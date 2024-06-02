@@ -44,3 +44,6 @@ else
     echo "Unable to open a new terminal automatically. Consider using VS Code tasks for Electron app."
   fi
 fi
+
+# Wait for the React app background process to finish
+wait $react_app_pid
