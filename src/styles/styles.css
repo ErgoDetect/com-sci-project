@@ -1,0 +1,24 @@
+/** @format */
+.Layout {
+	overflow: hidden;
+	width: 100vw;
+	height: 100vh;
+}
+.Header {
+	background-color: azure;
+	text-align: center;
+	color: #fff;
+	height: 64px;
+	padding-inline: 48px;
+	line-height: 64px;
+	background-color: #4096ff;
+}
+.Content {
+	height: 100%;
+	background-color: #000;
+}
+.Footer {
+	textalign: center;
+	color: #fff;
+	background-color: gray;
+}
