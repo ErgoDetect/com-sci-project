@@ -55,6 +55,7 @@ To learn React, check out the [React documentation](https://reactjs.org/). -->
 yarn
 ```
 
+## Mac OS
 ### Running the Application
 
 - To start your React application and work with Electron:
@@ -74,3 +75,14 @@ This command will launch your React app and then Electron for development.
 ```
 
 This command will stop the React app's server.
+
+## Windows OS
+### Running the Application
+
+- To start your React application and work with Electron:
+
+```bash
+./run_react.bat
+```
+
+This command will launch your React app and then Electron for development.
