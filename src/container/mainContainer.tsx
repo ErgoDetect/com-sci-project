@@ -121,7 +121,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				key: "rightTab3",
 				label: "Position",
 				children: (
-					<div>
+					<div style={{ overflowY: "scroll", height: 450 }}>
 						Head Position
 						<br />
 						x:
@@ -150,6 +150,41 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 						z:
 						{positionData && positionData.headRotationDegree
 							? Math.round(positionData.headRotationDegree[2] * 100) / 100
+							: "No data"}
+						<br />
+						<br />
+						Shoulder Left Position
+						<br />
+						x:
+						{positionData && positionData.shoulderLeftPosition
+							? Math.round(positionData.shoulderLeftPosition[0] * 100) / 100
+							: "No data"}
+						<br />
+						y:
+						{positionData && positionData.shoulderLeftPosition
+							? Math.round(positionData.shoulderLeftPosition[1] * 100) / 100
+							: "No data"}
+						<br />
+						z:
+						{positionData && positionData.shoulderLeftPosition
+							? Math.round(positionData.shoulderLeftPosition[2] * 100) / 100
+							: "No data"}
+						<br />
+						Shoulder Right Position
+						<br />
+						x:
+						{positionData && positionData.shoulderRightPosition
+							? Math.round(positionData.shoulderRightPosition[0] * 100) / 100
+							: "No data"}
+						<br />
+						y:
+						{positionData && positionData.shoulderRightPosition
+							? Math.round(positionData.shoulderRightPosition[1] * 100) / 100
+							: "No data"}
+						<br />
+						z:
+						{positionData && positionData.shoulderRightPosition
+							? Math.round(positionData.shoulderRightPosition[2] * 100) / 100
 							: "No data"}
 						<br />
 						<br />

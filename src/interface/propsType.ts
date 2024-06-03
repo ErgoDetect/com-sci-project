@@ -6,6 +6,9 @@ export interface PositionData {
 	headPosition: Record<number, number>;
 	headRotationDegree: Record<number, number>;
 	depth: number;
+	shoulderLeftPosition: Record<number, number>;
+	shoulderRightPosition: Record<number, number>;
+	// shoulderPosition: Record<number, number>;
 }
 
 export interface ContainerProps {
