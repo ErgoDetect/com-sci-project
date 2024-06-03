@@ -61,7 +61,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationX", value)
 								}
-								text='x :'
+								text="x :"
 							/>
 						),
 					},
@@ -73,7 +73,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationY", value)
 								}
-								text='y :'
+								text="y :"
 							/>
 						),
 					},
@@ -85,7 +85,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationZ", value)
 								}
-								text='z :'
+								text="z :"
 							/>
 						),
 					},
@@ -104,7 +104,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				label: "Sensitive",
 				children: (
 					<Menu
-						mode='inline'
+						mode="inline"
 						defaultSelectedKeys={["1"]}
 						defaultOpenKeys={["sub1"]}
 						style={{ height: "100%" }}
@@ -150,6 +150,12 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 						z:
 						{positionData && positionData.headRotationDegree
 							? Math.round(positionData.headRotationDegree[2] * 100) / 100
+							: "No data"}
+						<br />
+						<br />
+						depth:
+						{positionData && positionData.depth
+							? Math.round(positionData.depth * 100) / 100
 							: "No data"}
 						<br />
 						<br />
@@ -219,21 +225,21 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	}, [conditionPositionData, positionData, sliderValues]);
 
 	return (
-		<Layout className='Layout'>
+		<Layout className="Layout">
 			<Header
 				style={{ display: "flex", alignItems: "center" }}
-				className='Header'
+				className="Header"
 			>
 				<h2 style={{ padding: "5px" }}>Header</h2>
 				<Menu
-					theme='dark'
-					mode='horizontal'
+					theme="dark"
+					mode="horizontal"
 					defaultSelectedKeys={["2"]}
 					items={headerMenu}
 					style={{ flex: 1, minWidth: 0 }}
 				/>
 			</Header>
-			<Content className='Content'>
+			<Content className="Content">
 				<Layout style={{ height: "100%" }}>
 					<Content style={{ padding: "10px" }}>
 						<Button onClick={setPositionData}>Set</Button>
@@ -242,13 +248,13 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 					<Sider width={300} style={{ background: colorBgContainer }}>
 						<Tabs
 							style={{ padding: "10px" }}
-							defaultActiveKey='1'
+							defaultActiveKey="1"
 							items={rightTab}
 						/>
 					</Sider>
 				</Layout>
 			</Content>
-			<Footer className='Footer'>Footer</Footer>
+			<Footer className="Footer">Footer</Footer>
 		</Layout>
 	);
 };

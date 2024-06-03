@@ -5,6 +5,7 @@ import React, { ReactNode } from "react";
 export interface PositionData {
 	headPosition: Record<number, number>;
 	headRotationDegree: Record<number, number>;
+	depth: number;
 }
 
 export interface ContainerProps {
