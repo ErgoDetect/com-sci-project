@@ -3,11 +3,14 @@
 import React, { ReactNode } from "react";
 
 export interface PositionData {
-	headPosition: Record<number, number>;
-	headRotationDegree: Record<number, number>;
-	depth: number;
-	shoulderLeftPosition: Record<number, number>;
-	shoulderRightPosition: Record<number, number>;
+	headPosition: { x: number; y: number };
+
+	// headPosition: Record<number, number>;
+	// headPosition: Record<number, number>;
+	// headRotationDegree: Record<number, number>;
+	// depth: number;
+	// shoulderLeftPosition: Record<number, number>;
+	// shoulderRightPosition: Record<number, number>;
 	// shoulderPosition: Record<number, number>;
 }
 
