@@ -16,6 +16,7 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 		const handleMessage = (event: MessageEvent) => {
 			const inputData = JSON.parse(event.data);
 			onMessage(inputData);
+			// console.log(inputData);
 		};
 
 		const handleError = (error: Event) => {
