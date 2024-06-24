@@ -1,49 +1,63 @@
 #!/bin/bash
 
 # Function to get script directory
-script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Parse optional arguments for working directory and terminal emulator
 working_dir="$script_dir"
 terminal_emulator=""
-while getopts ":w:t:" opt; do
-  case $opt in
-    w) working_dir="$OPTARG" ;;
-    t) terminal_emulator="$OPTARG" ;;
-    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
-  esac
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -w)
+            working_dir="$2"
+            shift 2
+            ;;
+        -t)
+            terminal_emulator="$2"
+            shift 2
+            ;;
+        *)
+            echo "Invalid option: $1"
+            exit 1
+            ;;
+    esac
 done
 
-# Start React app in background (consider using process management tools)
-cd "$working_dir"  # Change directory to working directory (optional)
+# Start React app in background
+cd "$working_dir" || {
+    echo "Unable to change directory to $working_dir"
+    exit 1
+}
 echo "Starting React app with yarn start..."
 yarn start &
-react_app_pid=$!
-echo "React app started in background (PID: $react_app_pid)"
-
-if [[ $? -ne 0 ]]; then
+if [ $? -ne 0 ]; then
     echo "Error starting React app with yarn start."
     exit 1
 fi
 
+# Wait until http://localhost:3000/ is accessible
+wait_for_react() {
+    echo "Checking if React app is ready..."
+    sleep 2
+    while ! curl -s http://localhost:3000/ > /dev/null; do
+        sleep 2
+    done
+}
+wait_for_react
+
 # Start Electron app in new terminal window
 # Use user-specified terminal emulator if provided
-if [[ -n "$terminal_emulator" ]]; then
-  "$terminal_emulator" -e "cd '$working_dir' && yarn dev"
+if [ -n "$terminal_emulator" ]; then
+    if command -v "$terminal_emulator" &> /dev/null; then
+        "$terminal_emulator" -e "cd \"$working_dir\" && yarn dev"
+    else
+        echo "Terminal emulator '$terminal_emulator' not found."
+        exit 1
+    fi
 else
-  # Attempt cross-platform approach with working directory
-  if [[ -n "$(command -v x-terminal-emulator)" ]]; then
-    x-terminal-emulator -e "cd '$working_dir' && yarn dev"
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
-    osascript -e 'tell app "Terminal"
-        do script "cd '$working_dir' && yarn dev"
-    end tell'
-  elif [[ "$OSTYPE" == "msys" ]]; then
-    start cmd.exe /K "cd '$working_dir' && yarn dev"
-  else
-    echo "Unable to open a new terminal automatically. Consider using VS Code tasks for Electron app."
-  fi
+    open -a Terminal.app "$working_dir"
+    cd "$working_dir" && yarn dev
 fi
 
-# Wait for the React app background process to finish
-wait $react_app_pid
+exit 0
