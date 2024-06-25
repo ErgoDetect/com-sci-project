@@ -8,6 +8,7 @@ import type { MenuProps, TabsProps } from "antd";
 import CustomSlider from "../components/slider";
 
 import "../styles/styles.css";
+import PositionTab from "../components/positionTab";
 import { PositionData, ContainerProps } from "../interface/propsType";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -120,82 +121,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 			{
 				key: "rightTab3",
 				label: "Position",
-				children: (
-					<div>
-						Head Position
-						<br />
-						x:
-						{positionData && positionData.headPosition
-							? Math.round(positionData.headPosition[0] * 100) / 100
-							: "No data"}
-						<br />
-						y:
-						{positionData && positionData.headPosition
-							? Math.round(positionData.headPosition[1] * 100) / 100
-							: "No data"}
-						<br />
-						<br />
-						Head Rotation
-						<br />
-						x:
-						{positionData && positionData.headRotationDegree
-							? Math.round(positionData.headRotationDegree[0] * 100) / 100
-							: "No data"}
-						<br />
-						y:
-						{positionData && positionData.headRotationDegree
-							? Math.round(positionData.headRotationDegree[1] * 100) / 100
-							: "No data"}
-						<br />
-						z:
-						{positionData && positionData.headRotationDegree
-							? Math.round(positionData.headRotationDegree[2] * 100) / 100
-							: "No data"}
-						<br />
-						<br />
-						depth:
-						{positionData && positionData.depth
-							? Math.round(positionData.depth * 100) / 100
-							: "No data"}
-						<br />
-						<br />
-						<hr />
-						Set
-						<br />
-						Head Position
-						<br />
-						x:
-						{conditionPositionData && conditionPositionData.headPosition
-							? Math.round(conditionPositionData.headPosition[0] * 100) / 100
-							: "No data"}
-						<br />
-						y:
-						{conditionPositionData && conditionPositionData.headPosition
-							? Math.round(conditionPositionData.headPosition[1] * 100) / 100
-							: "No data"}
-						<br />
-						<br />
-						Head Rotation
-						<br />
-						x:
-						{conditionPositionData && conditionPositionData.headRotationDegree
-							? Math.round(conditionPositionData.headRotationDegree[0] * 100) /
-							  100
-							: "No data"}
-						<br />
-						y:
-						{conditionPositionData && conditionPositionData.headRotationDegree
-							? Math.round(conditionPositionData.headRotationDegree[1] * 100) /
-							  100
-							: "No data"}
-						<br />
-						z:
-						{conditionPositionData && conditionPositionData.headRotationDegree
-							? Math.round(conditionPositionData.headRotationDegree[2] * 100) /
-							  100
-							: "No data"}
-					</div>
-				),
+				children: <PositionTab data={data} />,
 			},
 		],
 		[sensitiveMenu, positionData, conditionPositionData]
@@ -206,22 +132,22 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	} = theme.useToken();
 
 	useEffect(() => {
-		if (
-			conditionPositionData &&
-			positionData &&
-			positionData.headPosition &&
-			positionData.headRotationDegree &&
-			conditionPositionData.headPosition &&
-			conditionPositionData.headRotationDegree
-		) {
-			if (
-				Math.abs(
-					positionData.headPosition[0] - conditionPositionData.headPosition[0]
-				) > sliderValues.headRotationX
-			) {
-				console.log("เปลี่ยนท่านั่ง");
-			}
-		}
+		// if (
+		// 	conditionPositionData &&
+		// 	positionData &&
+		// 	positionData.headPosition &&
+		// 	positionData.headRotationDegree &&
+		// 	conditionPositionData.headPosition &&
+		// 	conditionPositionData.headRotationDegree
+		// ) {
+		// 	if (
+		// 		Math.abs(
+		// 			positionData.headPosition[0] - conditionPositionData.headPosition[0]
+		// 		) > sliderValues.headRotationX
+		// 	) {
+		// 		console.log("เปลี่ยนท่านั่ง");
+		// 	}
+		// }
 	}, [conditionPositionData, positionData, sliderValues]);
 
 	return (
