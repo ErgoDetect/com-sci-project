@@ -46,7 +46,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 		}
 
 		try {
-			stopVideoStream(); // Stop any existing stream
+			stopVideoStream();
 
 			const videoStream = await navigator.mediaDevices.getUserMedia({
 				video: {

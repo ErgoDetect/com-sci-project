@@ -19,7 +19,7 @@ const headerMenu: MenuProps["items"] = [
 ];
 
 const Container: React.FC<ContainerProps> = ({ children, data }) => {
-	const positionData: PositionData | undefined = data as PositionData;
+	const positionData = data as PositionData;
 
 	const [sliderValues, setSliderValues] = useState({
 		headRotationX: 0.1,

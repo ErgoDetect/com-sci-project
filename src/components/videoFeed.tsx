@@ -18,7 +18,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
 	const { send } = useWebSocket("ws://localhost:8000/ws", setData);
 
-	// Handle devices
 	const handleDevices = useCallback(async () => {
 		try {
 			const mediaDevices = await navigator.mediaDevices.enumerateDevices();
@@ -34,12 +33,10 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		}
 	}, [deviceId]);
 
-	// Handle device change
 	const handleDeviceChange = useCallback((value: string) => {
 		setDeviceId(value);
 	}, []);
 
-	// Toggle streaming
 	const toggleStreaming = useCallback(() => {
 		setStreaming((prevStreaming) => !prevStreaming);
 	}, []);
