@@ -9,6 +9,7 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 	devices,
 	onChange,
 }) => {
+	// Memoize deviceOptions to avoid recalculating on every render unless devices change
 	const deviceOptions = useMemo(
 		() =>
 			devices.map((device) => ({
