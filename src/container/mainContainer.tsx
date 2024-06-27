@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { LaptopOutlined } from "@ant-design/icons";
-import { Layout, Menu, theme, Tabs, Checkbox, Button } from "antd";
+import { Layout, Menu, Tabs, Checkbox, Button, theme } from "antd";
 import type { MenuProps, TabsProps } from "antd";
 
 import CustomSlider from "../components/slider";
-
-import "../styles/styles.css";
 import PositionTab from "../components/positionTab";
 import { PositionData, ContainerProps } from "../interface/propsType";
+
+import "../styles/styles.css";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -25,7 +25,6 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 		headRotationX: 0.1,
 		headRotationY: 0.1,
 		headRotationZ: 0.1,
-		// Add more sliders as needed
 	});
 
 	const [conditionPositionData, setConditionPositionData] = useState<
@@ -51,7 +50,11 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 		() => [
 			{
 				key: "1",
-				icon: <Checkbox>{<LaptopOutlined />}</Checkbox>,
+				icon: (
+					<Checkbox>
+						<LaptopOutlined />
+					</Checkbox>
+				),
 				label: "Head pose rotation angle",
 				children: [
 					{
@@ -62,7 +65,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationX", value)
 								}
-								text="x :"
+								text='x :'
 							/>
 						),
 					},
@@ -74,7 +77,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationY", value)
 								}
-								text="y :"
+								text='y :'
 							/>
 						),
 					},
@@ -86,11 +89,10 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationZ", value)
 								}
-								text="z :"
+								text='z :'
 							/>
 						),
 					},
-					// Add more sliders as needed
 				],
 			},
 			{ key: "2", icon: <LaptopOutlined />, label: "Option 2" },
@@ -105,7 +107,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				label: "Sensitive",
 				children: (
 					<Menu
-						mode="inline"
+						mode='inline'
 						defaultSelectedKeys={["1"]}
 						defaultOpenKeys={["sub1"]}
 						style={{ height: "100%" }}
@@ -124,7 +126,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				children: <PositionTab data={data} />,
 			},
 		],
-		[sensitiveMenu, positionData, conditionPositionData]
+		[sensitiveMenu, data]
 	);
 
 	const {
@@ -132,40 +134,36 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	} = theme.useToken();
 
 	useEffect(() => {
-		// if (
-		// 	conditionPositionData &&
-		// 	positionData &&
-		// 	positionData.headPosition &&
-		// 	positionData.headRotationDegree &&
-		// 	conditionPositionData.headPosition &&
-		// 	conditionPositionData.headRotationDegree
-		// ) {
-		// 	if (
-		// 		Math.abs(
-		// 			positionData.headPosition[0] - conditionPositionData.headPosition[0]
-		// 		) > sliderValues.headRotationX
-		// 	) {
-		// 		console.log("เปลี่ยนท่านั่ง");
-		// 	}
-		// }
+		if (conditionPositionData && positionData) {
+			const checkPositionChange = () => {
+				if (
+					Math.abs(
+						positionData.headPosition.x - conditionPositionData.headPosition.x
+					) > sliderValues.headRotationX
+				) {
+					console.log("Position changed");
+				}
+			};
+			checkPositionChange();
+		}
 	}, [conditionPositionData, positionData, sliderValues]);
 
 	return (
-		<Layout className="Layout">
+		<Layout className='Layout'>
 			<Header
 				style={{ display: "flex", alignItems: "center" }}
-				className="Header"
+				className='Header'
 			>
 				<h2 style={{ padding: "5px" }}>Header</h2>
 				<Menu
-					theme="dark"
-					mode="horizontal"
+					theme='dark'
+					mode='horizontal'
 					defaultSelectedKeys={["2"]}
 					items={headerMenu}
 					style={{ flex: 1, minWidth: 0 }}
 				/>
 			</Header>
-			<Content className="Content">
+			<Content className='Content'>
 				<Layout style={{ height: "100%" }}>
 					<Content style={{ padding: "10px" }}>
 						<Button onClick={setPositionData}>Set</Button>
@@ -174,13 +172,13 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 					<Sider width={300} style={{ background: colorBgContainer }}>
 						<Tabs
 							style={{ padding: "10px" }}
-							defaultActiveKey="1"
+							defaultActiveKey='1'
 							items={rightTab}
 						/>
 					</Sider>
 				</Layout>
 			</Content>
-			<Footer className="Footer">Footer</Footer>
+			<Footer className='Footer'>Footer</Footer>
 		</Layout>
 	);
 };

@@ -1,6 +1,6 @@
 /** @format */
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 
 const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 	const socketRef = useRef<WebSocket | null>(null);
@@ -16,7 +16,6 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 		const handleMessage = (event: MessageEvent) => {
 			const inputData = JSON.parse(event.data);
 			onMessage(inputData);
-			// console.log(inputData);
 		};
 
 		const handleError = (error: Event) => {
@@ -33,11 +32,15 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 		socket.addEventListener("close", handleClose);
 
 		return () => {
-			if (
-				socketRef.current &&
-				socketRef.current.readyState === WebSocket.OPEN
-			) {
-				socketRef.current.close();
+			if (socketRef.current) {
+				socket.removeEventListener("open", handleOpen);
+				socket.removeEventListener("message", handleMessage);
+				socket.removeEventListener("error", handleError);
+				socket.removeEventListener("close", handleClose);
+
+				if (socketRef.current.readyState === WebSocket.OPEN) {
+					socketRef.current.close();
+				}
 			}
 		};
 	}, [url, onMessage]);
@@ -45,16 +48,18 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 	useEffect(() => {
 		const cleanupWebSocket = initializeWebSocket();
 
-		return cleanupWebSocket;
+		return () => {
+			if (cleanupWebSocket) cleanupWebSocket();
+		};
 	}, [initializeWebSocket]);
 
-	const send = (data: any) => {
+	const send = useCallback((data: any) => {
 		if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
 			socketRef.current.send(data);
 		}
-	};
+	}, []);
 
-	return { send };
+	return useMemo(() => ({ send }), [send]);
 };
 
 export default useWebSocket;

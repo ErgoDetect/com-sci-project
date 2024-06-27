@@ -49,7 +49,12 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 			stopVideoStream(); // Stop any existing stream
 
 			const videoStream = await navigator.mediaDevices.getUserMedia({
-				video: { deviceId, width: 1980, height: 1080 },
+				video: {
+					deviceId,
+					width: { ideal: 1980 },
+					height: { ideal: 1080 },
+					frameRate: { ideal: 30 },
+				},
 			});
 
 			videoStreamRef.current = videoStream;
@@ -64,7 +69,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 					canvasRef.current.height = videoHeight;
 				}
 			}
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Error accessing camera:", error);
 		}
 	}, [deviceId, stopVideoStream]);
@@ -84,7 +89,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
 	useEffect(() => {
 		if (streaming && intervalIdRef.current === undefined) {
-			intervalIdRef.current = window.setInterval(captureFrame, 42);
+			intervalIdRef.current = window.setInterval(captureFrame, 33.33333);
 		} else if (!streaming && intervalIdRef.current !== undefined) {
 			clearInterval(intervalIdRef.current);
 			intervalIdRef.current = undefined;

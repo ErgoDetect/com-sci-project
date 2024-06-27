@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "antd";
 import { DeviceProps, videoFeedProps } from "../interface/propsType";
 import DeviceSelector from "./camera/deviceSelector";
@@ -55,6 +55,17 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		[send]
 	);
 
+	const deviceSelectorMemo = useMemo(
+		() => (
+			<DeviceSelector
+				deviceId={deviceId}
+				devices={devices}
+				onChange={handleDeviceChange}
+			/>
+		),
+		[deviceId, devices, handleDeviceChange]
+	);
+
 	return (
 		<>
 			<WebcamDisplay
@@ -72,11 +83,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 					gap: "10px",
 				}}
 			>
-				<DeviceSelector
-					deviceId={deviceId}
-					devices={devices}
-					onChange={handleDeviceChange}
-				/>
+				{deviceSelectorMemo}
 				<Button onClick={toggleStreaming}>
 					{streaming ? "Stop" : "Start"}
 				</Button>
