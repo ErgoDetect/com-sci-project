@@ -15,6 +15,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 	const [deviceId, setDeviceId] = useState<string | undefined>("");
 	const [devices, setDevices] = useState<DeviceProps[]>([]);
 	const [streaming, setStreaming] = useState(false);
+	const [frameCount, setFrameCount] = useState(0);
 
 	const { send } = useWebSocket("ws://localhost:8000/ws", setData);
 
@@ -48,6 +49,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 	const handleCapture = useCallback(
 		(blob: Blob) => {
 			send(blob);
+			setFrameCount((prevFrameCount) => prevFrameCount + 1);
 		},
 		[send]
 	);
@@ -62,6 +64,10 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		),
 		[deviceId, devices, handleDeviceChange]
 	);
+
+	useEffect(() => {
+		console.log("Frame count:", frameCount);
+	}, [frameCount]);
 
 	return (
 		<>
