@@ -59,10 +59,12 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
 	const handleCapture = useCallback(
 		(blob: Blob) => {
+			console.log("Image size:", (blob.size / 1024).toFixed(2), "bytes"); // Log image size
+
 			const reader = new FileReader();
 			reader.onload = () => {
 				const dataUrl = reader.result as string;
-				const timestamp = Date.now(); // Capture the current time
+				const timestamp = Date.now();
 				const data = {
 					frameCount: frameCountRef.current,
 					image: dataUrl.split(",")[1],
