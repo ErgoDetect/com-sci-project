@@ -3,21 +3,25 @@
 import { useEffect, useState } from "react";
 import Container from "../container/mainContainer";
 import VideoFeed from "../components/videoFeed";
+import { DataProps } from "../interface/propsType";
 
 const App = () => {
-	const [data, setData] = useState({
-		frameCount: 0,
-		latency: 0,
-	});
-
+	const [data, setData] = useState<DataProps | undefined>(undefined);
+  
 	useEffect(() => {
-		console.log(
-			"Received Frame : ",
-			data?.frameCount,
-			"Latency : ",
-			data?.latency.toFixed(2),
-			"ms"
-		);
+		if (data) {
+			console.log(
+				"data :",
+				data,
+				"Head Position : ",
+				data.headPosition,
+				"Received Frame : ",
+				data.frameCount,
+				"Latency : ",
+				data.latency.toFixed(2),
+				"ms"
+			);
+		}
 	}, [data]);
 
 	return (

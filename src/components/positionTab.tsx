@@ -1,8 +1,12 @@
+/** @format */
+
 import React from "react";
-import { PositionData, ContainerProps } from "../interface/propsType";
+import { ContainerProps } from "../interface/propsType";
 
 const PositionTab: React.FC<ContainerProps> = ({ data }) => {
-	const positionData: PositionData | undefined = data as PositionData;
+	const positionData = data?.headPosition;
+	const frameTracking = data?.frameCount;
+	const latency = data?.latency;
 
 	// return (
 	// 	<div style={{ overflowY: "scroll", height: 450 }}>
@@ -119,14 +123,21 @@ const PositionTab: React.FC<ContainerProps> = ({ data }) => {
 			<h2>Head Position</h2>
 			<p>
 				x:{" "}
-				{positionData && positionData.headPosition
-					? Math.round(positionData.headPosition.x * 100) / 100
+				{positionData?.x
+					? (Math.round(positionData?.x * 100) / 100).toFixed(2)
 					: "No data"}
 				<br />
+				<br />
 				y:{" "}
-				{positionData && positionData.headPosition
-					? Math.round(positionData.headPosition.y * 100) / 100
+				{positionData?.y
+					? (Math.round(positionData?.y * 100) / 100).toFixed(2)
 					: "No data"}
+				<br />
+				<br />
+				receive frame: {frameTracking ?? "No data"}
+				<br />
+				<br />
+				latency: {latency ?? "No data"}
 			</p>
 			<h2>Depth</h2>
 			<p>
