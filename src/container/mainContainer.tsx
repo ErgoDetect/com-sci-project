@@ -7,7 +7,7 @@ import type { MenuProps, TabsProps } from "antd";
 
 import CustomSlider from "../components/slider";
 import PositionTab from "../components/positionTab";
-import { PositionData, ContainerProps } from "../interface/propsType";
+import { HeadPosition, ContainerProps } from "../interface/propsType";
 
 import "../styles/styles.css";
 
@@ -19,7 +19,7 @@ const headerMenu: MenuProps["items"] = [
 ];
 
 const Container: React.FC<ContainerProps> = ({ children, data }) => {
-	const positionData = data as PositionData;
+	const positionData: HeadPosition | undefined = data?.headPosition;
 
 	const [sliderValues, setSliderValues] = useState({
 		headRotationX: 0.1,
@@ -28,7 +28,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	});
 
 	const [conditionPositionData, setConditionPositionData] = useState<
-		PositionData | undefined
+		HeadPosition | undefined
 	>(undefined);
 
 	const setPositionData = useCallback(() => {
@@ -124,7 +124,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				children: <PositionTab data={data} />,
 			},
 		],
-		[sensitiveMenu, data]
+		[data, sensitiveMenu]
 	);
 
 	const {
@@ -135,9 +135,8 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 		if (conditionPositionData && positionData) {
 			const checkPositionChange = () => {
 				if (
-					Math.abs(
-						positionData.headPosition.x - conditionPositionData.headPosition.x
-					) > sliderValues.headRotationX
+					Math.abs(positionData.x - conditionPositionData.x) >
+					sliderValues.headRotationX
 				) {
 					console.log("Position changed");
 				}

@@ -2,8 +2,9 @@
 
 import React, { ReactNode } from "react";
 
-export interface PositionData {
-	headPosition: { x: number; y: number };
+export interface HeadPosition {
+	x: number;
+	y: number;
 
 	// headPosition: Record<number, number>;
 	// headPosition: Record<number, number>;
@@ -13,10 +14,16 @@ export interface PositionData {
 	// shoulderRightPosition: Record<number, number>;
 	// shoulderPosition: Record<number, number>;
 }
+export interface DataProps {
+	headPosition: HeadPosition;
+	frameCount: number;
+	latency: number;
+	// add other properties if necessary
+}
 
 export interface ContainerProps {
 	children?: React.ReactNode;
-	data?: PositionData | Record<string, any>;
+	data: DataProps | undefined;
 }
 
 export interface InputProps {
@@ -33,16 +40,7 @@ export interface DeviceProps {
 export interface videoFeedProps {
 	width?: number | string;
 	borderRadius?: number | string;
-	setData: React.Dispatch<
-		React.SetStateAction<{
-			headPosition: {
-				x: number;
-				y: number;
-			};
-			frameCount: number;
-			latency: number;
-		}>
-	>;
+	setData: React.Dispatch<React.SetStateAction<DataProps | undefined>>;
 	// Add setData prop
 }
 

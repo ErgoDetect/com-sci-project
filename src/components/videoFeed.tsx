@@ -59,7 +59,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
 	const handleCapture = useCallback(
 		(blob: Blob) => {
-			console.log("Image size:", (blob.size / 1024).toFixed(2), "bytes"); // Log image size
+			console.log("Image size:", (blob.size / 1024).toFixed(2), "kilo bytes"); // Log image size
 
 			const reader = new FileReader();
 			reader.onload = () => {
@@ -70,12 +70,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 					image: dataUrl.split(",")[1],
 					timestamp: timestamp,
 				};
-				console.log(
-					"Sending frame:",
-					frameCountRef.current,
-					"at",
-					new Date(timestamp).toISOString()
-				);
+
 				send(JSON.stringify(data));
 			};
 			reader.readAsDataURL(blob);
