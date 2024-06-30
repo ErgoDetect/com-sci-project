@@ -1,6 +1,12 @@
 /** @format */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, {
+	useState,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
 import { Button } from "antd";
 import { DeviceProps, videoFeedProps } from "../interface/propsType";
 import DeviceSelector from "./camera/deviceSelector";
@@ -16,6 +22,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 	const [devices, setDevices] = useState<DeviceProps[]>([]);
 	const [streaming, setStreaming] = useState(false);
 	const [frameCount, setFrameCount] = useState(0);
+	const frameCountRef = useRef(0);
 
 	const { send } = useWebSocket("ws://localhost:8000/ws", setData);
 
@@ -38,9 +45,13 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		setDeviceId(value);
 	}, []);
 
-	const toggleStreaming = useCallback(() => {
-		setStreaming((prevStreaming) => !prevStreaming);
-	}, []);
+	const toggleStreaming = () => {
+		if (streaming) {
+			setFrameCount(0);
+			frameCountRef.current = 0;
+		}
+		setStreaming(!streaming);
+	};
 
 	useEffect(() => {
 		handleDevices();
@@ -48,8 +59,25 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
 	const handleCapture = useCallback(
 		(blob: Blob) => {
-			send(blob);
-			setFrameCount((prevFrameCount) => prevFrameCount + 1);
+			const reader = new FileReader();
+			reader.onload = () => {
+				const dataUrl = reader.result as string;
+				const timestamp = Date.now(); // Capture the current time
+				const data = {
+					frameCount: frameCountRef.current,
+					image: dataUrl.split(",")[1],
+					timestamp: timestamp,
+				};
+				console.log(
+					"Sending frame:",
+					frameCountRef.current,
+					"at",
+					new Date(timestamp).toISOString()
+				);
+				send(JSON.stringify(data));
+			};
+			reader.readAsDataURL(blob);
+			frameCountRef.current += 1;
 		},
 		[send]
 	);
