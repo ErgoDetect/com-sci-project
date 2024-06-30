@@ -1,6 +1,12 @@
 /** @format */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, {
+	useState,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
 import { Button } from "antd";
 import { DeviceProps, videoFeedProps } from "../interface/propsType";
 import DeviceSelector from "./camera/deviceSelector";
@@ -15,10 +21,11 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 	const [deviceId, setDeviceId] = useState<string | undefined>("");
 	const [devices, setDevices] = useState<DeviceProps[]>([]);
 	const [streaming, setStreaming] = useState(false);
+	const [frameCount, setFrameCount] = useState(0);
+	const frameCountRef = useRef(0);
 
 	const { send } = useWebSocket("ws://localhost:8000/ws", setData);
 
-	// Handle devices
 	const handleDevices = useCallback(async () => {
 		try {
 			const mediaDevices = await navigator.mediaDevices.enumerateDevices();
@@ -34,15 +41,17 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		}
 	}, [deviceId]);
 
-	// Handle device change
 	const handleDeviceChange = useCallback((value: string) => {
 		setDeviceId(value);
 	}, []);
 
-	// Toggle streaming
-	const toggleStreaming = useCallback(() => {
-		setStreaming((prevStreaming) => !prevStreaming);
-	}, []);
+	const toggleStreaming = () => {
+		if (streaming) {
+			setFrameCount(0);
+			frameCountRef.current = 0;
+		}
+		setStreaming(!streaming);
+	};
 
 	useEffect(() => {
 		handleDevices();
@@ -50,7 +59,25 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
 	const handleCapture = useCallback(
 		(blob: Blob) => {
-			send(blob);
+			const reader = new FileReader();
+			reader.onload = () => {
+				const dataUrl = reader.result as string;
+				const timestamp = Date.now(); // Capture the current time
+				const data = {
+					frameCount: frameCountRef.current,
+					image: dataUrl.split(",")[1],
+					timestamp: timestamp,
+				};
+				console.log(
+					"Sending frame:",
+					frameCountRef.current,
+					"at",
+					new Date(timestamp).toISOString()
+				);
+				send(JSON.stringify(data));
+			};
+			reader.readAsDataURL(blob);
+			frameCountRef.current += 1;
 		},
 		[send]
 	);
@@ -65,6 +92,10 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 		),
 		[deviceId, devices, handleDeviceChange]
 	);
+
+	useEffect(() => {
+		console.log("Frame count:", frameCount);
+	}, [frameCount]);
 
 	return (
 		<>

@@ -32,15 +32,13 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 		socket.addEventListener("close", handleClose);
 
 		return () => {
-			if (socketRef.current) {
-				socket.removeEventListener("open", handleOpen);
-				socket.removeEventListener("message", handleMessage);
-				socket.removeEventListener("error", handleError);
-				socket.removeEventListener("close", handleClose);
+			socket.removeEventListener("open", handleOpen);
+			socket.removeEventListener("message", handleMessage);
+			socket.removeEventListener("error", handleError);
+			socket.removeEventListener("close", handleClose);
 
-				if (socketRef.current.readyState === WebSocket.OPEN) {
-					socketRef.current.close();
-				}
+			if (socket.readyState === WebSocket.OPEN) {
+				socket.close();
 			}
 		};
 	}, [url, onMessage]);
@@ -49,7 +47,7 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
 		const cleanupWebSocket = initializeWebSocket();
 
 		return () => {
-			if (cleanupWebSocket) cleanupWebSocket();
+			cleanupWebSocket();
 		};
 	}, [initializeWebSocket]);
 
