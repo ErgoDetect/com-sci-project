@@ -6,10 +6,6 @@ import VideoFeed from "../components/videoFeed";
 
 const App = () => {
 	const [data, setData] = useState({
-		headPosition: {
-			x: 0,
-			y: 0,
-		},
 		frameCount: 0,
 		latency: 0,
 	});

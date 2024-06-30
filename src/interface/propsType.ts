@@ -4,6 +4,7 @@ import React, { ReactNode } from "react";
 
 export interface PositionData {
 	headPosition: { x: number; y: number };
+	depthLeftIris: number;
 
 	// headPosition: Record<number, number>;
 	// headPosition: Record<number, number>;
@@ -35,10 +36,6 @@ export interface videoFeedProps {
 	borderRadius?: number | string;
 	setData: React.Dispatch<
 		React.SetStateAction<{
-			headPosition: {
-				x: number;
-				y: number;
-			};
 			frameCount: number;
 			latency: number;
 		}>

@@ -128,6 +128,14 @@ const PositionTab: React.FC<ContainerProps> = ({ data }) => {
 					? Math.round(positionData.headPosition.y * 100) / 100
 					: "No data"}
 			</p>
+			<h2>Depth</h2>
+			<p>
+				Left Iris:{" "}
+				{positionData && positionData.depthLeftIris
+					? Math.round(positionData.depthLeftIris * 100) / 100
+					: "No data"}
+				<br />
+			</p>
 		</div>
 	);
 };

@@ -12,9 +12,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 }) => {
 	const webcamRef = useRef<HTMLVideoElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const showCanvasRef = useRef<HTMLCanvasElement>(null);
 	const videoStreamRef = useRef<MediaStream | null>(null);
-	const animationFrameIdRef = useRef<number | undefined>();
 	const intervalIdRef = useRef<number | undefined>();
 
 	const stopVideoStream = useCallback(() => {
@@ -70,10 +68,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 					canvasRef.current.width = videoWidth;
 					canvasRef.current.height = videoHeight;
 				}
-				if (showCanvasRef.current) {
-					showCanvasRef.current.width = videoWidth;
-					showCanvasRef.current.height = videoHeight;
-				}
 			}
 		} catch (error) {
 			console.error("Error accessing camera:", error);
@@ -93,30 +87,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 		};
 	}, [deviceId, startVideoStream, stopVideoStream]);
 
-	const renderFrame = useCallback(() => {
-		const showCanvas = showCanvasRef.current;
-		const webcam = webcamRef.current;
-
-		if (showCanvas && webcam) {
-			const context = showCanvas.getContext("2d");
-			if (context) {
-				context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
-			}
-		}
-
-		animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-	}, []);
-
-	useEffect(() => {
-		animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-
-		return () => {
-			if (animationFrameIdRef.current !== undefined) {
-				cancelAnimationFrame(animationFrameIdRef.current);
-			}
-		};
-	}, [streaming, renderFrame]);
-
 	useEffect(() => {
 		if (streaming && intervalIdRef.current === undefined) {
 			intervalIdRef.current = window.setInterval(captureFrame, 1000);
@@ -131,14 +101,12 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 			<video
 				ref={webcamRef}
 				style={{
-					display: "none",
+					width,
+					borderRadius,
+					transform: "scaleX(-1)",
 				}}
 			></video>
 			<canvas ref={canvasRef} style={{ display: "none" }}></canvas>
-			<canvas
-				ref={showCanvasRef}
-				style={{ width, borderRadius, transform: "scaleX(-1)" }}
-			></canvas>
 		</>
 	);
 };
