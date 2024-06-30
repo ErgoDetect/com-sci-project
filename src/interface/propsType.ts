@@ -2,10 +2,10 @@
 
 import React, { ReactNode } from "react";
 
-export interface HeadPosition {
-	x: number;
-	y: number;
 
+export interface PositionData {
+	headPosition: { x: number; y: number };
+	depthLeftIris: number;
 	// headPosition: Record<number, number>;
 	// headPosition: Record<number, number>;
 	// headRotationDegree: Record<number, number>;
