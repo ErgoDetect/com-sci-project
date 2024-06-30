@@ -7,14 +7,12 @@ import { DataProps } from "../interface/propsType";
 
 const App = () => {
 	const [data, setData] = useState<DataProps | undefined>(undefined);
-  
+
 	useEffect(() => {
 		if (data) {
 			console.log(
 				"data :",
 				data,
-				"Head Position : ",
-				data.headPosition,
 				"Received Frame : ",
 				data.frameCount,
 				"Latency : ",

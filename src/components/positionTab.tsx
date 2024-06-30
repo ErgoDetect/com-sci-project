@@ -1,10 +1,12 @@
 /** @format */
 
 import React from "react";
-import { ContainerProps } from "../interface/propsType";
+import { PositionData, ContainerProps } from "../interface/propsType";
 
 const PositionTab: React.FC<ContainerProps> = ({ data }) => {
-	const positionData = data?.headPosition;
+	const positionData: PositionData | undefined =
+		data as unknown as PositionData;
+	// const positionData = data?.headPosition;
 	const frameTracking = data?.frameCount;
 	const latency = data?.latency;
 
@@ -123,21 +125,16 @@ const PositionTab: React.FC<ContainerProps> = ({ data }) => {
 			<h2>Head Position</h2>
 			<p>
 				x:{" "}
-				{positionData?.x
-					? (Math.round(positionData?.x * 100) / 100).toFixed(2)
+				{positionData?.headPosition
+					? (Math.round(positionData?.headPosition.x * 100) / 100).toFixed(2)
 					: "No data"}
 				<br />
 				<br />
 				y:{" "}
-				{positionData?.y
-					? (Math.round(positionData?.y * 100) / 100).toFixed(2)
+				{positionData?.headPosition
+					? (Math.round(positionData?.headPosition.y * 100) / 100).toFixed(2)
 					: "No data"}
 				<br />
-				<br />
-				receive frame: {frameTracking ?? "No data"}
-				<br />
-				<br />
-				latency: {latency ?? "No data"}
 			</p>
 			<h2>Depth</h2>
 			<p>
@@ -147,6 +144,10 @@ const PositionTab: React.FC<ContainerProps> = ({ data }) => {
 					: "No data"}
 				<br />
 			</p>
+			<br />
+			receive frame: {frameTracking ?? "No data"}
+			<br />
+			latency: {latency ?? "No data"}
 		</div>
 	);
 };

@@ -2,7 +2,6 @@
 
 import React, { ReactNode } from "react";
 
-
 export interface PositionData {
 	headPosition: { x: number; y: number };
 	depthLeftIris: number;
@@ -15,7 +14,6 @@ export interface PositionData {
 	// shoulderPosition: Record<number, number>;
 }
 export interface DataProps {
-	headPosition: HeadPosition;
 	frameCount: number;
 	latency: number;
 	// add other properties if necessary

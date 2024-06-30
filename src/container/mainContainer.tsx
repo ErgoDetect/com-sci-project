@@ -7,7 +7,7 @@ import type { MenuProps, TabsProps } from "antd";
 
 import CustomSlider from "../components/slider";
 import PositionTab from "../components/positionTab";
-import { HeadPosition, ContainerProps } from "../interface/propsType";
+import { PositionData, ContainerProps } from "../interface/propsType";
 
 import "../styles/styles.css";
 
@@ -19,7 +19,7 @@ const headerMenu: MenuProps["items"] = [
 ];
 
 const Container: React.FC<ContainerProps> = ({ children, data }) => {
-	const positionData: HeadPosition | undefined = data?.headPosition;
+	const positionData = data as unknown as PositionData;
 
 	const [sliderValues, setSliderValues] = useState({
 		headRotationX: 0.1,
@@ -28,7 +28,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	});
 
 	const [conditionPositionData, setConditionPositionData] = useState<
-		HeadPosition | undefined
+		PositionData | undefined
 	>(undefined);
 
 	const setPositionData = useCallback(() => {
@@ -65,7 +65,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationX", value)
 								}
-								text='x :'
+								text="x :"
 							/>
 						),
 					},
@@ -77,7 +77,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationY", value)
 								}
-								text='y :'
+								text="y :"
 							/>
 						),
 					},
@@ -89,7 +89,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 								onChange={(value: number) =>
 									handleSliderChange("headRotationZ", value)
 								}
-								text='z :'
+								text="z :"
 							/>
 						),
 					},
@@ -107,7 +107,7 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				label: "Sensitive",
 				children: (
 					<Menu
-						mode='inline'
+						mode="inline"
 						style={{ height: "100%" }}
 						items={sensitiveMenu}
 					/>
@@ -135,8 +135,9 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 		if (conditionPositionData && positionData) {
 			const checkPositionChange = () => {
 				if (
-					Math.abs(positionData.x - conditionPositionData.x) >
-					sliderValues.headRotationX
+					Math.abs(
+						positionData.headPosition.x - conditionPositionData.headPosition.x
+					) > sliderValues.headRotationX
 				) {
 					console.log("Position changed");
 				}
@@ -146,21 +147,21 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	}, [conditionPositionData, positionData, sliderValues]);
 
 	return (
-		<Layout className='Layout'>
+		<Layout className="Layout">
 			<Header
-				className='Header'
+				className="Header"
 				style={{ display: "flex", alignItems: "center" }}
 			>
 				<h2 style={{ padding: "5px" }}>Header</h2>
 				<Menu
-					theme='dark'
-					mode='horizontal'
+					theme="dark"
+					mode="horizontal"
 					defaultSelectedKeys={["2"]}
 					items={headerMenu}
 					style={{ flex: 1, minWidth: 0 }}
 				/>
 			</Header>
-			<Content className='Content'>
+			<Content className="Content">
 				<Layout style={{ height: "100%" }}>
 					<Content style={{ padding: "10px" }}>
 						<Button onClick={setPositionData}>Set</Button>
@@ -169,13 +170,13 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 					<Sider width={300} style={{ background: colorBgContainer }}>
 						<Tabs
 							style={{ padding: "10px" }}
-							defaultActiveKey='1'
+							defaultActiveKey="1"
 							items={rightTab}
 						/>
 					</Sider>
 				</Layout>
 			</Content>
-			<Footer className='Footer'>Footer</Footer>
+			<Footer className="Footer">Footer</Footer>
 		</Layout>
 	);
 };
