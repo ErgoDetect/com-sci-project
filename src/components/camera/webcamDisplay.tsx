@@ -6,8 +6,8 @@ import { WebcamDisplayProps } from "../../interface/propsType";
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 	deviceId,
 	streaming,
-	width,
-	borderRadius,
+	width = "35vw",
+	borderRadius = "12px",
 	onCapture,
 }) => {
 	const webcamRef = useRef<HTMLVideoElement>(null);
@@ -46,7 +46,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 		}
 
 		try {
-			stopVideoStream(); // Stop any existing stream
+			stopVideoStream();
 
 			const videoStream = await navigator.mediaDevices.getUserMedia({
 				video: {
@@ -89,7 +89,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
 	useEffect(() => {
 		if (streaming && intervalIdRef.current === undefined) {
-			intervalIdRef.current = window.setInterval(captureFrame, 33.33333);
+			intervalIdRef.current = window.setInterval(captureFrame, 1000);
 		} else if (!streaming && intervalIdRef.current !== undefined) {
 			clearInterval(intervalIdRef.current);
 			intervalIdRef.current = undefined;
@@ -101,8 +101,8 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 			<video
 				ref={webcamRef}
 				style={{
-					width: width || "35vw",
-					borderRadius: borderRadius || "12px",
+					width,
+					borderRadius,
 					transform: "scaleX(-1)",
 				}}
 			></video>

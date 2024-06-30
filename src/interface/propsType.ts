@@ -33,7 +33,17 @@ export interface DeviceProps {
 export interface videoFeedProps {
 	width?: number | string;
 	borderRadius?: number | string;
-	setData: React.Dispatch<React.SetStateAction<Object>>; // Add setData prop
+	setData: React.Dispatch<
+		React.SetStateAction<{
+			headPosition: {
+				x: number;
+				y: number;
+			};
+			frameCount: number;
+			latency: number;
+		}>
+	>;
+	// Add setData prop
 }
 
 export interface WebcamDisplayProps {
@@ -41,7 +51,6 @@ export interface WebcamDisplayProps {
 	streaming: boolean;
 	width?: number | string;
 	borderRadius?: number | string;
-	captureAndSendFrame?: () => void;
 	onCapture: (blob: Blob) => void;
 }
 

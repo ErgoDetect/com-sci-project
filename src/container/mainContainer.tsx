@@ -19,7 +19,7 @@ const headerMenu: MenuProps["items"] = [
 ];
 
 const Container: React.FC<ContainerProps> = ({ children, data }) => {
-	const positionData: PositionData | undefined = data as PositionData;
+	const positionData = data as PositionData;
 
 	const [sliderValues, setSliderValues] = useState({
 		headRotationX: 0.1,
@@ -108,8 +108,6 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 				children: (
 					<Menu
 						mode='inline'
-						defaultSelectedKeys={["1"]}
-						defaultOpenKeys={["sub1"]}
 						style={{ height: "100%" }}
 						items={sensitiveMenu}
 					/>
@@ -151,8 +149,8 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 	return (
 		<Layout className='Layout'>
 			<Header
-				style={{ display: "flex", alignItems: "center" }}
 				className='Header'
+				style={{ display: "flex", alignItems: "center" }}
 			>
 				<h2 style={{ padding: "5px" }}>Header</h2>
 				<Menu
