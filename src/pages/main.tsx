@@ -8,6 +8,15 @@ import { DataProps } from "../interface/propsType";
 const App = () => {
 	const [data, setData] = useState<DataProps | undefined>(undefined);
 
+	let drawArray: { x: number[]; y: number[] } = {
+		x: [],
+		y: [],
+	};
+	drawArray.x.push(0.5);
+	drawArray.y.push(0.5);
+	drawArray.x.push(0.5);
+	drawArray.y.push(0.2);
+
 	useEffect(() => {
 		if (data) {
 			console.log(
@@ -34,7 +43,7 @@ const App = () => {
 					}}
 				>
 					<div style={{ placeSelf: "center" }}>
-						<VideoFeed setData={setData} />
+						<VideoFeed setData={setData} drawingDot={drawArray} />
 					</div>
 				</div>
 			}

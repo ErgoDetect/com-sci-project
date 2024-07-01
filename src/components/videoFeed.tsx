@@ -16,6 +16,7 @@ import useWebSocket from "../utility/webSocketConfig";
 const VideoFeed: React.FC<videoFeedProps> = ({
 	width,
 	borderRadius,
+	drawingDot,
 	setData,
 }) => {
 	const [deviceId, setDeviceId] = useState<string | undefined>("");
@@ -101,6 +102,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 				streaming={streaming}
 				width={width}
 				borderRadius={borderRadius}
+				drawingDot={drawingDot}
 				onCapture={handleCapture}
 			/>
 			<div

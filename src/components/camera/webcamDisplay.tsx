@@ -2,12 +2,14 @@
 
 import React, { useRef, useEffect, useCallback } from "react";
 import { WebcamDisplayProps } from "../../interface/propsType";
+import { drawCircle } from "../../utility/drawCircle";
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 	deviceId,
 	streaming,
 	width = "35vw",
 	borderRadius = "12px",
+	drawingDot,
 	onCapture,
 }) => {
 	const webcamRef = useRef<HTMLVideoElement>(null);
@@ -101,6 +103,17 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 			const context = showCanvas.getContext("2d");
 			if (context) {
 				context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
+				if (drawingDot) {
+					for (let index = 0; index < drawingDot.x.length; index++) {
+						drawCircle(
+							drawingDot.x[index],
+							drawingDot.y[index],
+							showCanvas.height,
+							showCanvas.width,
+							showCanvas
+						);
+					}
+				}
 			}
 		}
 

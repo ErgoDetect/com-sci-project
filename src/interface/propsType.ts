@@ -38,6 +38,7 @@ export interface DeviceProps {
 export interface videoFeedProps {
 	width?: number | string;
 	borderRadius?: number | string;
+	drawingDot?: { x: number[]; y: number[] };
 	setData: React.Dispatch<React.SetStateAction<DataProps | undefined>>;
 	// Add setData prop
 }
@@ -47,6 +48,7 @@ export interface WebcamDisplayProps {
 	streaming: boolean;
 	width?: number | string;
 	borderRadius?: number | string;
+	drawingDot?: { x: number[]; y: number[] };
 	onCapture: (blob: Blob) => void;
 }
 
