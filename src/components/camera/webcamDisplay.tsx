@@ -132,7 +132,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
 	useEffect(() => {
 		if (streaming && intervalIdRef.current === undefined) {
-			intervalIdRef.current = window.setInterval(captureFrame, 1000);
+			intervalIdRef.current = window.setInterval(captureFrame, 1000 / 2);
 		} else if (!streaming && intervalIdRef.current !== undefined) {
 			clearInterval(intervalIdRef.current);
 			intervalIdRef.current = undefined;
