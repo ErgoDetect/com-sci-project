@@ -44,18 +44,29 @@ const App = () => {
 			drawArray.y = [];
 
 			const headPosition = positionData?.headPosition;
+			const shoulderPosition = positionData?.shoulderPosition;
 
 			if (landmarkState.showHeadLandmark && headPosition) {
 				drawArray.x.push(headPosition.x as number);
 
 				drawArray.y.push(headPosition.y as number);
-				// console.log(drawArray);
+			}
 
-				// drawArray.x.push(0.3);
-				// drawArray.x.push(0.4);
+			if (landmarkState.showShoulderLandmark && shoulderPosition) {
+				drawArray.x.push(shoulderPosition.shoulder_left.x as number);
+				drawArray.y.push(shoulderPosition.shoulder_left.y as number);
+
+				drawArray.x.push(shoulderPosition.shoulder_right.x as number);
+				drawArray.y.push(shoulderPosition.shoulder_right.y as number);
 			}
 		}
-	}, [data, drawArray, landmarkState.showHeadLandmark, positionData]);
+	}, [
+		data,
+		drawArray,
+		landmarkState.showHeadLandmark,
+		landmarkState.showShoulderLandmark,
+		positionData,
+	]);
 
 	return (
 		<Container

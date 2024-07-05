@@ -5,6 +5,11 @@ import React, { ReactNode } from "react";
 export interface PositionData {
 	headPosition: { x: number; y: number };
 	depthLeftIris: number;
+	depthRightIris: number;
+	shoulderPosition: {
+		shoulder_left: { x: number; y: number; z: number };
+		shoulder_right: { x: number; y: number; z: number };
+	};
 	// headPosition: Record<number, number>;
 	// headPosition: Record<number, number>;
 	// headRotationDegree: Record<number, number>;
