@@ -1,8 +1,8 @@
 export function drawCircle(
 	x: number,
 	y: number,
-	height: number,
 	width: number,
+	height: number,
 	canvas: HTMLCanvasElement
 ): void {
 	if (!canvas) {

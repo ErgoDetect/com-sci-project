@@ -108,8 +108,8 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 						drawCircle(
 							drawingDot.x[index],
 							drawingDot.y[index],
-							showCanvas.height,
 							showCanvas.width,
+							showCanvas.height,
 							showCanvas
 						);
 					}
@@ -148,10 +148,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 				}}
 			></video>
 			<canvas ref={canvasRef} style={{ display: "none" }}></canvas>
-			<canvas
-				ref={showCanvasRef}
-				style={{ width, borderRadius, transform: "scaleX(-1)" }}
-			></canvas>
+			<canvas ref={showCanvasRef} style={{ width, borderRadius }}></canvas>
 		</>
 	);
 };
