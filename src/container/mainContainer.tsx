@@ -18,7 +18,11 @@ const headerMenu: MenuProps["items"] = [
 	{ key: "2", label: "Header 2" },
 ];
 
-const Container: React.FC<ContainerProps> = ({ children, data }) => {
+const Container: React.FC<ContainerProps> = ({
+	children,
+	data,
+	onShowLandmarkChange,
+}) => {
 	const positionData = data as unknown as PositionData;
 
 	const [sliderValues, setSliderValues] = useState({
@@ -121,7 +125,12 @@ const Container: React.FC<ContainerProps> = ({ children, data }) => {
 			{
 				key: "rightTab3",
 				label: "Position",
-				children: <PositionTab data={data} />,
+				children: (
+					<PositionTab
+						data={data}
+						onShowLandmarkChange={onShowLandmarkChange}
+					/>
+				),
 			},
 		],
 		[data, sensitiveMenu]

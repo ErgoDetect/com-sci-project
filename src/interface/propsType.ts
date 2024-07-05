@@ -22,6 +22,10 @@ export interface DataProps {
 export interface ContainerProps {
 	children?: React.ReactNode;
 	data: DataProps | undefined;
+	onShowLandmarkChange?: (newState: {
+		showHeadLandmark: boolean;
+		showShoulderLandmark: boolean;
+	}) => void;
 }
 
 export interface InputProps {
@@ -56,4 +60,12 @@ export interface DeviceSelectorProps {
 	deviceId: string | undefined;
 	devices: DeviceProps[];
 	onChange: (value: string) => void;
+}
+
+export interface PositionTabProps {
+	data: DataProps | undefined;
+	onShowLandmarkChange?: (newState: {
+		showHeadLandmark: boolean;
+		showShoulderLandmark: boolean;
+	}) => void;
 }

@@ -1,21 +1,32 @@
-/** @format */
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Container from "../container/mainContainer";
 import VideoFeed from "../components/videoFeed";
-import { DataProps } from "../interface/propsType";
+import { DataProps, PositionData } from "../interface/propsType";
 
 const App = () => {
 	const [data, setData] = useState<DataProps | undefined>(undefined);
 
-	let drawArray: { x: number[]; y: number[] } = {
-		x: [],
-		y: [],
+	const [landmarkState, setLandmarkState] = useState({
+		showHeadLandmark: false,
+		showShoulderLandmark: false,
+	});
+
+	const handleShowLandmarkChange = (updatedState: {
+		showHeadLandmark: boolean;
+		showShoulderLandmark: boolean;
+	}) => {
+		setLandmarkState(updatedState);
 	};
-	drawArray.x.push(0.5);
-	drawArray.y.push(0.5);
-	drawArray.x.push(0.5);
-	drawArray.y.push(0.2);
+
+	const positionData = data as PositionData | undefined;
+
+	const drawArray = useMemo(
+		() => ({
+			x: [] as number[],
+			y: [] as number[],
+		}),
+		[]
+	);
 
 	useEffect(() => {
 		if (data) {
@@ -28,12 +39,28 @@ const App = () => {
 				data.latency.toFixed(2),
 				"ms"
 			);
+
+			drawArray.x = [];
+			drawArray.y = [];
+
+			const headPosition = positionData?.headPosition;
+
+			if (landmarkState.showHeadLandmark && headPosition) {
+				drawArray.x.push(headPosition.x as number);
+
+				drawArray.y.push(headPosition.y as number);
+				// console.log(drawArray);
+
+				// drawArray.x.push(0.3);
+				// drawArray.x.push(0.4);
+			}
 		}
-	}, [data]);
+	}, [data, drawArray, landmarkState.showHeadLandmark, positionData]);
 
 	return (
 		<Container
 			data={data}
+			onShowLandmarkChange={handleShowLandmarkChange}
 			children={
 				<div
 					style={{
