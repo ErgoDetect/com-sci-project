@@ -24,19 +24,12 @@ const ResultPage: React.FC = () => {
 		setPlayed(state.played);
 	};
 
-	const bar = new ProgressBar(undefined, {
-		// config
-	});
-
-	document.body.appendChild(bar.el);
-
 	return (
 		<div
 			className="result-page"
 			style={{ alignItems: "center", alignSelf: "center" }}
 		>
 			<h1>Result Page</h1>
-
 			<ReactPlayer
 				ref={playerRef}
 				url={videoFile}
@@ -44,7 +37,6 @@ const ResultPage: React.FC = () => {
 				onProgress={handleProgress}
 				controls={false}
 			/>
-
 			<input
 				type="range"
 				min="0"
@@ -54,6 +46,42 @@ const ResultPage: React.FC = () => {
 				onChange={handleSeekChange}
 				style={{ width: videoWidth }}
 			/>
+			<div className="bar">
+				<div className="bar_chapter">
+					<div className="bar_chapter_i" style={{ flex: "0.166667 1 0%" }}>
+						<div className="bar_chapter_i_w">
+							<div
+								className="bar_chapter_i_b"
+								style={{ transform: "scaleX(1)" }}
+							></div>
+							<div
+								className="bar_chapter_i_h"
+								style={{ transform: "scaleX(0.184615)" }}
+							></div>
+							<div
+								className="bar_chapter_i_p"
+								style={{ transform: "scaleX(1)" }}
+							></div>
+						</div>
+					</div>
+					<div className="bar_chapter_i" style={{ flex: "0.1 1 0%" }}>
+						<div className="bar_chapter_i_w">
+							<div
+								className="bar_chapter_i_b"
+								style={{ transform: "scaleX(1)" }}
+							></div>
+							<div
+								className="bar_chapter_i_h"
+								style={{ transform: "scaleX(0)" }}
+							></div>
+							<div
+								className="bar_chapter_i_p"
+								style={{ transform: "scaleX(1)" }}
+							></div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 };
