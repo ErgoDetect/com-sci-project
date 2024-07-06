@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { LaptopOutlined } from "@ant-design/icons";
 import { Layout, Menu, Tabs, Checkbox, Button, theme } from "antd";
 import type { MenuProps, TabsProps } from "antd";
+import { Link } from "react-router-dom";
 
 import CustomSlider from "../components/slider";
 import PositionTab from "../components/positionTab";
@@ -14,8 +15,11 @@ import "../styles/styles.css";
 const { Header, Content, Footer, Sider } = Layout;
 
 const headerMenu: MenuProps["items"] = [
-	{ key: "1", label: "Header 1" },
-	{ key: "2", label: "Header 2" },
+	{ key: "1", label: "Detection" },
+	{
+		key: "2",
+		label: "Result",
+	},
 ];
 
 const Container: React.FC<ContainerProps> = ({
@@ -133,7 +137,7 @@ const Container: React.FC<ContainerProps> = ({
 				),
 			},
 		],
-		[data, sensitiveMenu]
+		[data, onShowLandmarkChange, sensitiveMenu]
 	);
 
 	const {
@@ -165,7 +169,7 @@ const Container: React.FC<ContainerProps> = ({
 				<Menu
 					theme="dark"
 					mode="horizontal"
-					defaultSelectedKeys={["2"]}
+					defaultSelectedKeys={["1"]}
 					items={headerMenu}
 					style={{ flex: 1, minWidth: 0 }}
 				/>

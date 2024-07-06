@@ -72,11 +72,94 @@ const PositionTab: React.FC<PositionTabProps> = ({
 					</Text>
 				</Col>
 			</Row>
+			<Row>
+				<Col span={2}>
+					<Checkbox
+						checked={showShoulderLandmark}
+						onChange={onChangeShowShoulderLandmark}
+					></Checkbox>
+				</Col>
+				<Col>
+					<Title level={5} style={{ margin: 0 }}>
+						Shoulder Position
+					</Title>
+				</Col>
+			</Row>
+			<Row>
+				<Col span={2}></Col>
+				<Col>
+					<Text>
+						Left Shoulder Position
+						<br />
+						x:{" "}
+						{positionData?.shoulderPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_left.x * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+						y:{" "}
+						{positionData?.headPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_left.y * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+						z:{" "}
+						{positionData?.headPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_left.z * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+						Right Shoulder Position
+						<br />
+						x:{" "}
+						{positionData?.shoulderPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_right.x * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+						y:{" "}
+						{positionData?.headPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_right.y * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+						z:{" "}
+						{positionData?.headPosition
+							? (
+									Math.round(
+										positionData?.shoulderPosition.shoulder_right.z * 100
+									) / 100
+							  ).toFixed(2)
+							: "No data"}
+						<br />
+					</Text>
+				</Col>
+			</Row>
 			<h2>Depth</h2>
 			<p>
 				Left Iris:{" "}
 				{positionData && positionData.depthLeftIris
 					? Math.round(positionData.depthLeftIris * 100) / 100
+					: "No data"}
+				<br />
+				Right Iris:{" "}
+				{positionData && positionData.depthRightIris
+					? Math.round(positionData.depthRightIris * 100) / 100
 					: "No data"}
 				<br />
 			</p>
