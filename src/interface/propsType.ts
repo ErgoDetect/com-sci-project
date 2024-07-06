@@ -21,11 +21,13 @@ export interface PositionData {
 export interface DataProps {
 	frameCount: number;
 	latency: number;
-	// add other properties if necessary
 }
 
 export interface ContainerProps {
 	children?: React.ReactNode;
+}
+export interface Detection {
+	children?: ReactNode;
 	data: DataProps | undefined;
 	onShowLandmarkChange?: (newState: {
 		showHeadLandmark: boolean;

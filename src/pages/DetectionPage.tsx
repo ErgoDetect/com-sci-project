@@ -4,25 +4,14 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { LaptopOutlined } from "@ant-design/icons";
 import { Layout, Menu, Tabs, Checkbox, Button, theme } from "antd";
 import type { MenuProps, TabsProps } from "antd";
-import { Link } from "react-router-dom";
-
 import CustomSlider from "../components/slider";
 import PositionTab from "../components/positionTab";
-import { PositionData, ContainerProps } from "../interface/propsType";
-
+import { PositionData, Detection } from "../interface/propsType";
 import "../styles/styles.css";
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Sider } = Layout;
 
-const headerMenu: MenuProps["items"] = [
-	{ key: "1", label: "Detection" },
-	{
-		key: "2",
-		label: "Result",
-	},
-];
-
-const Container: React.FC<ContainerProps> = ({
+const DetectionPage: React.FC<Detection> = ({
 	children,
 	data,
 	onShowLandmarkChange,
@@ -73,7 +62,7 @@ const Container: React.FC<ContainerProps> = ({
 								onChange={(value: number) =>
 									handleSliderChange("headRotationX", value)
 								}
-								text="x :"
+								text='x :'
 							/>
 						),
 					},
@@ -85,7 +74,7 @@ const Container: React.FC<ContainerProps> = ({
 								onChange={(value: number) =>
 									handleSliderChange("headRotationY", value)
 								}
-								text="y :"
+								text='y :'
 							/>
 						),
 					},
@@ -97,7 +86,7 @@ const Container: React.FC<ContainerProps> = ({
 								onChange={(value: number) =>
 									handleSliderChange("headRotationZ", value)
 								}
-								text="z :"
+								text='z :'
 							/>
 						),
 					},
@@ -115,7 +104,7 @@ const Container: React.FC<ContainerProps> = ({
 				label: "Sensitive",
 				children: (
 					<Menu
-						mode="inline"
+						mode='inline'
 						style={{ height: "100%" }}
 						items={sensitiveMenu}
 					/>
@@ -160,38 +149,30 @@ const Container: React.FC<ContainerProps> = ({
 	}, [conditionPositionData, positionData, sliderValues]);
 
 	return (
-		<Layout className="Layout">
-			<Header
-				className="Header"
-				style={{ display: "flex", alignItems: "center" }}
-			>
-				<h2 style={{ padding: "5px" }}>Header</h2>
-				<Menu
-					theme="dark"
-					mode="horizontal"
-					defaultSelectedKeys={["1"]}
-					items={headerMenu}
-					style={{ flex: 1, minWidth: 0 }}
-				/>
-			</Header>
-			<Content className="Content">
-				<Layout style={{ height: "100%" }}>
-					<Content style={{ padding: "10px" }}>
-						<Button onClick={setPositionData}>Set</Button>
-						{children}
-					</Content>
-					<Sider width={300} style={{ background: colorBgContainer }}>
-						<Tabs
-							style={{ padding: "10px" }}
-							defaultActiveKey="1"
-							items={rightTab}
-						/>
-					</Sider>
-				</Layout>
-			</Content>
-			<Footer className="Footer">Footer</Footer>
-		</Layout>
+		<Content className='Content'>
+			<Layout style={{ height: "100%" }}>
+				<Content style={{ padding: "10px" }}>
+					<Button onClick={setPositionData}>Set</Button>
+					<div
+						style={{
+							display: "grid",
+							gridTemplateColumns: "1fr",
+							height: "100%",
+						}}
+					>
+						<div style={{ placeSelf: "center" }}>{children}</div>
+					</div>
+				</Content>
+				<Sider width={300} style={{ background: colorBgContainer }}>
+					<Tabs
+						style={{ padding: "10px" }}
+						defaultActiveKey='1'
+						items={rightTab}
+					/>
+				</Sider>
+			</Layout>
+		</Content>
 	);
 };
 
-export default Container;
+export default DetectionPage;
