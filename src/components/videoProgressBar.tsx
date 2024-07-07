@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { videoProgressBarProps } from "../interface/propsType";
 import "../styles/progressBar.css";
-import { forEachChild } from "typescript";
-import { map } from "jquery";
 import VideoProgressBarChapter from "../components/videoProgressBarChapter";
 
 const VideoProgressBar: React.FC<videoProgressBarProps> = () => {

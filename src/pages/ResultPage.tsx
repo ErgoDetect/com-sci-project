@@ -68,6 +68,7 @@ const ResultPage: React.FC = () => {
 			/>
 			<div>Duration: {duration} seconds</div>
 			<VideoProgressBar />
+			<VideoProgressBar />
 			{/* <br />
 			<div id="progressBar1"></div> */}
 		</div>
