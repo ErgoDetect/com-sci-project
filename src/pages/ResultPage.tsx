@@ -1,15 +1,15 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import videoFile from "../result/dummyVideo.mkv"; // Adjust the path accordingly
 import ReactPlayer from "react-player";
-
 import ProgressBar from "ppbar";
-
-import "../styles/resultPage.css";
+import "ppbar/dist/index.min.css";
+import VideoProgressBar from "../components/videoProgressBar";
 
 const videoWidth = 600;
 
 const ResultPage: React.FC = () => {
 	const [played, setPlayed] = useState(0);
+	const [duration, setDuration] = useState(0);
 	const playerRef = useRef<ReactPlayer | null>(null);
 
 	const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +24,25 @@ const ResultPage: React.FC = () => {
 		setPlayed(state.played);
 	};
 
+	const handleDuration = (duration: number) => {
+		setDuration(duration);
+	};
+
+	// const div = document.createElement("div");
+	// div.style.width = "100%";
+	// const bar = new ProgressBar(div, {
+	// 	chapters: [
+	// 		{ time: 10, title: "chapter1" },
+	// 		{ time: 20, title: "chapter2" },
+	// 		{ title: "chapter3" },
+	// 	],
+	// });
+
+	// useEffect(() => {
+	// 	const progressBar1 = document.getElementById("progressBar1");
+	// 	progressBar1?.appendChild(div);
+	// }, []);
+
 	return (
 		<div
 			className="result-page"
@@ -35,6 +54,7 @@ const ResultPage: React.FC = () => {
 				url={videoFile}
 				width={videoWidth}
 				onProgress={handleProgress}
+				onDuration={handleDuration}
 				controls={false}
 			/>
 			<input
@@ -46,42 +66,10 @@ const ResultPage: React.FC = () => {
 				onChange={handleSeekChange}
 				style={{ width: videoWidth }}
 			/>
-			<div className="bar">
-				<div className="bar_chapter">
-					<div className="bar_chapter_i" style={{ flex: "0.166667 1 0%" }}>
-						<div className="bar_chapter_i_w">
-							<div
-								className="bar_chapter_i_b"
-								style={{ transform: "scaleX(1)" }}
-							></div>
-							<div
-								className="bar_chapter_i_h"
-								style={{ transform: "scaleX(0.184615)" }}
-							></div>
-							<div
-								className="bar_chapter_i_p"
-								style={{ transform: "scaleX(1)" }}
-							></div>
-						</div>
-					</div>
-					<div className="bar_chapter_i" style={{ flex: "0.1 1 0%" }}>
-						<div className="bar_chapter_i_w">
-							<div
-								className="bar_chapter_i_b"
-								style={{ transform: "scaleX(1)" }}
-							></div>
-							<div
-								className="bar_chapter_i_h"
-								style={{ transform: "scaleX(0)" }}
-							></div>
-							<div
-								className="bar_chapter_i_p"
-								style={{ transform: "scaleX(1)" }}
-							></div>
-						</div>
-					</div>
-				</div>
-			</div>
+			<div>Duration: {duration} seconds</div>
+			<VideoProgressBar />
+			{/* <br />
+			<div id="progressBar1"></div> */}
 		</div>
 	);
 };

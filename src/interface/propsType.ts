@@ -76,3 +76,10 @@ export interface PositionTabProps {
 		showShoulderLandmark: boolean;
 	}) => void;
 }
+
+export interface videoProgressBarProps {}
+
+export interface VideoProgressBarChapterProps {
+	percent?: number;
+	highlight?: boolean;
+}

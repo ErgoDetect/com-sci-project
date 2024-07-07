@@ -1,13 +1,14 @@
 /* bar_chapter_i คือ ความยาวทั้งหมด */
 /* bar_chapter_i_h คือ hover */
 /* bar_chapter_i_p คือ กดดูถึง */
+/* bar_chapter_i_b คือ ปกติ */
 
 .bar {
-	/* --primary-color: #f00; */
-	/* position:relative; */
+	--primary-color: #f00;
+	position: relative;
 	width: 100%;
 	touch-action: none;
-	color: #fff;
+	color: #000000;
 	cursor: pointer;
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -101,4 +102,27 @@
 .bar_chapter_i_b {
 	transform: scaleX(0);
 	background: rgb(0, 0, 0);
+}
+
+.bar_dot {
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+	transform-origin: 0 0;
+	z-index: 1;
+}
+
+.bar_dot > :first-child {
+	transform: translate(-50%);
+}
+
+.bar_dot_i {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #f00;
+	background: var(--primary-color);
 }
