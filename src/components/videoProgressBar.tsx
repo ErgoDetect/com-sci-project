@@ -1,18 +1,33 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { videoProgressBarProps } from "../interface/propsType";
 import "../styles/progressBar.css";
 import VideoProgressBarChapter from "../components/videoProgressBarChapter";
 
-const VideoProgressBar: React.FC<videoProgressBarProps> = () => {
+const VideoProgressBar: React.FC<videoProgressBarProps> = ({
+	clickPercent,
+	setClickPercent,
+	playerRef,
+}) => {
 	const max_time = 415.77;
 
+	const handleBarClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+		const rect = e.currentTarget.getBoundingClientRect();
+		const clickX = e.clientX - rect.left;
+		const clickXPercent = clickX / rect.width;
+		if (setClickPercent) {
+			setClickPercent(clickXPercent);
+			if (playerRef && playerRef.current) {
+				playerRef.current.seekTo(clickXPercent, "fraction");
+			}
+		}
+	};
 	const chapters = [
 		[25, 50],
 		[90, 92],
 	];
 
 	return (
-		<div className="bar">
+		<div className="bar" onClick={handleBarClick}>
 			<div className="bar_chapter">
 				{chapters.map((chapter, index) => {
 					if (index === 0) {
@@ -67,7 +82,10 @@ const VideoProgressBar: React.FC<videoProgressBarProps> = () => {
 			</div>
 			<div
 				className="bar_dot"
-				style={{ transform: "scale(1.5) translateY(-50%)", left: "10.23077%" }}
+				style={{
+					transform: "scale(1.5) translateY(-50%)",
+					left: `${clickPercent ? clickPercent * 100 : 0}%`,
+				}}
 			>
 				<div className="bar_dot_i"></div>
 			</div>

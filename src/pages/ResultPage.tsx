@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import videoFile from "../result/dummyVideo.mkv"; // Adjust the path accordingly
 import ReactPlayer from "react-player";
-import ProgressBar from "ppbar";
-import "ppbar/dist/index.min.css";
 import VideoProgressBar from "../components/videoProgressBar";
 
 const videoWidth = 600;
@@ -28,25 +26,10 @@ const ResultPage: React.FC = () => {
 		setDuration(duration);
 	};
 
-	// const div = document.createElement("div");
-	// div.style.width = "100%";
-	// const bar = new ProgressBar(div, {
-	// 	chapters: [
-	// 		{ time: 10, title: "chapter1" },
-	// 		{ time: 20, title: "chapter2" },
-	// 		{ title: "chapter3" },
-	// 	],
-	// });
-
-	// useEffect(() => {
-	// 	const progressBar1 = document.getElementById("progressBar1");
-	// 	progressBar1?.appendChild(div);
-	// }, []);
-
 	return (
 		<div
 			className="result-page"
-			style={{ alignItems: "center", alignSelf: "center" }}
+			style={{ alignItems: "center", alignSelf: "center", overflowY: "scroll" }}
 		>
 			<h1>Result Page</h1>
 			<ReactPlayer
@@ -55,7 +38,7 @@ const ResultPage: React.FC = () => {
 				width={videoWidth}
 				onProgress={handleProgress}
 				onDuration={handleDuration}
-				controls={false}
+				controls={true}
 			/>
 			<input
 				type="range"
@@ -66,11 +49,14 @@ const ResultPage: React.FC = () => {
 				onChange={handleSeekChange}
 				style={{ width: videoWidth }}
 			/>
+
 			<div>Duration: {duration} seconds</div>
-			<VideoProgressBar />
-			<VideoProgressBar />
-			{/* <br />
-			<div id="progressBar1"></div> */}
+			<VideoProgressBar
+				clickPercent={played}
+				setClickPercent={setPlayed}
+				playerRef={playerRef}
+			/>
+			<VideoProgressBar clickPercent={played} setClickPercent={setPlayed} />
 		</div>
 	);
 };
