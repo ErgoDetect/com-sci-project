@@ -5,7 +5,7 @@ import { DataProps, PositionData } from "../interface/propsType";
 import DetectionPage from "./DetectionPage";
 import ResultPage from "./ResultPage";
 import { Layout, Menu } from "antd";
-import { Header, Footer } from "antd/es/layout/layout";
+import { Header } from "antd/es/layout/layout";
 import VideoFeed from "../components/videoFeed";
 
 const App = () => {
