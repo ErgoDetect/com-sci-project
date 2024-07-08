@@ -1,15 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import videoFile from "../result/dummyVideo.mkv"; // Adjust the path accordingly
 import ReactPlayer from "react-player";
-
-import ProgressBar from "ppbar";
-
-import "../styles/resultPage.css";
+import VideoProgressBar from "../components/videoProgressBar";
 
 const videoWidth = 600;
 
 const ResultPage: React.FC = () => {
 	const [played, setPlayed] = useState(0);
+	const [duration, setDuration] = useState(0);
 	const playerRef = useRef<ReactPlayer | null>(null);
 
 	const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,27 +22,24 @@ const ResultPage: React.FC = () => {
 		setPlayed(state.played);
 	};
 
-	const bar = new ProgressBar(undefined, {
-		// config
-	});
-
-	document.body.appendChild(bar.el);
+	const handleDuration = (duration: number) => {
+		setDuration(duration);
+	};
 
 	return (
 		<div
 			className="result-page"
-			style={{ alignItems: "center", alignSelf: "center" }}
+			style={{ alignItems: "center", alignSelf: "center", overflowY: "scroll" }}
 		>
 			<h1>Result Page</h1>
-
 			<ReactPlayer
 				ref={playerRef}
 				url={videoFile}
 				width={videoWidth}
 				onProgress={handleProgress}
-				controls={false}
+				onDuration={handleDuration}
+				controls={true}
 			/>
-
 			<input
 				type="range"
 				min="0"
@@ -54,6 +49,14 @@ const ResultPage: React.FC = () => {
 				onChange={handleSeekChange}
 				style={{ width: videoWidth }}
 			/>
+
+			<div>Duration: {duration} seconds</div>
+			<VideoProgressBar
+				clickPercent={played}
+				setClickPercent={setPlayed}
+				playerRef={playerRef}
+			/>
+			<VideoProgressBar clickPercent={played} setClickPercent={setPlayed} />
 		</div>
 	);
 };

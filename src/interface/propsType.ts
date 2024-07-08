@@ -1,6 +1,7 @@
 /** @format */
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, Ref } from "react";
+import ReactPlayer from "react-player";
 
 export interface PositionData {
 	headPosition: { x: number; y: number };
@@ -75,4 +76,15 @@ export interface PositionTabProps {
 		showHeadLandmark: boolean;
 		showShoulderLandmark: boolean;
 	}) => void;
+}
+
+export interface videoProgressBarProps {
+	clickPercent?: number;
+	setClickPercent?: React.Dispatch<React.SetStateAction<number>>;
+	playerRef?: React.RefObject<ReactPlayer>;
+}
+
+export interface VideoProgressBarChapterProps {
+	percent?: number;
+	highlight?: boolean;
 }
