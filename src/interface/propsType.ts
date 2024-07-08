@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { ReactNode, Ref } from "react";
+import React, { ReactNode } from "react";
 import ReactPlayer from "react-player";
 
 export interface PositionData {
@@ -82,9 +82,15 @@ export interface videoProgressBarProps {
 	clickPercent?: number;
 	setClickPercent?: React.Dispatch<React.SetStateAction<number>>;
 	playerRef?: React.RefObject<ReactPlayer>;
+	maxDuration: number;
+	chapters: number[][];
+	normalColor?: string;
+	highlightColor?: string;
+	dotColor?: string;
 }
 
 export interface VideoProgressBarChapterProps {
 	percent?: number;
-	highlight?: boolean;
+	background?: string;
+	height?: number;
 }
