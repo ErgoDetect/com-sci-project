@@ -59,6 +59,8 @@
 	position: relative;
 	gap: 2px;
 	transition: transfrom 0.12s ease;
+	display: flex;
+	align-items: center;
 }
 
 .bar_chapter_i {
@@ -89,13 +91,13 @@
 }
 
 .bar_chapter_i_h {
-	background: rgba(0, 255, 76, 0.603);
+	/* background: rgba(0, 255, 76, 0.603); */
 	opacity: 0;
 }
 
 .bar_chapter_i_p {
 	transform: scaleX(0);
-	background: #f00;
+	/* background: #f00; */
 	background: var(--primary-color);
 }
 
@@ -123,6 +125,6 @@
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background: #f00;
+	/* background: #f00; */
 	background: var(--primary-color);
 }

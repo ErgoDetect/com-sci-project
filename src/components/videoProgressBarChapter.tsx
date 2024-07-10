@@ -4,24 +4,20 @@ import "../styles/progressBar.css";
 
 const VideoProgressBarChapter: React.FC<VideoProgressBarChapterProps> = ({
 	percent,
-	highlight,
+	background,
+	height,
 }) => {
 	const text = percent + " 1 0%";
 	return (
 		<div className="bar_chapter_i" style={{ flex: `${text}` }}>
-			<div className="bar_chapter_i_w">
-				{highlight ? (
-					<div
-						className="bar_chapter_i_b"
-						style={{ transform: `scaleX(1)`, background: "rgb(179, 209, 6)" }}
-					></div>
-				) : (
-					<div
-						className="bar_chapter_i_b"
-						style={{ transform: `scaleX(1)` }}
-					></div>
-				)}
-
+			<div className="bar_chapter_i_w" style={{ height: height }}>
+				<div
+					className="bar_chapter_i_b"
+					style={{
+						transform: `scaleX(1)`,
+						background: `${background}`,
+					}}
+				></div>
 				<div
 					className="bar_chapter_i_h"
 					style={{ transform: `scaleX(0)` }}
