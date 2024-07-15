@@ -1,9 +1,9 @@
 /** @format */
 
-import Main from "./pages/main";
+import Main from './pages/main';
 
 const VideoFeed = () => {
-	return <Main />;
+  return <Main />;
 };
 
 export default VideoFeed;
