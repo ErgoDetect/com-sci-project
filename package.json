@@ -1,70 +1,67 @@
 {
-	"name": "com-sci-project",
-	"version": "0.1.0",
-	"private": true,
-	"main": "public/electron.js",
-	"dependencies": {
-		"@ant-design/icons": "^5.3.7",
-		"@floating-ui/react": "^0.26.19",
-		"@testing-library/jest-dom": "^5.14.1",
-		"@testing-library/react": "^13.0.0",
-		"@testing-library/user-event": "^13.2.1",
-		"@types/jest": "^27.0.1",
-		"@types/node": "^20.12.11",
-		"@types/react": "^18.0.0",
-		"@types/react-dom": "^18.0.0",
-		"@types/react-router-dom": "^5.3.3",
-		"antd": "^5.17.0",
-		"framer-motion": "^11.2.13",
-		"jquery": "^3.7.1",
-		"ppbar": "^0.0.16",
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1",
-		"react-icons": "^5.2.1",
-		"react-player": "^2.16.0",
-		"react-router-dom": "^6.24.1",
-		"react-scripts": "5.0.1",
-		"styled-components": "^6.1.11",
-		"typescript": "^5.4.5",
-		"web-vitals": "^2.1.0"
-	},
-	"scripts": {
-		"start": "react-scripts start",
-		"build": "react-scripts build",
-		"test": "react-scripts test",
-		"eject": "react-scripts eject",
-		"electron-start": "electron .",
-		"dev": "yarn electron-start",
-		"knip": "knip",
-		"pack": "electron-builder --dir",
-		"dist": "electron-builder",
-		"prepare": "husky",
-		"start-api": "cd.. && cd env\\Scripts && activate && cd.. && cd.. && cd backend && uvicorn fastapi_demo:app --reload"
-	},
-	"eslintConfig": {
-		"extends": [
-			"react-app",
-			"react-app/jest"
-		]
-	},
-	"browserslist": {
-		"production": [
-			">0.2%",
-			"not dead",
-			"not op_mini all"
-		],
-		"development": [
-			"last 1 chrome version",
-			"last 1 firefox version",
-			"last 1 safari version"
-		]
-	},
-	"devDependencies": {
-		"@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-		"@types/jquery": "^3.5.30",
-		"electron": "^30.0.3",
-		"electron-builder": "^24.13.3",
-		"husky": "^9.0.11",
-		"knip": "^5.13.0"
-	}
+  "name": "com-sci-project",
+  "version": "0.1.0",
+  "private": true,
+  "main": "public/electron.js",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@ant-design/icons": "^5.3.7",
+    "@floating-ui/react": "^0.26.19",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^20.12.11",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/react-router-dom": "^5.3.3",
+    "antd": "^5.17.0",
+    "framer-motion": "^11.2.13",
+    "jquery": "^3.7.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.2.1",
+    "react-player": "^2.16.0",
+    "react-router-dom": "^6.24.1",
+    "react-scripts": "5.0.1",
+    "typescript": "^5.5.3",
+    "web-vitals": "^2.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron-start": "electron .",
+    "dev": "yarn electron-start",
+    "lint": "eslint .",
+    "knip": "knip",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "prepare": "husky"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@eslint/js": "^9.7.0",
+    "@types/eslint__js": "^8.42.3",
+    "electron": "^30.0.3",
+    "electron-builder": "^24.13.3",
+    "eslint": "^9.7.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "husky": "^9.0.11",
+    "knip": "^5.13.0",
+    "typescript-eslint": "^7.16.0"
+  }
 }
