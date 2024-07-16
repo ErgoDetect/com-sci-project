@@ -1,9 +1,32 @@
-<mxfile host="app.diagrams.net" modified="2024-07-16T03:12:50.406Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0" version="24.6.5" etag="l_FRsYKp5BrV6CcThnTe" type="github">
+<mxfile host="app.diagrams.net" modified="2024-07-16T03:30:05.279Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0" etag="AsbTkWOWelBNtS6zll5j" version="24.6.5" type="github">
   <diagram name="หน้า-1" id="QaqSF_sLgsN73FrDTt-e">
-    <mxGraphModel>
+    <mxGraphModel dx="554" dy="317" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-11" value="Client" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="214" y="365" width="200" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-13" value="" style="ellipse;html=1;shape=startState;fillColor=#000000;strokeColor=#ff0000;" vertex="1" parent="Qi2w-CQRULLpoRaYCOA9-11">
+          <mxGeometry x="85" y="45" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-14" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;verticalAlign=bottom;endArrow=open;endSize=8;strokeColor=#ff0000;rounded=0;" edge="1" source="Qi2w-CQRULLpoRaYCOA9-13" parent="Qi2w-CQRULLpoRaYCOA9-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="100" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="Qi2w-CQRULLpoRaYCOA9-11" source="Qi2w-CQRULLpoRaYCOA9-15" target="Qi2w-CQRULLpoRaYCOA9-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-15" value="ผู้ใช้เปิดแอพลิเคชั่น" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="Qi2w-CQRULLpoRaYCOA9-11">
+          <mxGeometry x="15" y="155" width="170" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-21" value="เลือกอุปกรณ์กล้องที่ต้องการใช้&lt;br&gt;(ค่าเริ่มต้น : กล้องของแล็ปท็อป)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="Qi2w-CQRULLpoRaYCOA9-11">
+          <mxGeometry x="15" y="260" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Qi2w-CQRULLpoRaYCOA9-12" value="Sever" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="414" y="365" width="200" height="440" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
