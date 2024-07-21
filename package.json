@@ -7,6 +7,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
     "@floating-ui/react": "^0.26.19",
+    "@mediapipe/tasks-vision": "^0.10.14",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
