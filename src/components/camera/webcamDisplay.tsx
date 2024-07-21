@@ -6,7 +6,6 @@ import { drawCircle } from '../../utility/drawCircle';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
-  ipAddress,
   streaming,
   width = '35vw',
   borderRadius = '12px',
@@ -48,7 +47,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   }, [onCapture]);
 
   const startVideoStream = useCallback(async () => {
-    if (!deviceId && !ipAddress) {
+    if (!deviceId) {
       console.error('No camera device or IP address selected.');
       return;
     }
@@ -56,59 +55,39 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     try {
       stopVideoStream();
 
-      if (ipAddress) {
-        // If an IP address is provided, use it as the video source
-        const streamUrl = `http://${ipAddress}`;
+      // If no IP address is provided, use the local camera
+      const videoStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId,
+          width: { ideal: 1980 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30 },
+        },
+      });
 
-        if (webcamRef.current) {
-          webcamRef.current.src = streamUrl;
-          await webcamRef.current.play();
+      videoStreamRef.current = videoStream;
 
-          const { videoWidth, videoHeight } = webcamRef.current;
-          if (canvasRef.current) {
-            canvasRef.current.width = videoWidth;
-            canvasRef.current.height = videoHeight;
-          }
-          if (showCanvasRef.current) {
-            showCanvasRef.current.width = videoWidth;
-            showCanvasRef.current.height = videoHeight;
-          }
+      if (webcamRef.current) {
+        webcamRef.current.srcObject = videoStream;
+        await webcamRef.current.play();
+
+        const { videoWidth, videoHeight } = webcamRef.current;
+        if (canvasRef.current) {
+          canvasRef.current.width = videoWidth;
+          canvasRef.current.height = videoHeight;
         }
-      } else {
-        // If no IP address is provided, use the local camera
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId,
-            width: { ideal: 1980 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30 },
-          },
-        });
-
-        videoStreamRef.current = videoStream;
-
-        if (webcamRef.current) {
-          webcamRef.current.srcObject = videoStream;
-          await webcamRef.current.play();
-
-          const { videoWidth, videoHeight } = webcamRef.current;
-          if (canvasRef.current) {
-            canvasRef.current.width = videoWidth;
-            canvasRef.current.height = videoHeight;
-          }
-          if (showCanvasRef.current) {
-            showCanvasRef.current.width = videoWidth;
-            showCanvasRef.current.height = videoHeight;
-          }
+        if (showCanvasRef.current) {
+          showCanvasRef.current.width = videoWidth;
+          showCanvasRef.current.height = videoHeight;
         }
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
-  }, [deviceId, ipAddress, stopVideoStream]);
+  }, [deviceId, stopVideoStream]);
 
   useEffect(() => {
-    if (deviceId || ipAddress) {
+    if (deviceId) {
       startVideoStream();
     }
 
@@ -118,7 +97,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       }
       stopVideoStream();
     };
-  }, [deviceId, ipAddress, startVideoStream, stopVideoStream]);
+  }, [deviceId, startVideoStream, stopVideoStream]);
 
   const renderFrame = useCallback(() => {
     const showCanvas = showCanvasRef.current;

@@ -102,7 +102,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({
       <WebcamDisplay
         deviceId={deviceId}
         streaming={streaming}
-        ipAddress="192.168.1.50:9372"
         width={width}
         borderRadius={borderRadius}
         drawingDot={drawingDot}

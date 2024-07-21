@@ -63,7 +63,6 @@ export interface videoFeedProps {
 export interface WebcamDisplayProps {
   deviceId: string | undefined;
   streaming: boolean;
-  ipAddress?: string;
   width?: number | string;
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
