@@ -2,7 +2,9 @@
 
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 
-const useWebSocket = (url: string, onMessage: (data: any) => void) => {
+type WebSocketMessageHandler = (data: any) => void;
+
+const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
   const socketRef = useRef<WebSocket | null>(null);
 
   const initializeWebSocket = useCallback(() => {
@@ -14,8 +16,12 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
     };
 
     const handleMessage = (event: MessageEvent) => {
-      const inputData = JSON.parse(event.data);
-      onMessage(inputData);
+      try {
+        const inputData = JSON.parse(event.data);
+        onMessage(inputData);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
 
     const handleError = (error: Event) => {
@@ -54,6 +60,8 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
   const send = useCallback((data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(data);
+    } else {
+      console.error('WebSocket is not open. Unable to send data.');
     }
   }, []);
 

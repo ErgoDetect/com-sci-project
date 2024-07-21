@@ -24,7 +24,7 @@ export interface PositionData {
   // shoulderRightPosition: Record<number, number>;
   // shoulderPosition: Record<number, number>;
 }
-export interface DataProps {
+export interface DebugData {
   frameCount: number;
   latency: number;
 }
@@ -34,7 +34,6 @@ export interface ContainerProps {
 }
 export interface Detection {
   children?: ReactNode;
-  data: DataProps | undefined;
   onShowLandmarkChange?: (newState: {
     showHeadLandmark: boolean;
     showShoulderLandmark: boolean;
@@ -56,7 +55,7 @@ export interface videoFeedProps {
   width?: number | string;
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
-  setData: React.Dispatch<React.SetStateAction<DataProps | undefined>>;
+  // setData: React.Dispatch<React.SetStateAction<DataProps | undefined>>;
   // Add setData prop
 }
 
@@ -67,6 +66,12 @@ export interface WebcamDisplayProps {
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
   onCapture: (blob: Blob) => void;
+  onVideoReady?: (video: HTMLVideoElement) => void;
+}
+export interface FaceLandmarkDetectorProps {
+  videoElement: HTMLVideoElement;
+  width: number | string;
+  height: number | string;
 }
 
 export interface DeviceSelectorProps {
@@ -76,7 +81,6 @@ export interface DeviceSelectorProps {
 }
 
 export interface PositionTabProps {
-  data: DataProps | undefined;
   onShowLandmarkChange?: (newState: {
     showHeadLandmark: boolean;
     showShoulderLandmark: boolean;

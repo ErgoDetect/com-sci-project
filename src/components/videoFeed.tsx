@@ -1,5 +1,3 @@
-/** @format */
-
 import React, {
   useState,
   useCallback,
@@ -12,20 +10,19 @@ import { DeviceProps, videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
 import useWebSocket from '../utility/webSocketConfig';
+import { useResData } from '../context';
 
 const VideoFeed: React.FC<videoFeedProps> = ({
   width,
   borderRadius,
   drawingDot,
-  setData,
 }) => {
-  const [deviceId, setDeviceId] = useState<string | undefined>('');
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
   const [devices, setDevices] = useState<DeviceProps[]>([]);
   const [streaming, setStreaming] = useState(false);
-  const [frameCount, setFrameCount] = useState(0);
   const frameCountRef = useRef(0);
-
-  const { send } = useWebSocket('ws://localhost:8000/ws', setData);
+  const { setResData } = useResData();
+  const { send } = useWebSocket('ws://localhost:8000/ws', setResData);
 
   const handleDevices = useCallback(async () => {
     try {
@@ -42,15 +39,12 @@ const VideoFeed: React.FC<videoFeedProps> = ({
     }
   }, [deviceId]);
 
-  // 192.168.1.50
-
   const handleDeviceChange = useCallback((value: string) => {
     setDeviceId(value);
   }, []);
 
   const toggleStreaming = () => {
     if (streaming) {
-      setFrameCount(0);
       frameCountRef.current = 0;
     }
     setStreaming(!streaming);
@@ -62,7 +56,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({
 
   const handleCapture = useCallback(
     (blob: Blob) => {
-      console.log('Image size:', (blob.size / 1024).toFixed(2), 'kilo bytes'); // Log image size
+      console.log('Image size:', (blob.size / 1024).toFixed(2), 'kilo bytes');
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -75,9 +69,9 @@ const VideoFeed: React.FC<videoFeedProps> = ({
         };
 
         send(JSON.stringify(data));
+        frameCountRef.current += 1;
       };
       reader.readAsDataURL(blob);
-      frameCountRef.current += 1;
     },
     [send],
   );
@@ -93,10 +87,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({
     [deviceId, devices, handleDeviceChange],
   );
 
-  useEffect(() => {
-    console.log('Frame count:', frameCount);
-  }, [frameCount]);
-
   return (
     <>
       <WebcamDisplay
@@ -104,7 +94,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({
         streaming={streaming}
         width={width}
         borderRadius={borderRadius}
-        drawingDot={drawingDot}
         onCapture={handleCapture}
       />
       <div

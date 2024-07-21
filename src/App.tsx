@@ -1,14 +1,16 @@
-/** @format */
-
-import { useEffect, useMemo, useState } from 'react';
-import { DataProps, PositionData } from '../src/interface/propsType';
-import DetectionPage from '../src/pages/DetectionPage';
-import ResultPage from '../src/pages/ResultPage';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Layout, Menu } from 'antd';
-import VideoFeed from '../src/components/videoFeed';
+import { DebugData, PositionData } from './interface/propsType';
+import DetectionPage from './pages/DetectionPage';
+import ResultPage from './pages/ResultPage';
+import VideoFeed from './components/videoFeed';
+import { useResData } from './context';
 
-const App = () => {
+const App: React.FC = () => {
   const { Header } = Layout;
+  const { resData, debugData } = useResData();
+
+  // Memoize menu items
   const headerMenu = useMemo(
     () => [
       { key: '0', label: 'Detection' },
@@ -17,13 +19,16 @@ const App = () => {
     [],
   );
 
-  const [currentMenu, setCurrentMenu] = useState('0');
-  const [data, setData] = useState<DataProps | undefined>(undefined);
-  const [landmarkState, setLandmarkState] = useState({
+  const [currentMenu, setCurrentMenu] = useState<string>('0');
+  const [landmarkState, setLandmarkState] = useState<{
+    showHeadLandmark: boolean;
+    showShoulderLandmark: boolean;
+  }>({
     showHeadLandmark: false,
     showShoulderLandmark: false,
   });
 
+  // Handle landmark visibility changes
   const handleShowLandmarkChange = (updatedState: {
     showHeadLandmark: boolean;
     showShoulderLandmark: boolean;
@@ -31,8 +36,10 @@ const App = () => {
     setLandmarkState(updatedState);
   };
 
-  const positionData = data as unknown as PositionData | undefined;
+  // Initialize data variables
+  const positionData = resData as PositionData | undefined;
 
+  // Create drawArray with memoization
   const drawArray = useMemo(
     () => ({
       x: [] as number[],
@@ -41,37 +48,42 @@ const App = () => {
     [],
   );
 
+  // Update drawArray on data or landmark state change
   useEffect(() => {
-    if (data) {
+    if (resData) {
       console.log(
         'data :',
-        data,
+        resData,
         'Received Frame : ',
-        data.frameCount,
+        debugData?.frameCount,
         'Latency : ',
-        data.latency.toFixed(2),
+        debugData?.latency.toFixed(2),
         'ms',
       );
 
-      drawArray.x = [];
-      drawArray.y = [];
+      drawArray.x.length = 0; // Clear x array
+      drawArray.y.length = 0; // Clear y array
 
       const headPosition = positionData?.headPosition;
       const shoulderPosition = positionData?.shoulderPosition;
 
       if (landmarkState.showHeadLandmark && headPosition) {
-        drawArray.x.push(headPosition.x as number);
-        drawArray.y.push(headPosition.y as number);
+        drawArray.x.push(headPosition.x);
+        drawArray.y.push(headPosition.y);
       }
 
       if (landmarkState.showShoulderLandmark && shoulderPosition) {
-        drawArray.x.push(shoulderPosition.shoulder_left.x as number);
-        drawArray.y.push(shoulderPosition.shoulder_left.y as number);
-        drawArray.x.push(shoulderPosition.shoulder_right.x as number);
-        drawArray.y.push(shoulderPosition.shoulder_right.y as number);
+        drawArray.x.push(
+          shoulderPosition.shoulder_left.x,
+          shoulderPosition.shoulder_right.x,
+        );
+        drawArray.y.push(
+          shoulderPosition.shoulder_left.y,
+          shoulderPosition.shoulder_right.y,
+        );
       }
     }
-  }, [data, drawArray, landmarkState, positionData]);
+  }, [resData, landmarkState, positionData, drawArray]);
 
   return (
     <Layout className="Layout">
@@ -83,18 +95,15 @@ const App = () => {
         <Menu
           theme="dark"
           mode="horizontal"
-          defaultSelectedKeys={['0']}
+          selectedKeys={[currentMenu]}
           items={headerMenu}
-          onClick={(e) => setCurrentMenu(e.key)}
+          onClick={({ key }) => setCurrentMenu(key)}
           style={{ flex: 1, minWidth: 0 }}
         />
       </Header>
       {currentMenu === '0' && (
-        <DetectionPage
-          data={data}
-          onShowLandmarkChange={handleShowLandmarkChange}
-        >
-          <VideoFeed setData={setData} drawingDot={drawArray} />
+        <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
+          <VideoFeed drawingDot={drawArray} />
         </DetectionPage>
       )}
       {currentMenu === '1' && <ResultPage />}

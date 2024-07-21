@@ -1,25 +1,47 @@
-import React, { ReactNode, useContext, useMemo, useState } from 'react';
-import { PositionData, ResContextType } from '../interface/propsType';
-import useWebSocket from '../utility/webSocketConfig';
+/** @format */
 
-const ResContext = React.createContext<ResContextType | undefined>(undefined);
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+} from 'react';
+import { DebugData, PositionData } from '../interface/propsType';
 
-export const useData = () => {
-  return useContext(ResContext);
-};
+interface ResContextProps {
+  resData: PositionData | undefined;
+  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+  debugData: DebugData | undefined;
+}
+
+const ResContext = createContext<ResContextProps | null>(null);
 
 export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
 
-  const handleMessage = (data: any) => {
-    setResData(data); // Update context with WebSocket data
-  };
+  // Compute debugData based on resData if needed
+  const debugData = useMemo(() => {
+    if (resData) {
+      // Example conversion, adjust according to actual DebugData definition
+      return { ...resData } as unknown as DebugData;
+    }
+    return undefined;
+  }, [resData]);
 
-  useWebSocket('ws://localhost:8000/ws', handleMessage);
+  return (
+    <ResContext.Provider value={{ resData, setResData, debugData }}>
+      {children}
+    </ResContext.Provider>
+  );
+};
 
-  const value = useMemo(() => ({ resData, setResData }), [resData]);
-
-  return <ResContext.Provider value={value}>{children}</ResContext.Provider>;
+export const useResData = (): ResContextProps => {
+  const context = useContext(ResContext);
+  if (context === null) {
+    throw new Error('useResData must be used within a ResProvider');
+  }
+  return context;
 };

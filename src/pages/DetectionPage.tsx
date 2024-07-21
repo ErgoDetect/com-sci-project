@@ -1,23 +1,21 @@
 /** @format */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Layout, Button, Tabs, Menu, Checkbox, theme } from 'antd';
 import { LaptopOutlined } from '@ant-design/icons';
-import { Layout, Menu, Tabs, Checkbox, Button, theme } from 'antd';
-import type { MenuProps, TabsProps } from 'antd';
+import { PositionData, Detection } from '../interface/propsType';
+import { useResData } from '../context';
 import CustomSlider from '../components/slider';
 import PositionTab from '../components/positionTab';
-import { PositionData, Detection } from '../interface/propsType';
 import '../styles/styles.css';
-import { useData } from '../context';
 
 const { Content, Sider } = Layout;
 
 const DetectionPage: React.FC<Detection> = ({
   children,
-  data,
   onShowLandmarkChange,
 }) => {
-  const { resData } = useData();
+  const { resData } = useResData();
   const positionData = resData;
 
   const [sliderValues, setSliderValues] = useState({
@@ -45,7 +43,7 @@ const DetectionPage: React.FC<Detection> = ({
     }));
   }, []);
 
-  const sensitiveMenu: MenuProps['items'] = useMemo(
+  const sensitiveMenu = useMemo(
     () => [
       {
         key: '1',
@@ -99,7 +97,7 @@ const DetectionPage: React.FC<Detection> = ({
     [sliderValues, handleSliderChange],
   );
 
-  const rightTab: TabsProps['items'] = useMemo(
+  const rightTab = useMemo(
     () => [
       {
         key: 'rightTab1',
@@ -120,15 +118,10 @@ const DetectionPage: React.FC<Detection> = ({
       {
         key: 'rightTab3',
         label: 'Position',
-        children: (
-          <PositionTab
-            data={data}
-            onShowLandmarkChange={onShowLandmarkChange}
-          />
-        ),
+        children: <PositionTab onShowLandmarkChange={onShowLandmarkChange} />,
       },
     ],
-    [data, onShowLandmarkChange, sensitiveMenu],
+    [onShowLandmarkChange, sensitiveMenu],
   );
 
   const {

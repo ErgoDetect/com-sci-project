@@ -16,14 +16,12 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameIdRef = useRef<number | undefined>();
-  const intervalIdRef = useRef<number | undefined>();
+  const animationFrameIdRef = useRef<number | undefined>(undefined);
+  const intervalIdRef = useRef<number | undefined>(undefined);
 
   const stopVideoStream = useCallback(() => {
-    if (videoStreamRef.current) {
-      videoStreamRef.current.getTracks().forEach((track) => track.stop());
-      videoStreamRef.current = null;
-    }
+    videoStreamRef.current?.getTracks().forEach((track) => track.stop());
+    videoStreamRef.current = null;
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
     }
@@ -37,25 +35,20 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            onCapture(blob);
-          }
-        }, 'image/jpeg');
+        canvas.toBlob((blob) => blob && onCapture(blob), 'image/jpeg');
       }
     }
   }, [onCapture]);
 
   const startVideoStream = useCallback(async () => {
     if (!deviceId) {
-      console.error('No camera device or IP address selected.');
+      console.error('No camera device.');
       return;
     }
 
     try {
       stopVideoStream();
 
-      // If no IP address is provided, use the local camera
       const videoStream = await navigator.mediaDevices.getUserMedia({
         video: {
           deviceId,
@@ -66,7 +59,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       });
 
       videoStreamRef.current = videoStream;
-
       if (webcamRef.current) {
         webcamRef.current.srcObject = videoStream;
         await webcamRef.current.play();
@@ -90,7 +82,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     if (deviceId) {
       startVideoStream();
     }
-
     return () => {
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
@@ -108,25 +99,23 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       if (context) {
         context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
         if (drawingDot) {
-          for (let index = 0; index < drawingDot.x.length; index++) {
+          drawingDot.x.forEach((x, index) => {
             drawCircle(
-              drawingDot.x[index],
+              x,
               drawingDot.y[index],
               showCanvas.width,
               showCanvas.height,
               showCanvas,
             );
-          }
+          });
         }
       }
     }
-
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
   }, [drawingDot]);
 
   useEffect(() => {
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-
     return () => {
       if (animationFrameIdRef.current !== undefined) {
         cancelAnimationFrame(animationFrameIdRef.current);
@@ -145,14 +134,12 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
   return (
     <>
-      <video
-        ref={webcamRef}
-        style={{
-          display: 'none',
-        }}
-      ></video>
+      <video ref={webcamRef} style={{ display: 'none' }}></video>
       <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-      <canvas ref={showCanvasRef} style={{ width, borderRadius }}></canvas>
+      <canvas
+        ref={showCanvasRef}
+        style={{ width, borderRadius, transform: 'rotateY(180deg)' }}
+      ></canvas>
     </>
   );
 };
