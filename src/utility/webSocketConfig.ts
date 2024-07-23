@@ -1,21 +1,26 @@
-/** @format */
-
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 
-const useWebSocket = (url: string, onMessage: (data: any) => void) => {
+type WebSocketMessageHandler = (data: any) => void;
+
+const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const initializeWebSocket = useCallback(() => {
     const socket = new WebSocket(url);
     socketRef.current = socket;
 
     const handleOpen = () => {
-      console.log('WebSocket connection established');
+      console.info('WebSocket connection established');
     };
 
     const handleMessage = (event: MessageEvent) => {
-      const inputData = JSON.parse(event.data);
-      onMessage(inputData);
+      // try {
+      //   const inputData = JSON.parse(event.data);
+      //   onMessage(inputData);
+      // } catch (error) {
+      //   console.error('Error parsing WebSocket message:', error);
+      // }
     };
 
     const handleError = (error: Event) => {
@@ -23,7 +28,13 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
     };
 
     const handleClose = () => {
-      console.log('WebSocket connection closed');
+      console.info('WebSocket connection closed, attempting to reconnect');
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      reconnectTimeoutRef.current = setTimeout(() => {
+        initializeWebSocket();
+      }, 5000);
     };
 
     socket.addEventListener('open', handleOpen);
@@ -47,6 +58,9 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
     const cleanupWebSocket = initializeWebSocket();
 
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       cleanupWebSocket();
     };
   }, [initializeWebSocket]);
@@ -54,6 +68,8 @@ const useWebSocket = (url: string, onMessage: (data: any) => void) => {
   const send = useCallback((data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(data);
+    } else {
+      console.error('WebSocket is not open. Unable to send data.');
     }
   }, []);
 
