@@ -61,17 +61,10 @@ export interface videoFeedProps {
 
 export interface WebcamDisplayProps {
   deviceId: string | undefined;
-  streaming: boolean;
   width?: number | string;
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
-  onCapture: (blob: Blob) => void;
-  onVideoReady?: (video: HTMLVideoElement) => void;
-}
-export interface FaceLandmarkDetectorProps {
-  videoElement: HTMLVideoElement;
-  width: number | string;
-  height: number | string;
+  showBlendShapes: boolean;
 }
 
 export interface DeviceSelectorProps {

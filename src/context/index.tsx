@@ -13,6 +13,10 @@ interface ResContextProps {
   resData: PositionData | undefined;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
   debugData: DebugData | undefined;
+  landMarkData: object;
+  setLandMarkData: React.Dispatch<React.SetStateAction<object>>;
+  streaming: boolean;
+  setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -21,7 +25,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
-
+  const [landMarkData, setLandMarkData] = useState<object>({});
+  const [streaming, setStreaming] = useState<boolean>(false);
   // Compute debugData based on resData if needed
   const debugData = useMemo(() => {
     if (resData) {
@@ -32,7 +37,17 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   }, [resData]);
 
   return (
-    <ResContext.Provider value={{ resData, setResData, debugData }}>
+    <ResContext.Provider
+      value={{
+        resData,
+        setResData,
+        debugData,
+        landMarkData,
+        setLandMarkData,
+        streaming,
+        setStreaming,
+      }}
+    >
       {children}
     </ResContext.Provider>
   );

@@ -12,17 +12,20 @@ import WebcamDisplay from './camera/webcamDisplay';
 import useWebSocket from '../utility/webSocketConfig';
 import { useResData } from '../context';
 
-const VideoFeed: React.FC<videoFeedProps> = ({
-  width,
-  borderRadius,
-  drawingDot,
-}) => {
+// Define a type for the throttle function
+type ThrottleFunction = (...args: any[]) => void;
+
+const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
   const [devices, setDevices] = useState<DeviceProps[]>([]);
-  const [streaming, setStreaming] = useState(false);
-  const frameCountRef = useRef(0);
-  const { setResData } = useResData();
+  const { streaming, setStreaming } = useResData();
+  const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
+  const frameCountRef = useRef<number>(0);
+  const { setResData, landMarkData } = useResData();
   const { send } = useWebSocket('ws://localhost:8000/ws', setResData);
+
+  const lastLogTimeRef = useRef<number>(0);
+  const logInterval = 20000;
 
   const handleDevices = useCallback(async () => {
     try {
@@ -48,6 +51,10 @@ const VideoFeed: React.FC<videoFeedProps> = ({
       frameCountRef.current = 0;
     }
     setStreaming(!streaming);
+  };
+
+  const toggleBlendShapes = () => {
+    setShowBlendShapes((prev) => !prev);
   };
 
   useEffect(() => {
@@ -87,14 +94,47 @@ const VideoFeed: React.FC<videoFeedProps> = ({
     [deviceId, devices, handleDeviceChange],
   );
 
+  // Throttle function to limit the rate of function execution
+  const throttle = (func: ThrottleFunction, limit: number) => {
+    let lastFunc: NodeJS.Timeout;
+    let lastRan: number;
+    return function (...args: any[]) {
+      if (!lastRan) {
+        func(...args);
+        lastRan = Date.now();
+      } else {
+        clearTimeout(lastFunc);
+        lastFunc = setTimeout(function () {
+          if (Date.now() - lastRan >= limit) {
+            func(...args);
+            lastRan = Date.now();
+          }
+        }, limit - (Date.now() - lastRan));
+      }
+    };
+  };
+
+  const sendLandMarkData = useCallback(() => {
+    const currentTime = Date.now();
+    if (currentTime - lastLogTimeRef.current >= logInterval) {
+      console.log(landMarkData);
+      send(JSON.stringify({ landMarkData, timestamp: currentTime }));
+      lastLogTimeRef.current = currentTime;
+    }
+  }, [landMarkData, logInterval, send]);
+
+  useEffect(() => {
+    const throttledSend = throttle(sendLandMarkData, logInterval);
+    throttledSend();
+  }, [landMarkData, sendLandMarkData, logInterval]);
+
   return (
     <>
       <WebcamDisplay
         deviceId={deviceId}
-        streaming={streaming}
         width={width}
         borderRadius={borderRadius}
-        onCapture={handleCapture}
+        showBlendShapes={showBlendShapes}
       />
       <div
         style={{
@@ -107,6 +147,9 @@ const VideoFeed: React.FC<videoFeedProps> = ({
         {deviceSelectorMemo}
         <Button onClick={toggleStreaming}>
           {streaming ? 'Stop' : 'Start'}
+        </Button>
+        <Button onClick={toggleBlendShapes}>
+          {showBlendShapes ? 'Hide Blend Shapes' : 'Show Blend Shapes'}
         </Button>
       </div>
     </>
