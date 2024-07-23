@@ -3,6 +3,12 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import { drawCircle } from '../../utility/drawCircle';
+import {
+  initializeFaceLandmarker,
+  drawResults,
+  drawBlendShapes,
+} from '../../faceLandmark';
+import { DrawingUtils } from '@mediapipe/tasks-vision';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
@@ -18,6 +24,9 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const intervalIdRef = useRef<number | undefined>(undefined);
+
+  const faceLandmarkerRef = useRef(null);
+  const drawingUtilsRef = useRef(null);
 
   const stopVideoStream = useCallback(() => {
     videoStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -72,6 +81,13 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
           showCanvasRef.current.width = videoWidth;
           showCanvasRef.current.height = videoHeight;
         }
+
+        if (!faceLandmarkerRef.current) {
+          faceLandmarkerRef.current = await initializeFaceLandmarker();
+        }
+        drawingUtilsRef.current = new DrawingUtils(
+          showCanvasRef.current.getContext('2d'),
+        );
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -90,14 +106,20 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     };
   }, [deviceId, startVideoStream, stopVideoStream]);
 
-  const renderFrame = useCallback(() => {
+  const renderFrame = useCallback(async () => {
     const showCanvas = showCanvasRef.current;
     const webcam = webcamRef.current;
 
-    if (showCanvas && webcam) {
+    if (showCanvas && webcam && faceLandmarkerRef.current) {
       const context = showCanvas.getContext('2d');
       if (context) {
         context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
+        const results = await faceLandmarkerRef.current.detectForVideo(
+          webcam,
+          performance.now(),
+        );
+        drawResults(results, context, drawingUtilsRef.current);
+
         if (drawingDot) {
           drawingDot.x.forEach((x, index) => {
             drawCircle(
@@ -109,6 +131,11 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
             );
           });
         }
+
+        drawBlendShapes(
+          document.getElementById('video-blend-shapes'),
+          results.faceBlendshapes,
+        );
       }
     }
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
@@ -140,6 +167,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         ref={showCanvasRef}
         style={{ width, borderRadius, transform: 'rotateY(180deg)' }}
       ></canvas>
+      <div id="video-blend-shapes"></div>
     </>
   );
 };
