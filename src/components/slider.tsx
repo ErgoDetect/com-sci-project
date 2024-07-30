@@ -12,11 +12,12 @@ const CustomSlider: React.FC<InputProps> = ({ text, value, onChange }) => {
     setInputValue(value);
   }, [value]);
 
-  const handleChange = useCallback<InputNumberProps['onChange']>(
-    (newValue) => {
-      const numberValue = newValue as number;
-      setInputValue(numberValue);
-      onChange(numberValue);
+  const handleChange = useCallback(
+    (newValue: number | null) => {
+      if (newValue !== null) {
+        setInputValue(newValue);
+        onChange(newValue);
+      }
     },
     [onChange],
   );
@@ -29,7 +30,7 @@ const CustomSlider: React.FC<InputProps> = ({ text, value, onChange }) => {
           min={0.1}
           max={1}
           onChange={handleChange}
-          value={typeof inputValue === 'number' ? inputValue : 0.1}
+          value={inputValue}
           step={0.05}
         />
       </Col>

@@ -1,6 +1,10 @@
 /** @format */
 
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import {
+  DrawingUtils,
+  FaceLandmarker,
+  FilesetResolver,
+} from '@mediapipe/tasks-vision';
 
 /**
  * Initializes the FaceLandmarker with necessary configurations.
@@ -36,7 +40,11 @@ export const initializeFaceLandmarker = async () => {
  * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
  * @param {DrawingUtils} drawingUtils - Utility for drawing on the canvas.
  */
-export const drawResults = (results, context, drawingUtils) => {
+export const drawResults = (
+  results: { faceLandmarks: any },
+  context: CanvasRenderingContext2D,
+  drawingUtils: DrawingUtils,
+) => {
   if (results.faceLandmarks) {
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(

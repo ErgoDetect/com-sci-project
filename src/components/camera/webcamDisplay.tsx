@@ -48,6 +48,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
           height: { ideal: 1080 },
           frameRate: { ideal: 30 },
         },
+        audio: false,
       });
 
       videoStreamRef.current = videoStream;
