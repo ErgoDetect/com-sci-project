@@ -112,18 +112,18 @@ const configuration: webpack.Configuration = {
           'file-loader',
         ],
       },
-      {
-        test: /\.(mp4|webm|ogg|avi|mov)$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              name: '[name].[ext]',
-              outputPath: 'videos/',
-            },
-          },
-        ],
-      },
+      // {
+      //   test: /\.(mp4|webm|ogg|avi|mov)$/,
+      //   use: [
+      //     {
+      //       loader: 'file-loader',
+      //       options: {
+      //         name: '[name].[ext]',
+      //         outputPath: 'videos/',
+      //       },
+      //     },
+      //   ],
+      // },
     ],
   },
   plugins: [
