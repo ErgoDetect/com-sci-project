@@ -7,7 +7,13 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['node_modules/*', 'dist/*', 'build/*', 'public/*'],
+    ignores: [
+      'node_modules/*',
+      'dist/*',
+      'build/*',
+      'public/*',
+      'src/vision_wasm_nosimd_internal.js',
+    ],
   },
   {
     rules: {

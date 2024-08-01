@@ -33,3 +33,8 @@ declare module '*.css' {
   const content: Styles;
   export default content;
 }
+
+declare module '*.task' {
+  const content: any; // Use 'any' if you don't have a specific type for this
+  export default content;
+}
