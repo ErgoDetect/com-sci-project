@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint global-require: off, no-console: off, promise/always-return: off */
+
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -31,7 +33,6 @@ ipcMain.on('ipc-example', async (event, arg) => {
 });
 
 if (process.env.NODE_ENV === 'production') {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
 }
@@ -111,6 +112,10 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 };
+
+/**
+ * Add event listeners...
+ */
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

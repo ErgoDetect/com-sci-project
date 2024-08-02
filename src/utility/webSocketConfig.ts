@@ -15,12 +15,12 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
     };
 
     const handleMessage = (event: MessageEvent) => {
-      // try {
-      //   const inputData = JSON.parse(event.data);
-      //   onMessage(inputData);
-      // } catch (error) {
-      //   console.error('Error parsing WebSocket message:', error);
-      // }
+      try {
+        const inputData = JSON.parse(event.data);
+        onMessage(inputData);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
 
     const handleError = (error: Event) => {

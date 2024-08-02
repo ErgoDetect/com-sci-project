@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
-import VideoProgressBar from '../components/videoProgressBar';
 import { Col, Row, Typography } from 'antd';
-import { importVideo } from '../utility/importVideo';
+import VideoProgressBar from '../components/videoProgressBar';
+import { Chapter } from '../interface/propsType';
 
 const videoWidth = 600;
 
@@ -42,14 +42,14 @@ const ResultPage: React.FC = () => {
     setPlayed(state.played);
   };
 
-  const handleDuration = (duration: number) => {
-    setDuration(duration);
+  const handleDuration = (durations: number) => {
+    setDuration(durations);
   };
 
   const maxDuration = 200;
-  const chapters = [
-    [25, 50],
-    [90, 92],
+  const chapters: Chapter[] = [
+    { id: 'chapter-1', start: 25, end: 50 },
+    { id: 'chapter-2', start: 90, end: 92 },
   ];
 
   if (!videoUrl) {
@@ -71,7 +71,7 @@ const ResultPage: React.FC = () => {
         </Col>
       </Row>
       <Row>
-        <Col span={4}></Col>
+        <Col span={4} />
         <Col span={20}>
           <ReactPlayer
             ref={playerRef}
@@ -79,11 +79,11 @@ const ResultPage: React.FC = () => {
             width={videoWidth}
             onProgress={handleProgress}
             onDuration={handleDuration}
-            controls={true}
+            controls
           />
         </Col>
       </Row>
-      <Row align={'middle'}>
+      <Row align="middle">
         <Col span={4}>
           <Title level={5}>Blinking</Title>
         </Col>
@@ -101,14 +101,14 @@ const ResultPage: React.FC = () => {
         </Col>
       </Row>
       <Row>
-        <Col span={4}></Col>
+        <Col span={4} />
         <Col span={20}>
           <Text>Times: , Average Duration : </Text>
         </Col>
       </Row>
-      <Row align={'middle'}>
+      <Row align="middle">
         <Col span={4}>
-          <Title level={5}>Dynamic sitting </Title>
+          <Title level={5}>Dynamic sitting</Title>
         </Col>
         <Col span={20}>
           <VideoProgressBar
@@ -124,14 +124,14 @@ const ResultPage: React.FC = () => {
         </Col>
       </Row>
       <Row>
-        <Col span={4}></Col>
+        <Col span={4} />
         <Col span={20}>
           <Text>Times: , Average Duration : </Text>
         </Col>
       </Row>
-      <Row align={'middle'}>
+      <Row align="middle">
         <Col span={4}>
-          <Title level={5}>Dynamic sitting </Title>
+          <Title level={5}>Dynamic sitting</Title>
         </Col>
         <Col span={20}>
           <VideoProgressBar
@@ -147,7 +147,7 @@ const ResultPage: React.FC = () => {
         </Col>
       </Row>
       <Row>
-        <Col span={4}></Col>
+        <Col span={4} />
         <Col span={20}>
           <Text>Times: , Average Duration : </Text>
         </Col>

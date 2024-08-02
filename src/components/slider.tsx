@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Col, InputNumber, Row, Slider } from 'antd';
-import type { InputNumberProps } from 'antd';
 import { InputProps } from '../interface/propsType';
 
 const CustomSlider: React.FC<InputProps> = ({ text, value, onChange }) => {

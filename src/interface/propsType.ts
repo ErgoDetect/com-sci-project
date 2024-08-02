@@ -3,11 +3,6 @@
 import React, { ReactNode } from 'react';
 import ReactPlayer from 'react-player';
 
-export interface ResContextType {
-  resData?: PositionData;
-  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
-}
-
 export interface PositionData {
   headPosition: { x: number; y: number };
   depthLeftIris: number;
@@ -24,6 +19,12 @@ export interface PositionData {
   // shoulderRightPosition: Record<number, number>;
   // shoulderPosition: Record<number, number>;
 }
+
+export interface ResContextType {
+  resData?: PositionData;
+  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+}
+
 export interface DebugData {
   frameCount: number;
   latency: number;
@@ -80,19 +81,27 @@ export interface PositionTabProps {
   }) => void;
 }
 
-export interface videoProgressBarProps {
-  clickPercent?: number;
-  setClickPercent?: React.Dispatch<React.SetStateAction<number>>;
-  playerRef?: React.RefObject<ReactPlayer>;
-  maxDuration: number;
-  chapters: number[][];
-  normalColor?: string;
-  highlightColor?: string;
-  dotColor?: string;
-}
-
 export interface VideoProgressBarChapterProps {
   percent?: number;
   background?: string;
   height?: number;
+}
+
+// Define the Chapter interface
+export interface Chapter {
+  id: string;
+  start: number;
+  end: number;
+}
+
+// Update videoProgressBarProps interface
+export interface videoProgressBarProps {
+  clickPercent: number;
+  setClickPercent: (percent: number) => void;
+  playerRef: React.RefObject<any>;
+  chapters: Chapter[];
+  maxDuration: number;
+  normalColor: string;
+  highlightColor: string;
+  dotColor: string;
 }

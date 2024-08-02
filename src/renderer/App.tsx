@@ -83,7 +83,14 @@ const App: React.FC = () => {
         );
       }
     }
-  }, [resData, landmarkState, positionData, drawArray]);
+  }, [
+    resData,
+    landmarkState,
+    positionData,
+    drawArray,
+    debugData?.frameCount,
+    debugData?.latency,
+  ]);
 
   return (
     <Layout className="Layout">

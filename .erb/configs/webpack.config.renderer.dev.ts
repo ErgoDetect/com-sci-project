@@ -113,17 +113,6 @@ const configuration: webpack.Configuration = {
         ],
       },
       // {
-      //   test: /\.(mp4|webm|ogg|avi|mov)$/,
-      //   use: [
-      //     {
-      //       loader: 'file-loader',
-      //       options: {
-      //         name: '[name].[ext]',
-      //         outputPath: 'videos/',
-      //       },
-      //     },
-      //   ],
-      // },
     ],
   },
   plugins: [
