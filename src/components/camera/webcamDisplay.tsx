@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { WebcamDisplayProps } from '../../interface/propsType';
-import { drawCircle } from '../../utility/drawCircle';
-import { initializeFaceLandmarker, drawResults } from '../../faceLandmark';
 import { DrawingUtils } from '@mediapipe/tasks-vision';
+import { WebcamDisplayProps } from '../../interface/propsType';
+import drawCircle from '../../utility/drawCircle';
+import { initializeFaceLandmarker, drawResults } from '../../faceLandmark';
 import { useResData } from '../../context';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
@@ -48,6 +48,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
           height: { ideal: 1080 },
           frameRate: { ideal: 30 },
         },
+        audio: false,
       });
 
       videoStreamRef.current = videoStream;
@@ -86,9 +87,12 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     if (deviceId) {
       startVideoStream();
     }
+
+    const intervalId = intervalIdRef.current;
+
     return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
+      if (intervalId) {
+        clearInterval(intervalId);
       }
       stopVideoStream();
     };
@@ -165,27 +169,25 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   // }, [streaming, captureFrame]);
 
   return (
-    <>
+    <div>
       {streaming ? (
         <>
-          <video ref={webcamRef} style={{ display: 'none' }}></video>
+          <video ref={webcamRef} style={{ display: 'none' }} />
           <canvas
             ref={showCanvasRef}
             style={{ width, borderRadius, transform: 'rotateY(180deg)' }}
-          ></canvas>
+          />
           {showBlendShapes && (
-            <div style={{ height: '2px' }} id="video-blend-shapes"></div>
+            <div style={{ height: '2px' }} id="video-blend-shapes" />
           )}
         </>
       ) : (
-        <>
-          <video
-            ref={webcamRef}
-            style={{ width, borderRadius, transform: 'rotateY(180deg)' }}
-          ></video>
-        </>
+        <video
+          ref={webcamRef}
+          style={{ width, borderRadius, transform: 'rotateY(180deg)' }}
+        />
       )}
-    </>
+    </div>
   );
 };
 

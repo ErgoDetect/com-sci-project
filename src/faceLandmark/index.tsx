@@ -1,6 +1,11 @@
 /** @format */
 
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import {
+  DrawingUtils,
+  FaceLandmarker,
+  FilesetResolver,
+  NormalizedLandmark,
+} from '@mediapipe/tasks-vision';
 
 /**
  * Initializes the FaceLandmarker with necessary configurations.
@@ -9,7 +14,7 @@ import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 export const initializeFaceLandmarker = async () => {
   try {
     const filesetResolver = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm',
     );
     const faceLandmarker = await FaceLandmarker.createFromOptions(
       filesetResolver,
@@ -36,55 +41,61 @@ export const initializeFaceLandmarker = async () => {
  * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
  * @param {DrawingUtils} drawingUtils - Utility for drawing on the canvas.
  */
-export const drawResults = (results, context, drawingUtils) => {
+export const drawResults = (
+  results: { faceLandmarks: any },
+  context: CanvasRenderingContext2D,
+  drawingUtils: DrawingUtils,
+) => {
   if (results.faceLandmarks) {
-    for (const landmarks of results.faceLandmarks) {
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-        { color: '#C0C0C070', lineWidth: 1 },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-        { color: '#FF3030' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-        { color: '#FF3030' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-        { color: '#30FF30' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-        { color: '#30FF30' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-        { color: '#E0E0E0' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LIPS,
-        { color: '#E0E0E0' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-        { color: '#FF3030' },
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-        { color: '#30FF30' },
-      );
-    }
+    results.faceLandmarks.forEach(
+      (landmarks: NormalizedLandmark[] | undefined) => {
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+          { color: '#C0C0C070', lineWidth: 1 },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+          { color: '#FF3030' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+          { color: '#FF3030' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+          { color: '#30FF30' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+          { color: '#30FF30' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+          { color: '#E0E0E0' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_LIPS,
+          { color: '#E0E0E0' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+          { color: '#FF3030' },
+        );
+        drawingUtils.drawConnectors(
+          landmarks,
+          FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+          { color: '#30FF30' },
+        );
+      },
+    );
   }
 };
 

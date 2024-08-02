@@ -27,6 +27,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
   const [landMarkData, setLandMarkData] = useState<object>({});
   const [streaming, setStreaming] = useState<boolean>(false);
+
   // Compute debugData based on resData if needed
   const debugData = useMemo(() => {
     if (resData) {
@@ -36,20 +37,21 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     return undefined;
   }, [resData]);
 
+  const contextValue = useMemo(
+    () => ({
+      resData,
+      setResData,
+      debugData,
+      landMarkData,
+      setLandMarkData,
+      streaming,
+      setStreaming,
+    }),
+    [resData, debugData, landMarkData, streaming],
+  );
+
   return (
-    <ResContext.Provider
-      value={{
-        resData,
-        setResData,
-        debugData,
-        landMarkData,
-        setLandMarkData,
-        streaming,
-        setStreaming,
-      }}
-    >
-      {children}
-    </ResContext.Provider>
+    <ResContext.Provider value={contextValue}>{children}</ResContext.Provider>
   );
 };
 
