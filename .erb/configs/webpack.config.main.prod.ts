@@ -43,23 +43,6 @@ const configuration: webpack.Configuration = {
     ],
   },
 
-  // module: {
-  //   rules: [
-  //     {
-  //       test: /\.(mp4|webm|ogg|avi|mov)$/,
-  //       use: [
-  //         {
-  //           loader: 'file-loader',
-  //           options: {
-  //             name: '[name].[ext]',
-  //             outputPath: 'videos/',
-  //           },
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
-
   plugins: [
     new BundleAnalyzerPlugin({
       analyzerMode: process.env.ANALYZE === 'true' ? 'server' : 'disabled',

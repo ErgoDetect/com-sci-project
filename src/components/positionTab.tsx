@@ -1,8 +1,8 @@
 /** @format */
 
 import React, { useState, useEffect } from 'react';
-import { PositionData, PositionTabProps } from '../interface/propsType';
 import { Checkbox, Typography, Col, Row } from 'antd';
+import { PositionTabProps } from '../interface/propsType';
 import { useResData } from '../context';
 
 const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
@@ -23,13 +23,14 @@ const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
     }
   }, [landmarkState, onShowLandmarkChange]);
 
-  const handleCheckboxChange = (type: 'head' | 'shoulder') => (e: any) => {
-    setLandmarkState((prevState) => ({
-      ...prevState,
-      [`show${type.charAt(0).toUpperCase() + type.slice(1)}Landmark`]:
-        e.target.checked,
-    }));
-  };
+  //! fix
+  // const handleCheckboxChange = (type: 'head' | 'shoulder') => (e) => {
+  //   setLandmarkState((prevState) => ({
+  //     ...prevState,
+  //     [`show${type.charAt(0).toUpperCase() + type.slice(1)}Landmark`]:
+  //       e.target.checked,
+  //   }));
+  // };
 
   const formatCoordinate = (value?: number) =>
     value ? (Math.round(value * 100) / 100).toFixed(2) : 'No data';
@@ -40,7 +41,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
         <Col span={2}>
           <Checkbox
             checked={landmarkState.showHeadLandmark}
-            onChange={handleCheckboxChange('head')}
+            // onChange={handleCheckboxChange('head')}
           />
         </Col>
         <Col>
@@ -64,7 +65,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
         <Col span={2}>
           <Checkbox
             checked={landmarkState.showShoulderLandmark}
-            onChange={handleCheckboxChange('shoulder')}
+            // onChange={handleCheckboxChange('shoulder')}
           />
         </Col>
         <Col>

@@ -13,7 +13,7 @@ import useWebSocket from '../utility/webSocketConfig';
 import { useResData } from '../context';
 
 // Define a type for the throttle function
-type ThrottleFunction = (...args: any[]) => void;
+type ThrottleFunction = (...args: unknown[]) => void;
 
 const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
@@ -61,28 +61,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     handleDevices();
   }, [handleDevices]);
 
-  const handleCapture = useCallback(
-    (blob: Blob) => {
-      console.log('Image size:', (blob.size / 1024).toFixed(2), 'kilo bytes');
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        const timestamp = Date.now();
-        const data = {
-          frameCount: frameCountRef.current,
-          image: dataUrl.split(',')[1],
-          timestamp: timestamp,
-        };
-
-        send(JSON.stringify(data));
-        frameCountRef.current += 1;
-      };
-      reader.readAsDataURL(blob);
-    },
-    [send],
-  );
-
   const deviceSelectorMemo = useMemo(
     () => (
       <DeviceSelector
@@ -98,18 +76,21 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const throttle = (func: ThrottleFunction, limit: number) => {
     let lastFunc: NodeJS.Timeout;
     let lastRan: number;
-    return function (...args: any[]) {
+    return function (...args: unknown[]) {
       if (!lastRan) {
         func(...args);
         lastRan = Date.now();
       } else {
-        clearTimeout(lastFunc);
-        lastFunc = setTimeout(function () {
-          if (Date.now() - lastRan >= limit) {
-            func(...args);
-            lastRan = Date.now();
-          }
-        }, limit - (Date.now() - lastRan));
+        if (lastFunc) clearTimeout(lastFunc);
+        lastFunc = setTimeout(
+          () => {
+            if (Date.now() - lastRan >= limit) {
+              func(...args);
+              lastRan = Date.now();
+            }
+          },
+          limit - (Date.now() - lastRan),
+        );
       }
     };
   };
@@ -125,7 +106,15 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
 
   useEffect(() => {
     const throttledSend = throttle(sendLandMarkData, logInterval);
-    throttledSend();
+    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(
+      throttledSend,
+      logInterval,
+    );
+
+    // Cleanup timeout on component unmount
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [landMarkData, sendLandMarkData, logInterval]);
 
   return (

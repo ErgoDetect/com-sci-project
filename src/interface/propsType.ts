@@ -3,11 +3,6 @@
 import React, { ReactNode } from 'react';
 import ReactPlayer from 'react-player';
 
-export interface ResContextType {
-  resData?: PositionData;
-  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
-}
-
 export interface PositionData {
   headPosition: { x: number; y: number };
   depthLeftIris: number;
@@ -24,6 +19,12 @@ export interface PositionData {
   // shoulderRightPosition: Record<number, number>;
   // shoulderPosition: Record<number, number>;
 }
+
+export interface ResContextType {
+  resData?: PositionData;
+  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+}
+
 export interface DebugData {
   frameCount: number;
   latency: number;

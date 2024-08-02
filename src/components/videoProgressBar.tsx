@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+/** @format */
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { videoProgressBarProps } from '../interface/propsType';
 import '../styles/progressBar.css';
-import VideoProgressBarChapter from '../components/videoProgressBarChapter';
+import VideoProgressBarChapter from './videoProgressBarChapter';
 
 const VideoProgressBar: React.FC<videoProgressBarProps> = ({
   clickPercent,
@@ -15,66 +17,86 @@ const VideoProgressBar: React.FC<videoProgressBarProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
 
-  function fillChapter(chapters: number[][], maxDuration: number) {
-    type Custom3dArray = [string, number, number];
-    const emptyArray: Custom3dArray[] = [];
-    for (let index = 0; index < chapters.length; index++) {
-      if (index === 0 && chapters[0][0] !== 0) {
-        emptyArray.push(['n', 0, chapters[0][0]]);
-      } else {
-        if (chapters[index][0] !== chapters[index - 1][1]) {
-          emptyArray.push(['n', chapters[index - 1][1], chapters[index][0]]);
+  const fillChapter = useCallback(
+    (chaptersData: number[][], maxDurationData: number) => {
+      type Custom3dArray = [string, number, number];
+      const filledChapters: Custom3dArray[] = [];
+
+      for (let index = 0; index < chaptersData.length; index += 1) {
+        if (index === 0 && chaptersData[0][0] !== 0) {
+          filledChapters.push(['n', 0, chaptersData[0][0]]);
+        } else if (chaptersData[index][0] !== chaptersData[index - 1][1]) {
+          filledChapters.push([
+            'n',
+            chaptersData[index - 1][1],
+            chaptersData[index][0],
+          ]);
+        }
+        filledChapters.push([
+          'h',
+          chaptersData[index][0],
+          chaptersData[index][1],
+        ]);
+        if (
+          index === chaptersData.length - 1 &&
+          chaptersData[index][1] !== maxDurationData
+        ) {
+          filledChapters.push(['n', chaptersData[index][1], maxDurationData]);
         }
       }
-      emptyArray.push(['h', chapters[index][0], chapters[index][1]]);
-      if (index === chapters.length - 1 && chapters[index][1] !== maxDuration) {
-        emptyArray.push(['n', chapters[index][1], maxDuration]);
-      }
-    }
-    return emptyArray;
-  }
+      return filledChapters;
+    },
+    [],
+  );
 
   const filledChapter = fillChapter(chapters, maxDuration);
 
-  const handleBarClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickXPercent = clickX / rect.width;
-    if (setClickPercent) {
-      setClickPercent(clickXPercent);
-      if (playerRef && playerRef.current) {
-        playerRef.current.seekTo(clickXPercent, 'fraction');
+  const handleBarClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickXPercent = clickX / rect.width;
+      if (setClickPercent) {
+        setClickPercent(clickXPercent);
+        if (playerRef && playerRef.current) {
+          playerRef.current.seekTo(clickXPercent, 'fraction');
+        }
       }
-    }
-  };
+    },
+    [playerRef, setClickPercent],
+  );
 
-  const handleBarMouseDown = (
-    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-  ) => {
-    setIsDragging(true);
-    handleBarClick(e);
-  };
+  const handleBarMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      setIsDragging(true);
+      handleBarClick(e);
+    },
+    [handleBarClick],
+  );
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      const bar = document.querySelector('.bar');
-      if (bar) {
-        const rect = bar.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickXPercent = Math.min(Math.max(clickX / rect.width, 0), 1);
-        if (setClickPercent) {
-          setClickPercent(clickXPercent);
-          if (playerRef && playerRef.current) {
-            playerRef.current.seekTo(clickXPercent, 'fraction');
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging) {
+        const bar = document.querySelector('.bar');
+        if (bar) {
+          const rect = bar.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const clickXPercent = Math.min(Math.max(clickX / rect.width, 0), 1);
+          if (setClickPercent) {
+            setClickPercent(clickXPercent);
+            if (playerRef && playerRef.current) {
+              playerRef.current.seekTo(clickXPercent, 'fraction');
+            }
           }
         }
       }
-    }
-  };
+    },
+    [isDragging, playerRef, setClickPercent],
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (isDragging) {
@@ -89,36 +111,24 @@ const VideoProgressBar: React.FC<videoProgressBarProps> = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [handleMouseMove, handleMouseUp, isDragging]);
 
   return (
     <div
       className="bar"
       onClick={handleBarClick}
       onMouseDown={handleBarMouseDown}
+      role=""
     >
       <div className="bar_chapter">
-        {filledChapter.map((chapter, index) => {
-          if (chapter[0] === 'h') {
-            return (
-              <VideoProgressBarChapter
-                background={highlightColor}
-                percent={(chapter[2] - chapter[1]) / maxDuration}
-                key={index}
-                height={12}
-              />
-            );
-          } else {
-            return (
-              <VideoProgressBarChapter
-                background={normalColor}
-                percent={(chapter[2] - chapter[1]) / maxDuration}
-                key={index}
-                height={8}
-              />
-            );
-          }
-        })}
+        {filledChapter.map((chapter, index) => (
+          <VideoProgressBarChapter
+            background={chapter[0] === 'h' ? highlightColor : normalColor}
+            percent={(chapter[2] - chapter[1]) / maxDuration}
+            key={index}
+            height={chapter[0] === 'h' ? 12 : 8}
+          />
+        ))}
       </div>
       <div
         className="bar_dot"
@@ -127,7 +137,7 @@ const VideoProgressBar: React.FC<videoProgressBarProps> = ({
           left: `${clickPercent ? clickPercent * 100 : 0}%`,
         }}
       >
-        <div className="bar_dot_i" style={{ backgroundColor: dotColor }}></div>
+        <div className="bar_dot_i" style={{ backgroundColor: dotColor }} />
       </div>
     </div>
   );
