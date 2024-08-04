@@ -41,7 +41,7 @@ export const initializeFaceLandmarker = async () => {
  * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
  * @param {DrawingUtils} drawingUtils - Utility for drawing on the canvas.
  */
-export const drawResults = (
+export const drawFaceLandmarker = (
   results: { faceLandmarks: any },
   context: CanvasRenderingContext2D,
   drawingUtils: DrawingUtils,
