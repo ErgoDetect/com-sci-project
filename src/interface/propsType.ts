@@ -1,7 +1,6 @@
 /** @format */
 
 import React, { ReactNode } from 'react';
-import ReactPlayer from 'react-player';
 
 export interface PositionData {
   headPosition: { x: number; y: number };
@@ -104,4 +103,22 @@ export interface videoProgressBarProps {
   normalColor: string;
   highlightColor: string;
   dotColor: string;
+}
+
+export interface FaceResults {
+  faceLandmarks: Array<any>;
+  faceBlendshapes: Array<any>;
+  facialTransformationMatrixes: Array<any>;
+}
+
+export interface PoseResults {
+  landmarks: Array<any>;
+  worldLandmarks: Array<any>;
+  segmentationMasks: any;
+}
+
+// Define the overall results interface
+export interface LandmarksResult {
+  faceResults: FaceResults;
+  poseResults: PoseResults;
 }
