@@ -6,6 +6,10 @@ import {
   initializeFaceLandmarker,
   drawFaceLandmarker,
 } from '../../model/faceLandmark';
+import {
+  initializePoseLandmarker,
+  drawPoseLandmarker,
+} from '../../model/bodyLandmark';
 import { useResData } from '../../context';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
@@ -25,6 +29,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const { setLandMarkData, streaming } = useResData();
 
   const faceLandmarkerRef = useRef<any>(null);
+  const poseLandmarkerRef = useRef<any>(null);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
 
   const stopVideoStream = useCallback(() => {
@@ -72,6 +77,9 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         if (!faceLandmarkerRef.current && streaming) {
           faceLandmarkerRef.current = await initializeFaceLandmarker();
         }
+        if (!poseLandmarkerRef.current && streaming) {
+          poseLandmarkerRef.current = await initializePoseLandmarker();
+        }
         if (showCanvasRef.current) {
           const context = showCanvasRef.current.getContext('2d');
           if (context) {
@@ -110,21 +118,35 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       webcam &&
       webcam.srcObject &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      faceLandmarkerRef.current
+      (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
       const context = showCanvas.getContext('2d');
       if (context) {
         context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
-        const results = await faceLandmarkerRef.current.detectForVideo(
-          webcam,
-          performance.now(),
-        );
 
-        // Store results in setLandMarkData
+        const faceResults = faceLandmarkerRef.current
+          ? await faceLandmarkerRef.current.detectForVideo(
+              webcam,
+              performance.now(),
+            )
+          : null;
+        const poseResults = poseLandmarkerRef.current
+          ? await poseLandmarkerRef.current.detectForVideo(
+              webcam,
+              performance.now(),
+            )
+          : null;
+
+        const results = { faceResults, poseResults };
         setLandMarkData(results);
 
         if (showLandmarks && drawingUtilsRef.current) {
-          drawFaceLandmarker(results, context, drawingUtilsRef.current);
+          if (faceResults) {
+            drawFaceLandmarker(faceResults, context, drawingUtilsRef.current);
+          }
+          if (poseResults) {
+            drawPoseLandmarker(poseResults, context, drawingUtilsRef.current);
+          }
         }
 
         if (drawingDot) {
@@ -161,15 +183,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       }
     };
   }, [renderFrame, showBlendShapes]);
-
-  // useEffect(() => {
-  //   if (streaming && intervalIdRef.current === undefined) {
-  //     intervalIdRef.current = window.setInterval(captureFrame, 1000 / 2);
-  //   } else if (!streaming && intervalIdRef.current !== undefined) {
-  //     clearInterval(intervalIdRef.current);
-  //     intervalIdRef.current = undefined;
-  //   }
-  // }, [streaming, captureFrame]);
 
   return (
     <div>
