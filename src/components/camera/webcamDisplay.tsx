@@ -2,7 +2,10 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { DrawingUtils } from '@mediapipe/tasks-vision';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import drawCircle from '../../utility/drawCircle';
-import { initializeFaceLandmarker, drawResults } from '../../faceLandmark';
+import {
+  initializeFaceLandmarker,
+  drawFaceLandmarker,
+} from '../../model/faceLandmark';
 import { useResData } from '../../context';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
@@ -121,7 +124,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         setLandMarkData(results);
 
         if (showLandmarks && drawingUtilsRef.current) {
-          drawResults(results, context, drawingUtilsRef.current);
+          drawFaceLandmarker(results, context, drawingUtilsRef.current);
         }
 
         if (drawingDot) {
