@@ -98,33 +98,3 @@ export const drawFaceLandmarker = (
     );
   }
 };
-
-/**
- * Draws blend shape values as a list of items.
- * @param {HTMLElement} el - The DOM element to display blend shapes.
- * @param {Array} blendShapes - Array of blend shapes to display.
- */
-// export const drawBlendShapes = (el, blendShapes) => {
-//   if (!blendShapes.length) {
-//     return;
-//   }
-
-//   const blendShapesHtml = blendShapes[0].categories
-//     .map(
-//       (shape) => `
-//     <li class="blend-shapes-item">
-//       <span class="blend-shapes-label">${
-//         shape.displayName || shape.categoryName
-//       }</span>
-//       <span class="blend-shapes-value" style="width: calc(${
-//         shape.score * 100
-//       }% - 120px)">
-//         ${shape.score.toFixed(4)}
-//       </span>
-//     </li>
-//   `,
-//     )
-//     .join('');
-
-//   el.innerHTML = blendShapesHtml;
-// };

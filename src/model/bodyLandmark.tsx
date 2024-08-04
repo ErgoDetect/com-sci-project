@@ -1,21 +1,14 @@
-/** @format */
-
 import {
-  DrawingUtils,
   PoseLandmarker,
   FilesetResolver,
+  DrawingUtils,
   NormalizedLandmark,
 } from '@mediapipe/tasks-vision';
-
-/**
- * Initializes the FaceLandmarker with necessary configurations.
- * @returns {Promise<PoseLandmarker>} - An initialized FaceLandmarker instance.
- */
 
 export const initializePoseLandmarker = async () => {
   try {
     const filesetResolver = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm',
     );
     const poseLandmarker = await PoseLandmarker.createFromOptions(
       filesetResolver,
@@ -24,6 +17,7 @@ export const initializePoseLandmarker = async () => {
           modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
           delegate: 'GPU',
         },
+
         runningMode: 'VIDEO',
         numPoses: 1,
       },
@@ -32,5 +26,20 @@ export const initializePoseLandmarker = async () => {
   } catch (error) {
     console.error('Error initializing PoseLandmarker:', error);
     throw error;
+  }
+};
+
+export const drawPoseLandmarker = (
+  results: { landmarks: any },
+  context: CanvasRenderingContext2D,
+  drawingUtils: DrawingUtils,
+) => {
+  if (results.landmarks) {
+    results.landmarks.forEach((landmark: NormalizedLandmark[] | undefined) => {
+      drawingUtils.drawLandmarks(landmark, {
+        radius: (data) => DrawingUtils.lerp(data.from!.z, -0.15, 0.1, 5, 1),
+      });
+      drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+    });
   }
 };
