@@ -137,6 +137,9 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
             )
           : null;
 
+        console.log('Face Results:', faceResults);
+        console.log('Pose Results:', poseResults);
+
         const results = { faceResults, poseResults };
         setLandMarkData(results);
 
