@@ -7,14 +7,20 @@ import React, {
   ReactNode,
   useMemo,
 } from 'react';
-import { DebugData, PositionData } from '../interface/propsType';
+import {
+  DebugData,
+  LandmarksResult,
+  PositionData,
+} from '../interface/propsType';
 
 interface ResContextProps {
   resData: PositionData | undefined;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
   debugData: DebugData | undefined;
-  landMarkData: object;
-  setLandMarkData: React.Dispatch<React.SetStateAction<object>>;
+  landMarkData: LandmarksResult | undefined;
+  setLandMarkData: React.Dispatch<
+    React.SetStateAction<LandmarksResult | undefined>
+  >;
   streaming: boolean;
   setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -25,7 +31,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
-  const [landMarkData, setLandMarkData] = useState<object>({});
+  const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
+    undefined,
+  );
   const [streaming, setStreaming] = useState<boolean>(false);
 
   // Compute debugData based on resData if needed

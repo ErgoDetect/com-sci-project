@@ -119,6 +119,9 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     };
   }, [throttle, sendLandMarkData, logInterval]);
 
+  console.log('face landmark', landMarkData?.faceResults);
+  console.log('pose landmark', landMarkData?.poseResults);
+
   return (
     <>
       <WebcamDisplay
