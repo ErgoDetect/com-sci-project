@@ -122,3 +122,13 @@ export interface LandmarksResult {
   faceResults: FaceResults;
   poseResults: PoseResults;
 }
+export interface ModalProps {
+  visible: boolean;
+  title: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  onClose: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  children: React.ReactNode;
+}
