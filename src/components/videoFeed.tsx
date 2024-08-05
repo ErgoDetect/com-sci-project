@@ -1,5 +1,3 @@
-/** @format */
-
 import React, {
   useState,
   useCallback,
@@ -8,18 +6,16 @@ import React, {
   useRef,
 } from 'react';
 import { Button } from 'antd';
-import { DeviceProps, videoFeedProps } from '../interface/propsType';
+import { videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
 import useWebSocket from '../utility/webSocketConfig';
 import { useResData } from '../context';
-
-// Define a type for the throttle function
-type ThrottleFunction = (...args: unknown[]) => void;
+import useDevices from '../hooks/useDevices';
+import useThrottle from '../hooks/useThrottle';
 
 const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
-  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
-  const [devices, setDevices] = useState<DeviceProps[]>([]);
+  const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming } = useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
@@ -29,24 +25,12 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const lastLogTimeRef = useRef<number>(0);
   const logInterval = 20000;
 
-  const handleDevices = useCallback(async () => {
-    try {
-      const mediaDevices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = mediaDevices.filter(
-        (device) => device.kind === 'videoinput',
-      );
-      setDevices(videoDevices);
-      if (videoDevices.length > 0 && !deviceId) {
-        setDeviceId(videoDevices[0].deviceId);
-      }
-    } catch (error) {
-      console.error('Error enumerating devices:', error);
-    }
-  }, [deviceId]);
-
-  const handleDeviceChange = useCallback((value: string) => {
-    setDeviceId(value);
-  }, []);
+  const handleDeviceChange = useCallback(
+    (value: string) => {
+      setDeviceId(value);
+    },
+    [setDeviceId],
+  );
 
   const toggleStreaming = useCallback(() => {
     if (streaming) {
@@ -59,10 +43,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     setShowBlendShapes((prev) => !prev);
   }, []);
 
-  useEffect(() => {
-    handleDevices();
-  }, [handleDevices]);
-
   const deviceSelectorMemo = useMemo(
     () => (
       <DeviceSelector
@@ -74,29 +54,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     [deviceId, devices, handleDeviceChange],
   );
 
-  // Throttle function to limit the rate of function execution
-  const throttle = useCallback((func: ThrottleFunction, limit: number) => {
-    let lastFunc: NodeJS.Timeout;
-    let lastRan: number;
-    return function throttledFunction(...args: unknown[]) {
-      if (!lastRan) {
-        func(...args);
-        lastRan = Date.now();
-      } else {
-        if (lastFunc) clearTimeout(lastFunc);
-        lastFunc = setTimeout(
-          () => {
-            if (Date.now() - lastRan >= limit) {
-              func(...args);
-              lastRan = Date.now();
-            }
-          },
-          limit - (Date.now() - lastRan),
-        );
-      }
-    };
-  }, []);
-
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
     if (currentTime - lastLogTimeRef.current >= logInterval) {
@@ -106,18 +63,18 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     }
   }, [landMarkData, logInterval, send]);
 
+  const throttledSend = useThrottle(sendLandMarkData, logInterval);
+
   useEffect(() => {
-    const throttledSend = throttle(sendLandMarkData, logInterval);
     const intervalId: ReturnType<typeof setInterval> = setInterval(
       throttledSend,
       logInterval,
     );
 
-    // Cleanup interval on component unmount
     return () => {
       clearInterval(intervalId);
     };
-  }, [throttle, sendLandMarkData, logInterval]);
+  }, [throttledSend, logInterval]);
 
   console.log('face landmark', landMarkData?.faceResults);
   console.log('pose landmark', landMarkData?.poseResults);
