@@ -85,11 +85,6 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
-
-    // Check if it's the first run
-    if (isFirstRun({ name: 'x' })) {
-      mainWindow.webContents.send('show-modal');
-    }
   });
 
   mainWindow.on('closed', () => {

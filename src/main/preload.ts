@@ -21,17 +21,7 @@ const electronHandler = {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
   },
-  showModal: {
-    checkFirstRun() {
-      return isFirstRun({ name: 'x ' }); // Check if it's the first run
-    },
-    setCameraAccessGranted() {
-      localStorage.setItem('cameraAccessGranted', 'true'); // Mark camera access as granted
-    },
-    getCameraAccessStatus() {
-      return localStorage.getItem('cameraAccessGranted') === 'true'; // Check if camera access was granted
-    },
-  },
+  showModal: {},
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

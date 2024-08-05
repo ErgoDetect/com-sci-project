@@ -96,33 +96,6 @@ const App: React.FC = () => {
     debugData?.latency,
   ]);
 
-  // Function to request camera access
-  const requestCameraAccess = async () => {
-    try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCameraAccess(true);
-      setModalVisible(false);
-      window.electron.showModal.setCameraAccessGranted(); // Mark camera access as granted
-    } catch (error) {
-      console.error('Camera access denied:', error);
-    }
-  };
-
-  // Check if the app is running for the first time and if camera access has been granted
-  useEffect(() => {
-    const checkCameraAccess = async () => {
-      const isAccessGranted = window.electron.showModal.getCameraAccessStatus(); // Get camera access status
-      if (!isAccessGranted) {
-        if (window.electron.showModal.checkFirstRun()) {
-          setModalVisible(true);
-        }
-      } else {
-        setHasCameraAccess(true);
-      }
-    };
-    checkCameraAccess();
-  }, []);
-
   return (
     <Layout className="Layout">
       <Header
@@ -139,7 +112,7 @@ const App: React.FC = () => {
           style={{ flex: 1, minWidth: 0 }}
         />
       </Header>
-      {modalVisible && (
+      {/* {modalVisible && (
         <Modal
           visible={modalVisible}
           title="Camera Access Required"
@@ -148,9 +121,9 @@ const App: React.FC = () => {
             <Button key="back" onClick={() => setModalVisible(false)}>
               Cancel
             </Button>,
-            <Button key="submit" type="primary" onClick={requestCameraAccess}>
-              Request Camera Access
-            </Button>,
+            // <Button key="submit" type="primary" onClick={requestCameraAccess}>
+            //   Request Camera Access
+            // </Button>,
           ]}
         >
           <p>
@@ -158,10 +131,10 @@ const App: React.FC = () => {
             Please grant access when prompted.
           </p>
         </Modal>
-      )}
+      )} */}
       {currentMenu === '0' && (
         <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
-          {hasCameraAccess && <VideoFeed drawingDot={drawArray} />}
+          <VideoFeed />
         </DetectionPage>
       )}
       {currentMenu === '1' && <ResultPage />}
