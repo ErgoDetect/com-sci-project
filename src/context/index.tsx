@@ -23,6 +23,7 @@ interface ResContextProps {
   >;
   streaming: boolean;
   setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
+  url: string;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -35,6 +36,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     undefined,
   );
   const [streaming, setStreaming] = useState<boolean>(false);
+  const url = 'localhost:8000';
 
   // Compute debugData based on resData if needed
   const debugData = useMemo(() => {
@@ -54,6 +56,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setLandMarkData,
       streaming,
       setStreaming,
+      url,
     }),
     [resData, debugData, landMarkData, streaming],
   );

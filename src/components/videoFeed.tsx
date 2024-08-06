@@ -1,19 +1,30 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import { Button } from 'antd';
-import { videoFeedProps } from '../interface/propsType';
+import { LandmarksResult, videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
 import { useResData } from '../context';
 import useDevices from '../hooks/useDevices';
-import useSendLandmarkData from '../hooks/useSendLandMark';
+import filterLandmark from '../utility/filterLandMark';
+import useWebSocket from '../utility/webSocketConfig';
+import useInterval from '../hooks/useInterval';
 
 const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming } = useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
-  const { landMarkData } = useResData();
-  const logInterval = 20000;
+  const { landMarkData, setResData, url } = useResData();
+  const { send } = useWebSocket(`ws://${url}/ws`, setResData);
+
+  const lastLogTimeRef = useRef<number>(0);
+  const logInterval = 1000;
 
   const handleDeviceChange = useCallback(
     (value: string) => {
@@ -33,6 +44,34 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     setShowBlendShapes((prev) => !prev);
   }, []);
 
+  const sendLandMarkData = useCallback(() => {
+    const currentTime = Date.now();
+
+    // Ensure lastLogTimeRef.current is initialized
+    if (lastLogTimeRef.current === undefined) {
+      lastLogTimeRef.current = 0;
+    }
+
+    if (currentTime - lastLogTimeRef.current >= logInterval) {
+      try {
+        const filteredData = filterLandmark(landMarkData as LandmarksResult);
+        const dataToSend = JSON.stringify({
+          data: filteredData,
+          timestamp: currentTime,
+        });
+
+        send(dataToSend);
+
+        // Update the last log time reference
+        lastLogTimeRef.current = currentTime;
+      } catch (error) {
+        console.error('Failed to send landmark data:', error);
+      }
+    }
+  }, [landMarkData, logInterval, send]);
+
+  useInterval(sendLandMarkData, 1000, streaming);
+
   const deviceSelectorMemo = useMemo(
     () => (
       <DeviceSelector
@@ -43,8 +82,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     ),
     [deviceId, devices, handleDeviceChange],
   );
-
-  useSendLandmarkData(landMarkData, logInterval);
 
   return (
     <>

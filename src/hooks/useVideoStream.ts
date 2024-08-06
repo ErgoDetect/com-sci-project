@@ -13,9 +13,7 @@ import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 
 const useVideoStream = ({
   deviceId,
-  width,
-  borderRadius,
-  drawingDot,
+
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
@@ -61,32 +59,35 @@ const useVideoStream = ({
       videoStreamRef.current = videoStream;
       if (webcamRef.current) {
         webcamRef.current.srcObject = videoStream;
-        await webcamRef.current.play();
 
-        const { videoWidth, videoHeight } = webcamRef.current;
-        if (canvasRef.current) {
-          canvasRef.current.width = videoWidth;
-          canvasRef.current.height = videoHeight;
-        }
-        if (showCanvasRef.current) {
-          showCanvasRef.current.width = videoWidth;
-          showCanvasRef.current.height = videoHeight;
-        }
+        webcamRef.current.onloadedmetadata = async () => {
+          await webcamRef.current?.play();
 
-        if (!faceLandmarkerRef.current && streaming) {
-          faceLandmarkerRef.current = await initializeFaceLandmarker();
-        }
-        if (!poseLandmarkerRef.current && streaming) {
-          poseLandmarkerRef.current = await initializePoseLandmarker();
-        }
-        if (showCanvasRef.current) {
-          const context = showCanvasRef.current.getContext('2d');
-          if (context) {
-            drawingUtilsRef.current = new DrawingUtils(context);
-          } else {
-            console.error('Unable to get 2D context for the canvas.');
+          const { videoWidth, videoHeight } = webcamRef.current!;
+          if (canvasRef.current) {
+            canvasRef.current.width = videoWidth;
+            canvasRef.current.height = videoHeight;
           }
-        }
+          if (showCanvasRef.current) {
+            showCanvasRef.current.width = videoWidth;
+            showCanvasRef.current.height = videoHeight;
+          }
+
+          if (!faceLandmarkerRef.current && streaming) {
+            faceLandmarkerRef.current = await initializeFaceLandmarker();
+          }
+          if (!poseLandmarkerRef.current && streaming) {
+            poseLandmarkerRef.current = await initializePoseLandmarker();
+          }
+          if (showCanvasRef.current) {
+            const context = showCanvasRef.current.getContext('2d');
+            if (context) {
+              drawingUtilsRef.current = new DrawingUtils(context);
+            } else {
+              console.error('Unable to get 2D context for the canvas.');
+            }
+          }
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -147,18 +148,6 @@ const useVideoStream = ({
             drawPoseLandmarker(poseResults, context, drawingUtilsRef.current);
           }
         }
-
-        // if (drawingDot) {
-        //   drawingDot.x.forEach((x, index) => {
-        //     drawCircle(
-        //       x,
-        //       drawingDot.y[index],
-        //       showCanvas.width,
-        //       showCanvas.height,
-        //       showCanvas,
-        //     );
-        //   });
-        // }
 
         if (showBlendShapes) {
           const blendShapesElement =
