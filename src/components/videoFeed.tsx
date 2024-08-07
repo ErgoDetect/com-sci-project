@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from 'antd';
 import { LandmarksResult, videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
@@ -21,7 +15,7 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
   const { landMarkData, setResData, url } = useResData();
-  const { send } = useWebSocket(`ws://${url}/ws`, setResData);
+  const { send } = useWebSocket(`ws://${url}/landmark-results`, setResData);
 
   const lastLogTimeRef = useRef<number>(0);
   const logInterval = 1000;

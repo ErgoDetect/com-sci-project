@@ -18,7 +18,6 @@ const ResultPage: React.FC = () => {
   useEffect(() => {
     async function loadVideo() {
       try {
-        // const video = await importVideo('dummyVideo');
         const video =
           await 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
         setVideoUrl(video);
