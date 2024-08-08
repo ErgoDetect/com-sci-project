@@ -53,48 +53,48 @@ const App: React.FC = () => {
   );
 
   // Update drawArray on data or landmark state change
-  useEffect(() => {
-    if (resData) {
-      console.log(
-        'data :',
-        resData,
-        'Received Frame : ',
-        debugData?.frameCount,
-        'Latency : ',
-        debugData?.latency.toFixed(2),
-        'ms',
-      );
+  // useEffect(() => {
+  //   if (resData) {
+  //     console.log(
+  //       'data :',
+  //       resData,
+  //       'Received Frame : ',
+  //       debugData?.frameCount,
+  //       'Latency : ',
+  //       debugData?.latency.toFixed(2),
+  //       'ms',
+  //     );
 
-      drawArray.x.length = 0; // Clear x array
-      drawArray.y.length = 0; // Clear y array
+  //     drawArray.x.length = 0; // Clear x array
+  //     drawArray.y.length = 0; // Clear y array
 
-      const headPosition = positionData?.headPosition;
-      const shoulderPosition = positionData?.shoulderPosition;
+  //     const headPosition = positionData?.headPosition;
+  //     const shoulderPosition = positionData?.shoulderPosition;
 
-      if (landmarkState.showHeadLandmark && headPosition) {
-        drawArray.x.push(headPosition.x);
-        drawArray.y.push(headPosition.y);
-      }
+  //     if (landmarkState.showHeadLandmark && headPosition) {
+  //       drawArray.x.push(headPosition.x);
+  //       drawArray.y.push(headPosition.y);
+  //     }
 
-      if (landmarkState.showShoulderLandmark && shoulderPosition) {
-        drawArray.x.push(
-          shoulderPosition.shoulder_left.x,
-          shoulderPosition.shoulder_right.x,
-        );
-        drawArray.y.push(
-          shoulderPosition.shoulder_left.y,
-          shoulderPosition.shoulder_right.y,
-        );
-      }
-    }
-  }, [
-    resData,
-    landmarkState,
-    positionData,
-    drawArray,
-    debugData?.frameCount,
-    debugData?.latency,
-  ]);
+  //     if (landmarkState.showShoulderLandmark && shoulderPosition) {
+  //       drawArray.x.push(
+  //         shoulderPosition.shoulder_left.x,
+  //         shoulderPosition.shoulder_right.x,
+  //       );
+  //       drawArray.y.push(
+  //         shoulderPosition.shoulder_left.y,
+  //         shoulderPosition.shoulder_right.y,
+  //       );
+  //     }
+  //   }
+  // }, [
+  //   resData,
+  //   landmarkState,
+  //   positionData,
+  //   drawArray,
+  //   debugData?.frameCount,
+  //   debugData?.latency,
+  // ]);
 
   return (
     <Layout className="Layout">
