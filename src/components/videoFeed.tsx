@@ -8,17 +8,12 @@ import React, {
   useRef,
 } from 'react';
 import { Button } from 'antd';
-import {
-  DeviceProps,
-  videoFeedProps,
-  LandmarksResult,
-} from '../interface/propsType';
+import { DeviceProps, videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
 import useWebSocket from '../utility/webSocketConfig';
 import { useResData } from '../context';
 
-import filterLandmark from '../utility/filterLandmark';
 // Define a type for the throttle function
 type ThrottleFunction = (...args: unknown[]) => void;
 
@@ -105,13 +100,8 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
     if (currentTime - lastLogTimeRef.current >= logInterval) {
-      send(
-        JSON.stringify({
-          data: filterLandmark(landMarkData as LandmarksResult),
-          timestamp: currentTime,
-        }),
-      );
-      // send(JSON.stringify({ landMarkData, timestamp: currentTime }));
+      console.log(landMarkData);
+      send(JSON.stringify({ landMarkData, timestamp: currentTime }));
       lastLogTimeRef.current = currentTime;
     }
   }, [landMarkData, logInterval, send]);
@@ -129,8 +119,8 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     };
   }, [throttle, sendLandMarkData, logInterval]);
 
-  // console.log('face landmark', landMarkData?.faceResults);
-  // console.log('pose landmark', landMarkData?.poseResults);
+  console.log('face landmark', landMarkData?.faceResults);
+  console.log('pose landmark', landMarkData?.poseResults);
 
   return (
     <>
