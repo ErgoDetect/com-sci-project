@@ -32,10 +32,6 @@ const DetectionPage: React.FC<Detection> = ({
     setConditionPositionData(positionData);
   };
 
-  useEffect(() => {
-    console.log(conditionPositionData);
-  }, [conditionPositionData]);
-
   const handleSliderChange = useCallback((key: string, value: number) => {
     setSliderValues((prevValues) => ({
       ...prevValues,
@@ -137,7 +133,7 @@ const DetectionPage: React.FC<Detection> = ({
           ) > sliderValues.headRotationX;
 
         if (positionChanged) {
-          console.log('Position changed');
+          console.info('Position changed');
         }
       }
     };

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Modal, Button } from 'antd';
 import { DebugData, PositionData } from '../interface/propsType';
 import DetectionPage from '../pages/DetectionPage';
 import ResultPage from '../pages/ResultPage';
 import VideoFeed from '../components/videoFeed';
 import { useResData } from '../context';
 
+// Define modal visibility and camera access state
 const App: React.FC = () => {
   const { Header } = Layout;
   const { resData, debugData } = useResData();
@@ -27,6 +28,9 @@ const App: React.FC = () => {
     showHeadLandmark: false,
     showShoulderLandmark: false,
   });
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [hasCameraAccess, setHasCameraAccess] = useState(false);
 
   // Handle landmark visibility changes
   const handleShowLandmarkChange = (updatedState: {
@@ -108,9 +112,29 @@ const App: React.FC = () => {
           style={{ flex: 1, minWidth: 0 }}
         />
       </Header>
+      {/* {modalVisible && (
+        <Modal
+          visible={modalVisible}
+          title="Camera Access Required"
+          onCancel={() => setModalVisible(false)}
+          footer={[
+            <Button key="back" onClick={() => setModalVisible(false)}>
+              Cancel
+            </Button>,
+            // <Button key="submit" type="primary" onClick={requestCameraAccess}>
+            //   Request Camera Access
+            // </Button>,
+          ]}
+        >
+          <p>
+            Your application needs access to the webcam to function correctly.
+            Please grant access when prompted.
+          </p>
+        </Modal>
+      )} */}
       {currentMenu === '0' && (
         <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
-          <VideoFeed drawingDot={drawArray} />
+          <VideoFeed />
         </DetectionPage>
       )}
       {currentMenu === '1' && <ResultPage />}

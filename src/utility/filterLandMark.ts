@@ -1,7 +1,7 @@
 import { LandmarksResult } from '../interface/propsType';
 
 export default function filterLandmark(landMarkData: LandmarksResult): any {
-  let result = {
+  const result = {
     leftShoulder: landMarkData?.poseResults?.landmarks[0][11],
     rightShoulder: landMarkData?.poseResults?.landmarks[0][11],
     rightIris: {
