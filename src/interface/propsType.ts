@@ -132,3 +132,9 @@ export interface ModalProps {
   cancelText?: string;
   children: React.ReactNode;
 }
+
+export interface xyzPosition {
+  x: number;
+  y: number;
+  z: number;
+}

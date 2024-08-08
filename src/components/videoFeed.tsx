@@ -5,7 +5,7 @@ import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
 import { useResData } from '../context';
 import useDevices from '../hooks/useDevices';
-import filterLandmark from '../utility/filterLandMark';
+import { filterLandmark } from '../utility/filterLandMark';
 import useWebSocket from '../utility/webSocketConfig';
 import useInterval from '../hooks/useInterval';
 
