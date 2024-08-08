@@ -1,52 +1,31 @@
-/** @format */
-
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from 'antd';
-import { DeviceProps, videoFeedProps } from '../interface/propsType';
+import { LandmarksResult, videoFeedProps } from '../interface/propsType';
 import DeviceSelector from './camera/deviceSelector';
 import WebcamDisplay from './camera/webcamDisplay';
-import useWebSocket from '../utility/webSocketConfig';
 import { useResData } from '../context';
-
-// Define a type for the throttle function
-type ThrottleFunction = (...args: unknown[]) => void;
+import useDevices from '../hooks/useDevices';
+import filterLandmark from '../utility/filterLandMark';
+import useWebSocket from '../utility/webSocketConfig';
+import useInterval from '../hooks/useInterval';
 
 const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
-  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
-  const [devices, setDevices] = useState<DeviceProps[]>([]);
+  const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming } = useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
-  const { setResData, landMarkData } = useResData();
-  const { send } = useWebSocket('ws://localhost:8000/ws', setResData);
+  const { landMarkData, setResData, url } = useResData();
+  const { send } = useWebSocket(`ws://${url}/landmark-results`, setResData);
 
   const lastLogTimeRef = useRef<number>(0);
-  const logInterval = 20000;
+  const logInterval = 1000;
 
-  const handleDevices = useCallback(async () => {
-    try {
-      const mediaDevices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = mediaDevices.filter(
-        (device) => device.kind === 'videoinput',
-      );
-      setDevices(videoDevices);
-      if (videoDevices.length > 0 && !deviceId) {
-        setDeviceId(videoDevices[0].deviceId);
-      }
-    } catch (error) {
-      console.error('Error enumerating devices:', error);
-    }
-  }, [deviceId]);
-
-  const handleDeviceChange = useCallback((value: string) => {
-    setDeviceId(value);
-  }, []);
+  const handleDeviceChange = useCallback(
+    (value: string) => {
+      setDeviceId(value);
+    },
+    [setDeviceId],
+  );
 
   const toggleStreaming = useCallback(() => {
     if (streaming) {
@@ -59,9 +38,33 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     setShowBlendShapes((prev) => !prev);
   }, []);
 
-  useEffect(() => {
-    handleDevices();
-  }, [handleDevices]);
+  const sendLandMarkData = useCallback(() => {
+    const currentTime = Date.now();
+
+    // Ensure lastLogTimeRef.current is initialized
+    if (lastLogTimeRef.current === undefined) {
+      lastLogTimeRef.current = 0;
+    }
+
+    if (currentTime - lastLogTimeRef.current >= logInterval) {
+      try {
+        const filteredData = filterLandmark(landMarkData as LandmarksResult);
+        const dataToSend = JSON.stringify({
+          data: filteredData,
+          timestamp: currentTime,
+        });
+
+        send(dataToSend);
+
+        // Update the last log time reference
+        lastLogTimeRef.current = currentTime;
+      } catch (error) {
+        console.error('Failed to send landmark data:', error);
+      }
+    }
+  }, [landMarkData, logInterval, send]);
+
+  useInterval(sendLandMarkData, 1000, streaming);
 
   const deviceSelectorMemo = useMemo(
     () => (
@@ -73,54 +76,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     ),
     [deviceId, devices, handleDeviceChange],
   );
-
-  // Throttle function to limit the rate of function execution
-  const throttle = useCallback((func: ThrottleFunction, limit: number) => {
-    let lastFunc: NodeJS.Timeout;
-    let lastRan: number;
-    return function throttledFunction(...args: unknown[]) {
-      if (!lastRan) {
-        func(...args);
-        lastRan = Date.now();
-      } else {
-        if (lastFunc) clearTimeout(lastFunc);
-        lastFunc = setTimeout(
-          () => {
-            if (Date.now() - lastRan >= limit) {
-              func(...args);
-              lastRan = Date.now();
-            }
-          },
-          limit - (Date.now() - lastRan),
-        );
-      }
-    };
-  }, []);
-
-  const sendLandMarkData = useCallback(() => {
-    const currentTime = Date.now();
-    if (currentTime - lastLogTimeRef.current >= logInterval) {
-      console.log(landMarkData);
-      send(JSON.stringify({ landMarkData, timestamp: currentTime }));
-      lastLogTimeRef.current = currentTime;
-    }
-  }, [landMarkData, logInterval, send]);
-
-  useEffect(() => {
-    const throttledSend = throttle(sendLandMarkData, logInterval);
-    const intervalId: ReturnType<typeof setInterval> = setInterval(
-      throttledSend,
-      logInterval,
-    );
-
-    // Cleanup interval on component unmount
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [throttle, sendLandMarkData, logInterval]);
-
-  console.log('face landmark', landMarkData?.faceResults);
-  console.log('pose landmark', landMarkData?.poseResults);
 
   return (
     <>

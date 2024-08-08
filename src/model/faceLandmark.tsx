@@ -14,7 +14,7 @@ import {
 export const initializeFaceLandmarker = async () => {
   try {
     const filesetResolver = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
     );
     const faceLandmarker = await FaceLandmarker.createFromOptions(
       filesetResolver,

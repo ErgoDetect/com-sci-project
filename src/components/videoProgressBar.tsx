@@ -55,32 +55,6 @@ const VideoProgressBar: React.FC<videoProgressBarProps> = ({
 
   const filledChapter = fillChapter(chapters, maxDuration);
 
-  // Define a named throttle function
-  const throttle = useCallback(
-    (func: (...args: unknown[]) => void, limit: number) => {
-      let lastFunc: NodeJS.Timeout | undefined;
-      let lastRan: number | undefined;
-      return function throttledFunction(...args: unknown[]) {
-        if (lastRan === undefined) {
-          func(...args);
-          lastRan = Date.now();
-        } else {
-          if (lastFunc) clearTimeout(lastFunc);
-          lastFunc = setTimeout(
-            () => {
-              if (Date.now() - (lastRan as number) >= limit) {
-                func(...args);
-                lastRan = Date.now();
-              }
-            },
-            limit - (Date.now() - (lastRan as number)),
-          );
-        }
-      };
-    },
-    [],
-  );
-
   const handleBarClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       const rect = e.currentTarget.getBoundingClientRect();

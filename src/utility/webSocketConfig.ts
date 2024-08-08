@@ -6,6 +6,15 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isJSON = (str: string): boolean => {
+    try {
+      JSON.parse(str);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const initializeWebSocket = useCallback(() => {
     const socket = new WebSocket(url);
     socketRef.current = socket;
@@ -15,11 +24,11 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
     };
 
     const handleMessage = (event: MessageEvent) => {
-      try {
+      if (isJSON(event.data)) {
         const inputData = JSON.parse(event.data);
         onMessage(inputData);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+      } else {
+        // console.error('Received non-JSON message:', event.data);
       }
     };
 
@@ -32,9 +41,7 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      reconnectTimeoutRef.current = setTimeout(() => {
-        initializeWebSocket();
-      }, 5000);
+      reconnectTimeoutRef.current = setTimeout(initializeWebSocket, 5000);
     };
 
     socket.addEventListener('open', handleOpen);
