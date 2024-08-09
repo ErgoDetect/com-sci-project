@@ -33,3 +33,20 @@ export function thoracicDetection(
     return false;
   }
 }
+
+export function depthEstimation(
+  irisDiameter: number,
+  forcalLength: number,
+  imageWidth: number,
+  imageHeigh: number,
+): any {
+  let real_iris_diameter = 1.17;
+  let size;
+  if (imageWidth < imageHeigh) {
+    size = imageWidth;
+  } else {
+    size = imageHeigh;
+  }
+  let depth = (forcalLength * real_iris_diameter * size) / irisDiameter;
+  return depth;
+}
