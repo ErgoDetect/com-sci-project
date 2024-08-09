@@ -34,7 +34,7 @@ export function thoracicDetection(
   }
 }
 
-export function depthDetection(
+export function depthEstimation(
   irisDiameter: number,
   forcalLength: number,
   imageWidth: number,
