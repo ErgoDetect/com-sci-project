@@ -11,7 +11,8 @@ import useInterval from '../hooks/useInterval';
 
 const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const { deviceId, devices, setDeviceId } = useDevices();
-  const { streaming, setStreaming } = useResData();
+  const { streaming, setStreaming, startCapture, setStartCapture } =
+    useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
   const { landMarkData, setResData, url } = useResData();
@@ -38,13 +39,12 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     setShowBlendShapes((prev) => !prev);
   }, []);
 
+  const toggleCapture = useCallback(() => {
+    setStartCapture((prev) => !prev);
+  }, [setStartCapture]);
+
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
-
-    // Ensure lastLogTimeRef.current is initialized
-    if (lastLogTimeRef.current === undefined) {
-      lastLogTimeRef.current = 0;
-    }
 
     if (currentTime - lastLogTimeRef.current >= logInterval) {
       try {
@@ -55,8 +55,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
         });
 
         send(dataToSend);
-
-        // Update the last log time reference
         lastLogTimeRef.current = currentTime;
       } catch (error) {
         console.error('Failed to send landmark data:', error);
@@ -99,6 +97,38 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
         </Button>
         <Button onClick={toggleBlendShapes}>
           {showBlendShapes ? 'Hide Blend Shapes' : 'Show Blend Shapes'}
+        </Button>
+        <Button onClick={toggleCapture}>
+          {startCapture ? 'Stop Capture' : 'Start Capture'}
+        </Button>
+
+        {/* <Button
+          onClick={async () => {
+            console.log('Button clicked');
+            await Promise.all([
+              window.electron.ipcRenderer.invoke('play-alert-sound'),
+              window.electron.ipcRenderer.showNotification(
+                'Capture Complete',
+                'The calibration process has completed successfully.',
+              ),
+            ]);
+          }}
+        >
+          Test Sound and Badge
+        </Button> */}
+        <Button
+          onClick={async () => {
+            const title = 'Capture Complete';
+            const body = 'The calibration process has completed successfully.';
+            console.log(`Sending notification: ${title} - ${body}`);
+
+            await window.electron.ipcRenderer.invoke('show-notification', {
+              title,
+              body,
+            });
+          }}
+        >
+          Test Notification
         </Button>
       </div>
     </>

@@ -13,7 +13,6 @@ import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 
 const useVideoStream = ({
   deviceId,
-
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
@@ -48,8 +47,7 @@ const useVideoStream = ({
 
       const videoStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          deviceId,
-          width: { ideal: 1980 },
+          width: { ideal: 1920 },
           height: { ideal: 1080 },
           frameRate: { ideal: 30 },
         },

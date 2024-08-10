@@ -1,7 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import isFirstRun from 'first-run';
 
-export type Channels = 'ipc-example' | 'show-modal';
+export type Channels = 'ipc-example' | 'play-alert-sound' | 'show-notification';
 
 const electronHandler = {
   ipcRenderer: {
@@ -20,8 +19,13 @@ const electronHandler = {
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
+    invoke(channel: Channels, ...args: unknown[]) {
+      return ipcRenderer.invoke(channel, ...args);
+    },
+    showNotification(title: string, body: string) {
+      return ipcRenderer.invoke('show-notification', { title, body });
+    },
   },
-  showModal: {},
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
