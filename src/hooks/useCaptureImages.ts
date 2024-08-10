@@ -128,6 +128,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
     endpointUrl,
     triggerURL,
     setStartCapture,
+    setCalibrationData,
   ]);
 
   return { capturedImages };
