@@ -1,11 +1,15 @@
+/* eslint-disable camelcase */
 // stack is numbers of frame that user not blink
-export function blinkDetection(currentData: number, stack: number): any {
+export function blinkDetection(currentData: number, stack: number): number {
+  let newStack = stack;
+
   if (currentData >= 0.3) {
-    stack = 0;
+    newStack = 0;
   } else {
-    stack = stack + 1;
+    newStack += 1;
   }
-  return stack;
+
+  return newStack;
 }
 
 // stack is numbers of frame that user near the screen than normal
@@ -13,13 +17,16 @@ export function distanceDetection(
   currentData: number,
   correctData: number,
   stack: number,
-): any {
+): number {
+  let newStack = stack;
+
   if (currentData >= correctData * 1.1) {
-    stack = stack + 1;
+    newStack += 1;
   } else {
-    stack = 0;
+    newStack = 0;
   }
-  return stack;
+
+  return newStack;
 }
 
 // if not sitting straight it's will return true
@@ -29,9 +36,8 @@ export function thoracicDetection(
 ): any {
   if (currentData >= correctData * 1.1) {
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 export function depthEstimation(
@@ -40,13 +46,13 @@ export function depthEstimation(
   imageWidth: number,
   imageHeigh: number,
 ): any {
-  let real_iris_diameter = 1.17;
+  const real_iris_diameter = 1.17;
   let size;
   if (imageWidth < imageHeigh) {
     size = imageWidth;
   } else {
     size = imageHeigh;
   }
-  let depth = (forcalLength * real_iris_diameter * size) / irisDiameter;
+  const depth = (forcalLength * real_iris_diameter * size) / irisDiameter;
   return depth;
 }
