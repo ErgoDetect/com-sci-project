@@ -38,3 +38,7 @@ declare module '*.task' {
   const content: any; // Use 'any' if you don't have a specific type for this
   export default content;
 }
+// declare module 'cv' {
+//   const cv: any;
+//   export default cv;
+// }

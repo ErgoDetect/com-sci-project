@@ -23,6 +23,8 @@ interface ResContextProps {
   >;
   streaming: boolean;
   setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
+  startCapture: boolean;
+  setStartCapture: React.Dispatch<React.SetStateAction<boolean>>;
   url: string;
 }
 
@@ -36,6 +38,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     undefined,
   );
   const [streaming, setStreaming] = useState<boolean>(false);
+  const [startCapture, setStartCapture] = useState<boolean>(false);
   const url = 'localhost:8000';
 
   // Compute debugData based on resData if needed
@@ -56,9 +59,11 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setLandMarkData,
       streaming,
       setStreaming,
+      startCapture,
+      setStartCapture,
       url,
     }),
-    [resData, debugData, landMarkData, streaming],
+    [resData, debugData, landMarkData, streaming, startCapture],
   );
 
   return (

@@ -1,5 +1,5 @@
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, Notification } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -21,6 +21,25 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
+// Add an IPC handler for playing a system beep sound
+ipcMain.handle('play-alert-sound', () => {
+  shell.beep(); // Play the system alert sound
+});
+
+ipcMain.handle('show-notification', (event, args) => {
+  const { title, body } = args;
+
+  // Logging to check if title and body are received correctly
+  console.log(`Showing notification: ${title} - ${body}`);
+
+  // Show the notification
+  if (title && body) {
+    new Notification({ title, body }).show();
+  } else {
+    console.error('Notification title or body is missing.');
+  }
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
@@ -40,7 +59,7 @@ const installExtensions = async () => {
 
   return installer
     .default(
-      extensions.map((name) => installer[name]),
+      extensions.map((name: any) => installer[name]),
       forceDownload,
     )
     .catch(console.log);
@@ -93,7 +112,6 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
-  // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
     return { action: 'deny' };
