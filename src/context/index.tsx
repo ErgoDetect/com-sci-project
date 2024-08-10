@@ -1,5 +1,3 @@
-/** @format */
-
 import React, {
   createContext,
   useContext,
@@ -25,6 +23,8 @@ interface ResContextProps {
   setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
   startCapture: boolean;
   setStartCapture: React.Dispatch<React.SetStateAction<boolean>>;
+  calibrationData: any;
+  setCalibrationData: React.Dispatch<React.SetStateAction<any>>;
   url: string;
 }
 
@@ -39,6 +39,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   );
   const [streaming, setStreaming] = useState<boolean>(false);
   const [startCapture, setStartCapture] = useState<boolean>(false);
+  const [calibrationData, setCalibrationData] = useState<any>(null); // New state for calibration data
   const url = 'localhost:8000';
 
   // Compute debugData based on resData if needed
@@ -61,9 +62,18 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setStreaming,
       startCapture,
       setStartCapture,
+      calibrationData,
+      setCalibrationData, // Include calibration data in context value
       url,
     }),
-    [resData, debugData, landMarkData, streaming, startCapture],
+    [
+      resData,
+      debugData,
+      landMarkData,
+      streaming,
+      startCapture,
+      calibrationData,
+    ], // Add calibrationData to dependencies
   );
 
   return (

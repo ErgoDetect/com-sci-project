@@ -2,7 +2,7 @@ import { useEffect, useState, RefObject } from 'react';
 import { useResData } from '../context';
 
 const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
-  const { startCapture, setStartCapture } = useResData();
+  const { startCapture, setStartCapture, setCalibrationData } = useResData();
   const captureDuration = 12000; // 12 seconds duration
   const captureFPS = 12; // 12 FPS
   const maxImageCount = Math.floor((captureDuration / 1000) * captureFPS);
@@ -88,6 +88,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
             );
             const jsonData = await jsonResponse.json();
             console.log('Calibration data:', jsonData);
+            setCalibrationData(jsonData);
 
             await window.electron.ipcRenderer.showNotification(
               'Calibrate Complete',
