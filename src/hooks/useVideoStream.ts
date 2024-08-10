@@ -21,7 +21,6 @@ const useVideoStream = ({
   const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
-  const intervalIdRef = useRef<number | undefined>(undefined);
   const { setLandMarkData, streaming } = useResData();
 
   const faceLandmarkerRef = useRef<any>(null);
@@ -53,26 +52,16 @@ const useVideoStream = ({
 
     const fallbackConstraints = [
       {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 },
-      },
-      {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        frameRate: { ideal: 30 },
-      },
-      {
-        width: { ideal: 320 },
-        height: { ideal: 240 },
-        frameRate: { ideal: 30 },
+        width: 1280,
+        height: 720,
+        frameRate: 30,
       },
     ];
 
     try {
       stopVideoStream();
 
-      let videoStream = null;
+      let videoStream: MediaProvider | null = null;
       try {
         videoStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (error) {
@@ -80,23 +69,24 @@ const useVideoStream = ({
           'High-resolution camera access failed, attempting fallback resolutions.',
         );
 
-        fallbackConstraints.some(async (fallback) => {
-          try {
-            videoStream = await navigator.mediaDevices.getUserMedia({
-              video: { ...fallback },
-              audio: false,
-            });
-            console.info(
-              `Fallback to resolution: ${fallback.width.ideal}x${fallback.height.ideal}`,
-            );
-            return true; // Stop the iteration
-          } catch (fallbackError) {
-            console.warn(
-              `Failed with resolution: ${fallback.width.ideal}x${fallback.height.ideal}`,
-            );
-            return false; // Continue to the next fallback resolution
+        await fallbackConstraints.reduce(async (acc, fallback) => {
+          await acc;
+          if (!videoStream) {
+            try {
+              videoStream = await navigator.mediaDevices.getUserMedia({
+                video: { ...fallback },
+                audio: false,
+              });
+              console.info(
+                `Fallback to resolution: ${fallback.width}x${fallback.height}`,
+              );
+            } catch (fallbackError) {
+              console.warn(
+                `Failed with resolution: ${fallback.width}x${fallback.height}`,
+              );
+            }
           }
-        });
+        }, Promise.resolve());
       }
 
       if (!videoStream) {
@@ -143,21 +133,6 @@ const useVideoStream = ({
       console.error('Error accessing camera:', error);
     }
   }, [deviceId, stopVideoStream, streaming]);
-
-  useEffect(() => {
-    if (deviceId) {
-      startVideoStream();
-    }
-
-    const intervalId = intervalIdRef.current;
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-      stopVideoStream();
-    };
-  }, [deviceId, startVideoStream, stopVideoStream]);
 
   const renderFrame = useCallback(async () => {
     const showCanvas = showCanvasRef.current;
