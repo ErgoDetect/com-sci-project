@@ -42,17 +42,69 @@ const useVideoStream = ({
       return;
     }
 
+    const constraints = {
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 30 },
+      },
+      audio: false,
+    };
+
+    const fallbackConstraints = [
+      {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 },
+      },
+      {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30 },
+      },
+      {
+        width: { ideal: 320 },
+        height: { ideal: 240 },
+        frameRate: { ideal: 30 },
+      },
+    ];
+
     try {
       stopVideoStream();
 
-      const videoStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 },
-        },
-        audio: false,
-      });
+      let videoStream = null;
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        console.warn(
+          'High-resolution camera access failed, attempting fallback resolutions.',
+        );
+
+        fallbackConstraints.some(async (fallback) => {
+          try {
+            videoStream = await navigator.mediaDevices.getUserMedia({
+              video: { ...fallback },
+              audio: false,
+            });
+            console.info(
+              `Fallback to resolution: ${fallback.width.ideal}x${fallback.height.ideal}`,
+            );
+            return true; // Stop the iteration
+          } catch (fallbackError) {
+            console.warn(
+              `Failed with resolution: ${fallback.width.ideal}x${fallback.height.ideal}`,
+            );
+            return false; // Continue to the next fallback resolution
+          }
+        });
+      }
+
+      if (!videoStream) {
+        console.error(
+          'Unable to access the camera with any supported resolution.',
+        );
+        return;
+      }
 
       videoStreamRef.current = videoStream;
       if (webcamRef.current) {
