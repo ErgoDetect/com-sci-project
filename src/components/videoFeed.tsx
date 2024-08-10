@@ -118,10 +118,8 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
         </Button> */}
         <Button
           onClick={async () => {
-            const title = 'Capture Complete';
-            const body = 'The calibration process has completed successfully.';
-            console.log(`Sending notification: ${title} - ${body}`);
-
+            const title = 'Test Notification';
+            const body = 'This is a test notification from the app.';
             await window.electron.ipcRenderer.invoke('show-notification', {
               title,
               body,
