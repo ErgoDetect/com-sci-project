@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Layout, Menu, Modal, Button, RadioChangeEvent, Radio } from 'antd';
-import { DebugData, PositionData } from '../interface/propsType';
+import { DebugData, PositionData, combineResult } from '../interface/propsType';
 import DetectionPage from '../pages/DetectionPage';
 import ResultPage from '../pages/ResultPage';
 import { VideoFeedVer1 } from '../components/videoFeed/videoFeedVer1';
@@ -11,7 +11,7 @@ import { useResData } from '../context';
 const App: React.FC = () => {
   const { Header } = Layout;
   const { resData, debugData } = useResData();
-  const [videoFeed, setVideoFeed] = useState(<VideoFeedVer1></VideoFeedVer1>);
+  const [result, setResult] = useState();
 
   // Memoize menu items
   const headerMenu = useMemo(
@@ -54,6 +54,11 @@ const App: React.FC = () => {
     [],
   );
 
+  const handleResult = (result: any) => {
+    // console.log('Received result:', result);
+    setResult(result);
+    // You can now use the result data here
+  };
   // Update drawArray on data or landmark state change
   // useEffect(() => {
   //   if (resData) {
@@ -99,10 +104,13 @@ const App: React.FC = () => {
   // ]);
   // let videoFeed;
   // let videoFeed;
+  const [videoFeed, setVideoFeed] = useState(
+    <VideoFeedVer1 onResult={handleResult}></VideoFeedVer1>,
+  );
   const onChange = (e: RadioChangeEvent) => {
     console.log(`radio checked:${e.target.value}`);
     if (e.target.value === '1') {
-      setVideoFeed(<VideoFeedVer1></VideoFeedVer1>);
+      setVideoFeed(<VideoFeedVer1 onResult={handleResult}></VideoFeedVer1>);
     } else if (e.target.value === '2') {
       setVideoFeed(<VideoFeedVer2></VideoFeedVer2>);
     }
@@ -147,7 +155,7 @@ const App: React.FC = () => {
 
       {currentMenu === '0' && (
         <>
-          <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
+          <DetectionPage combineResult={result as unknown as combineResult}>
             <Radio.Group onChange={onChange} defaultValue="1">
               <Radio.Button value="1">Version 1</Radio.Button>
               <Radio.Button value="2">Version 2</Radio.Button>

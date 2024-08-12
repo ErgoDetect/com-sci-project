@@ -5,32 +5,14 @@ import { Checkbox, Typography, Col, Row } from 'antd';
 import { PositionTabProps } from '../interface/propsType';
 import { useResData } from '../context';
 
-const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
+const PositionTab: React.FC<PositionTabProps> = ({ combineResult, mode }) => {
   const { Title, Text } = Typography;
   const { resData, debugData } = useResData();
   const positionData = resData;
   const frameTracking = debugData?.frameCount;
   const latency = debugData?.latency;
 
-  const [landmarkState, setLandmarkState] = useState({
-    showHeadLandmark: false,
-    showShoulderLandmark: false,
-  });
-
-  useEffect(() => {
-    if (onShowLandmarkChange) {
-      onShowLandmarkChange(landmarkState);
-    }
-  }, [landmarkState, onShowLandmarkChange]);
-
-  //! fix
-  // const handleCheckboxChange = (type: 'head' | 'shoulder') => (e) => {
-  //   setLandmarkState((prevState) => ({
-  //     ...prevState,
-  //     [`show${type.charAt(0).toUpperCase() + type.slice(1)}Landmark`]:
-  //       e.target.checked,
-  //   }));
-  // };
+  // console.log(combineResult);
 
   const formatCoordinate = (value?: number) =>
     value ? (Math.round(value * 100) / 100).toFixed(2) : 'No data';
@@ -38,36 +20,6 @@ const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
   return (
     <div style={{ overflowY: 'scroll', height: 450 }}>
       <Row align="middle">
-        <Col span={2}>
-          <Checkbox
-            checked={landmarkState.showHeadLandmark}
-            // onChange={handleCheckboxChange('head')}
-          />
-        </Col>
-        <Col>
-          <Title level={5} style={{ margin: 0 }}>
-            Head Position
-          </Title>
-        </Col>
-      </Row>
-      <Row>
-        <Col span={2} />
-        <Col>
-          <Text>
-            x: {formatCoordinate(positionData?.headPosition?.x)}
-            <br />
-            y: {formatCoordinate(positionData?.headPosition?.y)}
-            <br />
-          </Text>
-        </Col>
-      </Row>
-      <Row align="middle">
-        <Col span={2}>
-          <Checkbox
-            checked={landmarkState.showShoulderLandmark}
-            // onChange={handleCheckboxChange('shoulder')}
-          />
-        </Col>
         <Col>
           <Title level={5} style={{ margin: 0 }}>
             Shoulder Position
@@ -78,42 +30,80 @@ const PositionTab: React.FC<PositionTabProps> = ({ onShowLandmarkChange }) => {
         <Col span={2} />
         <Col>
           <Text>
-            Left Shoulder Position
+            x: {formatCoordinate(combineResult?.shoulderPosition.x)}
             <br />
-            x:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_left.x)}
+            y: {formatCoordinate(combineResult?.shoulderPosition.y)}
             <br />
-            y:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_left.y)}
-            <br />
-            z:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_left.z)}
-            <br />
-            Right Shoulder Position
-            <br />
-            x:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_right.x)}
-            <br />
-            y:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_right.y)}
-            <br />
-            z:{' '}
-            {formatCoordinate(positionData?.shoulderPosition?.shoulder_right.z)}
+            z: {formatCoordinate(combineResult?.shoulderPosition.z)}
             <br />
           </Text>
         </Col>
       </Row>
-      <h2>Depth</h2>
-      <p>
-        Left Iris: {formatCoordinate(positionData?.depthLeftIris)}
-        <br />
-        Right Iris: {formatCoordinate(positionData?.depthRightIris)}
-        <br />
-      </p>
-      <br />
-      Receive Frame: {frameTracking ?? 'No data'}
-      <br />
-      Latency: {latency ?? 'No data'}
+      <Row align="middle">
+        <Col>
+          <Title level={5} style={{ margin: 0 }}>
+            Blink Left
+          </Title>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={2} />
+        <Col>
+          <Text>
+            eAR: {formatCoordinate(combineResult?.blinkLeft)}
+            <br />
+          </Text>
+        </Col>
+      </Row>
+      <Row align="middle">
+        <Col>
+          <Title level={5} style={{ margin: 0 }}>
+            Blink Right
+          </Title>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={2} />
+        <Col>
+          <Text>
+            eAR: {formatCoordinate(combineResult?.blinkRight)}
+            <br />
+          </Text>
+        </Col>
+      </Row>
+
+      <Row align="middle">
+        <Col>
+          <Title level={5} style={{ margin: 0 }}>
+            Left Iris Diameter
+          </Title>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={2} />
+        <Col>
+          <Text>
+            Diameter: {formatCoordinate(combineResult?.leftIrisDiameter)}
+            <br />
+          </Text>
+        </Col>
+      </Row>
+      <Row align="middle">
+        <Col>
+          <Title level={5} style={{ margin: 0 }}>
+            Right Iris Diameter
+          </Title>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={2} />
+        <Col>
+          <Text>
+            Diameter: {formatCoordinate(combineResult?.rightIrisDiameter)}
+            <br />
+          </Text>
+        </Col>
+      </Row>
     </div>
   );
 };

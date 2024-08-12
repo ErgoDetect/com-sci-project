@@ -1,10 +1,11 @@
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 
 type WebSocketMessageHandler = (data: any) => void;
 
-const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
+const useWebSocket = (url: string, onMessage?: WebSocketMessageHandler) => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [message, setMessage] = useState<any>(null);
 
   const isJSON = (str: string): boolean => {
     try {
@@ -24,11 +25,18 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
     };
 
     const handleMessage = (event: MessageEvent) => {
+      let inputData: any = event.data;
+
       if (isJSON(event.data)) {
-        const inputData = JSON.parse(event.data);
+        inputData = JSON.parse(event.data);
+      }
+
+      // Set the received message to state
+      setMessage(inputData);
+
+      // If an external onMessage handler is provided, call it
+      if (onMessage) {
         onMessage(inputData);
-      } else {
-        // console.error('Received non-JSON message:', event.data);
       }
     };
 
@@ -80,7 +88,7 @@ const useWebSocket = (url: string, onMessage: WebSocketMessageHandler) => {
     }
   }, []);
 
-  return useMemo(() => ({ send }), [send]);
+  return useMemo(() => ({ send, message }), [send, message]);
 };
 
 export default useWebSocket;

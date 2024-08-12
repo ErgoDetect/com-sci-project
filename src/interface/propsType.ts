@@ -34,10 +34,7 @@ export interface ContainerProps {
 }
 export interface Detection {
   children?: ReactNode;
-  onShowLandmarkChange?: (newState: {
-    showHeadLandmark: boolean;
-    showShoulderLandmark: boolean;
-  }) => void;
+  combineResult: combineResult;
 }
 
 export interface InputProps {
@@ -74,10 +71,8 @@ export interface DeviceSelectorProps {
 }
 
 export interface PositionTabProps {
-  onShowLandmarkChange?: (newState: {
-    showHeadLandmark: boolean;
-    showShoulderLandmark: boolean;
-  }) => void;
+  combineResult?: combineResult;
+  mode?: number;
 }
 
 export interface VideoProgressBarChapterProps {
@@ -133,8 +128,22 @@ export interface ModalProps {
   children: React.ReactNode;
 }
 
+export interface websocketProcessData {
+  shoulderPosition: xyzPosition;
+  blinkRight: number;
+  blinkLeft: number;
+}
+
 export interface xyzPosition {
   x: number;
   y: number;
   z: number;
+}
+
+export interface combineResult {
+  shoulderPosition: xyzPosition;
+  blinkRight: number;
+  blinkLeft: number;
+  leftIrisDiameter: number;
+  rightIrisDiameter: number;
 }
