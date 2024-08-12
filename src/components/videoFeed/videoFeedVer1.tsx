@@ -6,13 +6,18 @@ import DeviceSelector from '../camera/deviceSelector';
 import WebcamDisplay from '../camera/webcamDisplay';
 import { useResData } from '../../context';
 import useDevices from '../../hooks/useDevices';
-import { filterLandmark } from '../../utility/filterLandMark';
+import { filterLandmark, getIrisDiameter } from '../../utility/filterLandMark';
 import useWebSocket from '../../utility/webSocketConfig';
 import useInterval from '../../hooks/useInterval';
 
-export const VideoFeedVer1: React.FC<videoFeedProps> = ({
+interface VideoFeedProps extends videoFeedProps {
+  onResult?: (result: any) => void;
+}
+
+export const VideoFeedVer1: React.FC<VideoFeedProps> = ({
   width,
   borderRadius,
+  onResult,
 }) => {
   const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming, startCapture, setStartCapture } =
@@ -20,7 +25,11 @@ export const VideoFeedVer1: React.FC<videoFeedProps> = ({
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
   const { landMarkData, setResData, url } = useResData();
-  const { send } = useWebSocket(`ws://${url}/landmark-results`, setResData);
+  const { send, message } = useWebSocket(
+    `ws://${url}/landmark-results`,
+    setResData,
+  );
+  const [result, setResult] = useState<any>(null);
 
   const lastLogTimeRef = useRef<number>(0);
   const logInterval = 1000;
@@ -56,11 +65,30 @@ export const VideoFeedVer1: React.FC<videoFeedProps> = ({
 
         send(dataToSend);
         lastLogTimeRef.current = currentTime;
+
+        // Ensure message is parsed only if it's a string
+        let parsedMessage;
+        if (typeof message === 'string') {
+          parsedMessage = JSON.parse(message);
+        } else {
+          parsedMessage = message;
+        }
+
+        const newResult = {
+          ...parsedMessage,
+          ...getIrisDiameter(landMarkData as LandmarksResult),
+        };
+        setResult(newResult);
+
+        // Pass the result to the parent component via the onResult callback
+        if (onResult) {
+          onResult(newResult);
+        }
       } catch (error) {
         console.error('Failed to send landmark data:', error);
       }
     }
-  }, [landMarkData, logInterval, send]);
+  }, [landMarkData, logInterval, send, message, onResult]);
 
   useInterval(sendLandMarkData, 1000, streaming);
 
