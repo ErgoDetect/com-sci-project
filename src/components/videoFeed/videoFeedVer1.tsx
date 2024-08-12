@@ -1,15 +1,19 @@
+// ต้อง calibrate ท่านั่งที่ถูกต้อง
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from 'antd';
-import { LandmarksResult, videoFeedProps } from '../interface/propsType';
-import DeviceSelector from './camera/deviceSelector';
-import WebcamDisplay from './camera/webcamDisplay';
-import { useResData } from '../context';
-import useDevices from '../hooks/useDevices';
-import { filterLandmark } from '../utility/filterLandMark';
-import useWebSocket from '../utility/webSocketConfig';
-import useInterval from '../hooks/useInterval';
+import { LandmarksResult, videoFeedProps } from '../../interface/propsType';
+import DeviceSelector from '../camera/deviceSelector';
+import WebcamDisplay from '../camera/webcamDisplay';
+import { useResData } from '../../context';
+import useDevices from '../../hooks/useDevices';
+import { filterLandmark } from '../../utility/filterLandMark';
+import useWebSocket from '../../utility/webSocketConfig';
+import useInterval from '../../hooks/useInterval';
 
-const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
+export const VideoFeedVer1: React.FC<videoFeedProps> = ({
+  width,
+  borderRadius,
+}) => {
   const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming, startCapture, setStartCapture } =
     useResData();
@@ -38,10 +42,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
   const toggleBlendShapes = useCallback(() => {
     setShowBlendShapes((prev) => !prev);
   }, []);
-
-  const toggleCapture = useCallback(() => {
-    setStartCapture((prev) => !prev);
-  }, [setStartCapture]);
 
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
@@ -98,24 +98,6 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
         <Button onClick={toggleBlendShapes}>
           {showBlendShapes ? 'Hide Blend Shapes' : 'Show Blend Shapes'}
         </Button>
-        <Button onClick={toggleCapture}>
-          {startCapture ? 'Stop Capture' : 'Start Capture'}
-        </Button>
-
-        {/* <Button
-          onClick={async () => {
-            console.log('Button clicked');
-            await Promise.all([
-              window.electron.ipcRenderer.invoke('play-alert-sound'),
-              window.electron.ipcRenderer.showNotification(
-                'Capture Complete',
-                'The calibration process has completed successfully.',
-              ),
-            ]);
-          }}
-        >
-          Test Sound and Badge
-        </Button> */}
         <Button
           onClick={async () => {
             const title = 'Test Notification';
@@ -132,5 +114,3 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     </>
   );
 };
-
-export default VideoFeed;

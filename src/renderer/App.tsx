@@ -1,15 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Layout, Menu, Modal, Button } from 'antd';
+import { Layout, Menu, Modal, Button, RadioChangeEvent, Radio } from 'antd';
 import { DebugData, PositionData } from '../interface/propsType';
 import DetectionPage from '../pages/DetectionPage';
 import ResultPage from '../pages/ResultPage';
-import VideoFeed from '../components/videoFeed';
+import { VideoFeedVer1 } from '../components/videoFeed/videoFeedVer1';
+import { VideoFeedVer2 } from '../components/videoFeed/videoFeedVer2';
 import { useResData } from '../context';
 
 // Define modal visibility and camera access state
 const App: React.FC = () => {
   const { Header } = Layout;
   const { resData, debugData } = useResData();
+  const [videoFeed, setVideoFeed] = useState(<VideoFeedVer1></VideoFeedVer1>);
 
   // Memoize menu items
   const headerMenu = useMemo(
@@ -95,6 +97,16 @@ const App: React.FC = () => {
   //   debugData?.frameCount,
   //   debugData?.latency,
   // ]);
+  // let videoFeed;
+  // let videoFeed;
+  const onChange = (e: RadioChangeEvent) => {
+    console.log(`radio checked:${e.target.value}`);
+    if (e.target.value === '1') {
+      setVideoFeed(<VideoFeedVer1></VideoFeedVer1>);
+    } else if (e.target.value === '2') {
+      setVideoFeed(<VideoFeedVer2></VideoFeedVer2>);
+    }
+  };
 
   return (
     <Layout className="Layout">
@@ -132,10 +144,17 @@ const App: React.FC = () => {
           </p>
         </Modal>
       )} */}
+
       {currentMenu === '0' && (
-        <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
-          <VideoFeed />
-        </DetectionPage>
+        <>
+          <DetectionPage onShowLandmarkChange={handleShowLandmarkChange}>
+            <Radio.Group onChange={onChange} defaultValue="1">
+              <Radio.Button value="1">Version 1</Radio.Button>
+              <Radio.Button value="2">Version 2</Radio.Button>
+            </Radio.Group>
+            {videoFeed}
+          </DetectionPage>
+        </>
       )}
       {currentMenu === '1' && <ResultPage />}
     </Layout>
