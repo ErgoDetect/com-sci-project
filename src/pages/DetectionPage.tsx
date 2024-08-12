@@ -24,13 +24,13 @@ const DetectionPage: React.FC<Detection> = ({
     headRotationZ: 0.1,
   });
 
-  const [conditionPositionData, setConditionPositionData] = useState<
-    PositionData | undefined
-  >(undefined);
+  // const [conditionPositionData, setConditionPositionData] = useState<
+  //   PositionData | undefined
+  // >(undefined);
 
-  const setPositionData = () => {
-    setConditionPositionData(positionData);
-  };
+  // const setPositionData = () => {
+  //   setConditionPositionData(positionData);
+  // };
 
   const handleSliderChange = useCallback((key: string, value: number) => {
     setSliderValues((prevValues) => ({
@@ -124,28 +124,28 @@ const DetectionPage: React.FC<Detection> = ({
     token: { colorBgContainer },
   } = theme.useToken();
 
-  useEffect(() => {
-    const checkPositionChange = () => {
-      if (conditionPositionData && positionData) {
-        const positionChanged =
-          Math.abs(
-            positionData.headPosition.x - conditionPositionData.headPosition.x,
-          ) > sliderValues.headRotationX;
+  // useEffect(() => {
+  //   const checkPositionChange = () => {
+  //     if (conditionPositionData && positionData) {
+  //       const positionChanged =
+  //         Math.abs(
+  //           positionData.headPosition.x - conditionPositionData.headPosition.x,
+  //         ) > sliderValues.headRotationX;
 
-        if (positionChanged) {
-          console.info('Position changed');
-        }
-      }
-    };
+  //       if (positionChanged) {
+  //         console.info('Position changed');
+  //       }
+  //     }
+  //   };
 
-    checkPositionChange();
-  }, [conditionPositionData, positionData, sliderValues]);
+  //   checkPositionChange();
+  // }, [conditionPositionData, positionData, sliderValues]);
 
   return (
     <Content className="Content">
       <Layout style={{ height: '100%' }}>
         <Content style={{ padding: '10px' }}>
-          <Button onClick={setPositionData}>Set</Button>
+          {/* <Button onClick={setPositionData}>Set</Button> */}
           <div
             style={{
               display: 'grid',
