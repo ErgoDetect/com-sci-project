@@ -39,8 +39,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   );
   const [streaming, setStreaming] = useState<boolean>(false);
   const [startCapture, setStartCapture] = useState<boolean>(false);
-  const [calibrationData, setCalibrationData] = useState<any>(null); // New state for calibration data
-  const url = 'localhost:8000';
+  const [calibrationData, setCalibrationData] = useState<any>(null);
+  // const url = 'localhost:8000';
+  const url = '192.168.1.56:8000';
 
   // Compute debugData based on resData if needed
   const debugData = useMemo(() => {

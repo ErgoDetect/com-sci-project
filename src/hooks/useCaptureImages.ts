@@ -2,12 +2,11 @@ import { useEffect, useState, RefObject } from 'react';
 import { useResData } from '../context';
 
 const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
-  const { startCapture, setStartCapture, setCalibrationData } = useResData();
+  const { startCapture, setStartCapture, setCalibrationData, url } =
+    useResData();
   const captureDuration = 12000; // 12 seconds duration
   const captureFPS = 12; // 12 FPS
   const maxImageCount = Math.floor((captureDuration / 1000) * captureFPS);
-  const endpointUrl = 'http://localhost:8000/upload-images'; // Adjusted for batch upload
-  const triggerURL = 'http://localhost:8000/trigger-calibration';
   const [capturedImages, setCapturedImages] = useState<Blob[]>([]); // Store captured images
 
   useEffect(() => {
@@ -55,7 +54,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           formData.append('files', image, `calibration_${index + 1}.png`); // Changed 'file' to 'files'
         });
 
-        const response = await fetch(endpointUrl, {
+        const response = await fetch(`http://${url}/upload-images`, {
           method: 'POST',
           body: formData,
         });
@@ -68,9 +67,12 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           );
         } else {
           // Trigger calibration after all images are uploaded
-          const calibrationResponse = await fetch(triggerURL, {
-            method: 'POST',
-          });
+          const calibrationResponse = await fetch(
+            `http://${url}/trigger-calibration`,
+            {
+              method: 'POST',
+            },
+          );
 
           if (!calibrationResponse.ok) {
             console.error(
@@ -84,7 +86,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
 
             // Fetch the calibration_data.json file
             const jsonResponse = await fetch(
-              `http://localhost:8000/download/${data.calibration_file.split('/').pop()}`, // Extracts the filename from the path
+              `http://${url}/download/${data.calibration_file.split('/').pop()}`, // Extracts the filename from the path
             );
             const jsonData = await jsonResponse.json();
             console.log('Calibration data:', jsonData);
@@ -125,10 +127,9 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
     captureDuration,
     maxImageCount,
     videoRef,
-    endpointUrl,
-    triggerURL,
     setStartCapture,
     setCalibrationData,
+    url,
   ]);
 
   return { capturedImages };
