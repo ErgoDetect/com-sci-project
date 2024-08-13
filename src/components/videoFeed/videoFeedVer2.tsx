@@ -1,15 +1,19 @@
+// ต้อง calibrate ด้วย checkerborad เพื่อหา focal length
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from 'antd';
-import { LandmarksResult, videoFeedProps } from '../interface/propsType';
-import DeviceSelector from './camera/deviceSelector';
-import WebcamDisplay from './camera/webcamDisplay';
-import { useResData } from '../context';
-import useDevices from '../hooks/useDevices';
-import { filterLandmark } from '../utility/filterLandMark';
-import useWebSocket from '../utility/webSocketConfig';
-import useInterval from '../hooks/useInterval';
+import { LandmarksResult, videoFeedProps } from '../../interface/propsType';
+import DeviceSelector from '../camera/deviceSelector';
+import WebcamDisplay from '../camera/webcamDisplay';
+import { useResData } from '../../context';
+import useDevices from '../../hooks/useDevices';
+import { filterLandmark } from '../../utility/filterLandMark';
+import useWebSocket from '../../utility/webSocketConfig';
+import useInterval from '../../hooks/useInterval';
 
-const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
+export const VideoFeedVer2: React.FC<videoFeedProps> = ({
+  width,
+  borderRadius,
+}) => {
   const { deviceId, devices, setDeviceId } = useDevices();
   const { streaming, setStreaming, startCapture, setStartCapture } =
     useResData();
@@ -132,5 +136,3 @@ const VideoFeed: React.FC<videoFeedProps> = ({ width, borderRadius }) => {
     </>
   );
 };
-
-export default VideoFeed;
