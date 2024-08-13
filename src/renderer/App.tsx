@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Layout, Menu, Modal, Button, Radio, RadioChangeEvent } from 'antd';
 import DetectionPage from '../pages/DetectionPage';
 import ResultPage from '../pages/ResultPage';
 import VideoFeedVer1 from '../components/videoFeed/videoFeedVer1';
 import VideoFeedVer2 from '../components/videoFeed/videoFeedVer2';
+import { useResData } from '../context';
 
 const { Header } = Layout;
 
@@ -39,6 +40,36 @@ const App: React.FC = () => {
   });
 
   const [videoFeedVersion, setVideoFeedVersion] = useState<'1' | '2'>('1');
+  const { calibrationData, setCalibrationData } = useResData();
+  // Load calibration data when the app starts
+  useEffect(() => {
+    const loadCalibrationData = async () => {
+      try {
+        // Get the path to the hidden calibration data file
+        const filePath = await window.electron.fs.getUserDataPath();
+
+        // Check if the file exists
+        const fileExists = await window.electron.fs.fileExists(filePath);
+
+        if (fileExists) {
+          // Read the file if it exists
+          const data = await window.electron.fs.readFile(filePath);
+
+          // Parse the JSON data and set it to state
+          setCalibrationData(JSON.parse(data));
+
+          console.log('Calibration data loaded successfully');
+        } else {
+          console.log('Calibration data file does not exist');
+        }
+      } catch (error) {
+        console.error('Failed to load calibration data:', error);
+      }
+    };
+
+    // Call the function to load the calibration data
+    loadCalibrationData();
+  }, [setCalibrationData]); // Only run on mount
 
   const handleShowLandmarkChange = useCallback(
     (updatedState: LandmarkState) => {
@@ -58,6 +89,8 @@ const App: React.FC = () => {
   const videoFeed = useMemo(() => {
     return videoFeedVersion === '1' ? <VideoFeedVer1 /> : <VideoFeedVer2 />;
   }, [videoFeedVersion]);
+
+  console.log(calibrationData);
 
   return (
     <Layout className="Layout">

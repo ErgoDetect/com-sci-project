@@ -48,8 +48,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [combineResult, setCombineResult] = useState<CombineResult | undefined>(
     undefined,
   );
-  const url = 'localhost:8000';
-  // const url = '192.168.1.56:8000';
+  const url = process.env.SEVER_URL || 'localhost:8000';
 
   const debugData = useMemo(() => {
     if (resData) {
@@ -83,6 +82,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       startCapture,
       calibrationData,
       combineResult,
+      url,
     ], // Add calibrationData to dependencies
   );
 

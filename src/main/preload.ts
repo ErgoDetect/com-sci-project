@@ -11,7 +11,6 @@ const electronHandler = {
       const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
         func(...args);
       ipcRenderer.on(channel, subscription);
-
       return () => {
         ipcRenderer.removeListener(channel, subscription);
       };
@@ -24,6 +23,20 @@ const electronHandler = {
     },
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
+    },
+  },
+  fs: {
+    getUserDataPath(): Promise<string> {
+      return ipcRenderer.invoke('get-user-data-path');
+    },
+    writeFile(filePath: string, data: string): Promise<void> {
+      return ipcRenderer.invoke('write-file', filePath, data);
+    },
+    readFile(filePath: string): Promise<string> {
+      return ipcRenderer.invoke('read-file', filePath);
+    },
+    fileExists(filePath: string): Promise<boolean> {
+      return ipcRenderer.invoke('file-exists', filePath);
     },
   },
 };

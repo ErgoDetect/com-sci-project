@@ -1,38 +1,67 @@
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, Notification } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
+// import { autoUpdater } from 'electron-updater';
+// import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
+import fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+// Handle getting the user data path securely
+ipcMain.handle('get-user-data-path', () => {
+  // Get the path to the user data directory
+  const userDataPath = app.getPath('userData');
+
+  // Ensure the user data directory exists
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
+
+  // Define the path to the hidden calibration data file
+  const calibrationFilePath = path.join(userDataPath, 'calibrationData.json');
+
+  // Hide the file on Windows
+  if (process.platform === 'win32') {
+    require('child_process').execSync(`attrib +h ${calibrationFilePath}`);
+  }
+
+  // On Unix-like systems (macOS, Linux), hide the file by prefixing with a dot
+  if (process.platform !== 'win32') {
+    const hiddenFilePath = path.join(userDataPath, '.calibrationData.json');
+    if (fs.existsSync(calibrationFilePath)) {
+      fs.renameSync(calibrationFilePath, hiddenFilePath);
+    }
+    return hiddenFilePath;
+  }
+
+  return calibrationFilePath;
 });
 
-// Add an IPC handler for playing a system beep sound
+// Handle writing to a file securely
+ipcMain.handle('write-file', (event, filePath: string, data: string) => {
+  fs.writeFileSync(filePath, data, 'utf8');
+  return true;
+});
+
+// Handle reading from a file
+ipcMain.handle('read-file', (event, filePath: string) => {
+  return fs.readFileSync(filePath, 'utf8');
+});
+
+// Handle checking if a file exists
+ipcMain.handle('file-exists', (event, filePath: string) => {
+  return fs.existsSync(filePath);
+});
+
+// Handle playing alert sound
 ipcMain.handle('play-alert-sound', () => {
-  shell.beep(); // Play the system alert sound
+  shell.beep();
 });
 
+// Handle showing notifications
 ipcMain.handle('show-notification', (event, args) => {
   const { title, body } = args;
-
-  // Logging to check if title and body are received correctly
-  console.log(`Showing notification: ${title} - ${body}`);
-
-  // Show the notification
   if (title && body) {
     new Notification({ title, body }).show();
   } else {
@@ -118,7 +147,7 @@ const createWindow = async () => {
   });
 
   // Remove this if your app does not use auto updates
-  new AppUpdater();
+  // new AppUpdater();
 };
 
 app.on('window-all-closed', () => {

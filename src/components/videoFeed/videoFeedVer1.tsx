@@ -9,7 +9,7 @@ import useSendLandmarkData from '../../hooks/useSendLandMarkData';
 
 const VideoFeedVer1: React.FC<VideoFeedProps> = ({ width, borderRadius }) => {
   const { deviceId, devices, setDeviceId } = useDevices();
-  const { streaming, setStreaming } = useResData();
+  const { streaming, setStreaming, url } = useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
 
@@ -42,6 +42,41 @@ const VideoFeedVer1: React.FC<VideoFeedProps> = ({ width, borderRadius }) => {
     ),
     [deviceId, devices, handleDeviceChange],
   );
+  const handleDownload = async () => {
+    try {
+      // Fetch the calibration data from the server
+      const response = await fetch(
+        `http://${url}/download/calibration_data.json`,
+      );
+
+      if (!response.ok) {
+        console.error('Failed to download calibration data:', response.status);
+        throw new Error('Download failed');
+      }
+
+      // Read the response data as text (assuming JSON format)
+      const calibrationData = await response.text();
+
+      // Get the secure path to save the calibration data on the user's device
+      const savePath = await window.electron.fs.getUserDataPath();
+
+      // Write the calibration data to the file in a hidden directory
+      await window.electron.fs.writeFile(savePath, calibrationData);
+
+      console.log(`Calibration data successfully saved to ${savePath}`);
+    } catch (error: any) {
+      console.error(
+        'Error downloading or saving calibration data:',
+        error.message,
+      );
+
+      // Optional: Show a user-friendly notification in case of failure
+      await window.electron.ipcRenderer.showNotification(
+        'Download Error',
+        'Failed to download and save calibration data. Please try again.',
+      );
+    }
+  };
 
   return (
     <>
@@ -66,18 +101,7 @@ const VideoFeedVer1: React.FC<VideoFeedProps> = ({ width, borderRadius }) => {
         <Button onClick={toggleBlendShapes}>
           {showBlendShapes ? 'Hide Blend Shapes' : 'Show Blend Shapes'}
         </Button>
-        <Button
-          onClick={async () => {
-            const title = 'Test Notification';
-            const body = 'This is a test notification from the app.';
-            await window.electron.ipcRenderer.invoke('show-notification', {
-              title,
-              body,
-            });
-          }}
-        >
-          Test Notification
-        </Button>
+        <Button onClick={handleDownload}>Test Download Result</Button>
       </div>
     </>
   );
