@@ -34,24 +34,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     };
   }, [deviceId, startVideoStream, stopVideoStream]);
 
-  // Ensures the video is playing before capturing
-  // useEffect(() => {
-  //   const video = webcamRef.current;
-
-  //   if (video) {
-  //     const onLoadedData = () => {
-  //       console.log('Video is playing and ready');
-  //     };
-
-  //     video.addEventListener('loadeddata', onLoadedData);
-
-  //     return () => {
-  //       video.removeEventListener('loadeddata', onLoadedData);
-  //     };
-  //   }
-  //   return undefined;
-  // }, [webcamRef, startCapture]);
-
   return (
     <div
       style={{ position: 'relative', width, borderRadius, overflow: 'hidden' }}
@@ -63,7 +45,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
           height: 'auto',
           borderRadius,
           transform: 'rotateY(180deg)',
-          position: 'relative', // Set relative to parent container
+          position: 'relative',
         }}
       />
       {streaming && (
@@ -74,7 +56,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
             height: 'auto',
             borderRadius,
             transform: 'rotateY(180deg)',
-            position: 'absolute', // Overlay the canvas on the video
+            position: 'absolute',
             top: 0,
             left: 0,
           }}

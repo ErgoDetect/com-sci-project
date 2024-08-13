@@ -1,5 +1,3 @@
-/** @format */
-
 import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { Col, Row, Typography } from 'antd';
@@ -19,7 +17,7 @@ const ResultPage: React.FC = () => {
     async function loadVideo() {
       try {
         const video =
-          await 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
+          'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
         setVideoUrl(video);
       } catch (error) {
         console.error('Error loading video:', error);
@@ -29,20 +27,13 @@ const ResultPage: React.FC = () => {
     loadVideo();
   }, []);
 
-  // const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  // 	const newPlayed = parseFloat(e.target.value);
-  // 	setPlayed(newPlayed);
-  // 	if (playerRef.current) {
-  // 		playerRef.current.seekTo(newPlayed, "fraction");
-  // 	}
-  // };
-
   const handleProgress = (state: { played: number }) => {
     setPlayed(state.played);
   };
 
-  const handleDuration = (durations: number) => {
-    setDuration(durations);
+  const handleDuration = (videoDuration: number) => {
+    // Renamed to avoid no-shadow error
+    setDuration(videoDuration);
   };
 
   const maxDuration = 200;
@@ -143,12 +134,6 @@ const ResultPage: React.FC = () => {
             highlightColor="#1677ff"
             dotColor="#001d66"
           />
-        </Col>
-      </Row>
-      <Row>
-        <Col span={4} />
-        <Col span={20}>
-          <Text>Times: , Average Duration : </Text>
         </Col>
       </Row>
     </div>

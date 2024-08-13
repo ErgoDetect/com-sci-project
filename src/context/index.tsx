@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from 'react';
 import {
+  CombineResult,
   DebugData,
   LandmarksResult,
   PositionData,
@@ -25,6 +26,10 @@ interface ResContextProps {
   setStartCapture: React.Dispatch<React.SetStateAction<boolean>>;
   calibrationData: any;
   setCalibrationData: React.Dispatch<React.SetStateAction<any>>;
+  combineResult: CombineResult | undefined;
+  setCombineResult: React.Dispatch<
+    React.SetStateAction<CombineResult | undefined>
+  >;
   url: string;
 }
 
@@ -40,13 +45,14 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [streaming, setStreaming] = useState<boolean>(false);
   const [startCapture, setStartCapture] = useState<boolean>(false);
   const [calibrationData, setCalibrationData] = useState<any>(null);
-  // const url = 'localhost:8000';
-  const url = '192.168.1.56:8000';
+  const [combineResult, setCombineResult] = useState<CombineResult | undefined>(
+    undefined,
+  );
+  const url = 'localhost:8000';
+  // const url = '192.168.1.56:8000';
 
-  // Compute debugData based on resData if needed
   const debugData = useMemo(() => {
     if (resData) {
-      // Example conversion, adjust according to actual DebugData definition
       return { ...resData } as unknown as DebugData;
     }
     return undefined;
@@ -64,7 +70,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       startCapture,
       setStartCapture,
       calibrationData,
-      setCalibrationData, // Include calibration data in context value
+      setCalibrationData,
+      combineResult,
+      setCombineResult,
       url,
     }),
     [
@@ -74,6 +82,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       streaming,
       startCapture,
       calibrationData,
+      combineResult,
     ], // Add calibrationData to dependencies
   );
 

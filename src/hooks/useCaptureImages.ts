@@ -7,7 +7,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
   const captureDuration = 12000; // 12 seconds duration
   const captureFPS = 12; // 12 FPS
   const maxImageCount = Math.floor((captureDuration / 1000) * captureFPS);
-  const [capturedImages, setCapturedImages] = useState<Blob[]>([]); // Store captured images
+  const [capturedImages, setCapturedImages] = useState<Blob[]>([]);
 
   useEffect(() => {
     if (!startCapture) return undefined;
@@ -48,10 +48,9 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           'Image capture is complete.',
         );
 
-        // Upload all images at once
         const formData = new FormData();
         newCapturedImages.forEach((image, index) => {
-          formData.append('files', image, `calibration_${index + 1}.png`); // Changed 'file' to 'files'
+          formData.append('files', image, `calibration_${index + 1}.png`);
         });
 
         const response = await fetch(`http://${url}/upload-images`, {
@@ -66,12 +65,9 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
             await response.text(),
           );
         } else {
-          // Trigger calibration after all images are uploaded
           const calibrationResponse = await fetch(
             `http://${url}/trigger-calibration`,
-            {
-              method: 'POST',
-            },
+            { method: 'POST' },
           );
 
           if (!calibrationResponse.ok) {
@@ -84,9 +80,8 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
             const data = await calibrationResponse.json();
             console.log('Calibration result:', data);
 
-            // Fetch the calibration_data.json file
             const jsonResponse = await fetch(
-              `http://${url}/download/${data.calibration_file.split('/').pop()}`, // Extracts the filename from the path
+              `http://${url}/download/${data.calibration_file.split('/').pop()}`,
             );
             const jsonData = await jsonResponse.json();
             console.log('Calibration data:', jsonData);
@@ -113,8 +108,8 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
       console.log('Capture duration ended. Stopping image capture.');
       if (intervalId) clearInterval(intervalId);
       setStartCapture(false);
-      onCaptureComplete(); // Trigger calibration after capture completes
-      setCapturedImages(newCapturedImages); // Set captured images after capture completes
+      onCaptureComplete();
+      setCapturedImages(newCapturedImages);
     }, captureDuration);
 
     return () => {

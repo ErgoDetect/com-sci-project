@@ -5,12 +5,12 @@ import { Checkbox, Typography, Col, Row } from 'antd';
 import { PositionTabProps } from '../interface/propsType';
 import { useResData } from '../context';
 
-const PositionTab: React.FC<PositionTabProps> = ({ combineResult, mode }) => {
+const PositionTab: React.FC<PositionTabProps> = ({ mode }) => {
   const { Title, Text } = Typography;
-  const { resData, debugData } = useResData();
-  const positionData = resData;
-  const frameTracking = debugData?.frameCount;
-  const latency = debugData?.latency;
+  const { resData, debugData, combineResult } = useResData();
+  // const positionData = resData;
+  // const frameTracking = debugData?.frameCount;
+  // const latency = debugData?.latency;
 
   // console.log(combineResult);
 
@@ -30,11 +30,11 @@ const PositionTab: React.FC<PositionTabProps> = ({ combineResult, mode }) => {
         <Col span={2} />
         <Col>
           <Text>
-            x: {formatCoordinate(combineResult?.shoulderPosition.x)}
+            x: {formatCoordinate(combineResult?.shoulderPosition?.x)}
             <br />
-            y: {formatCoordinate(combineResult?.shoulderPosition.y)}
+            y: {formatCoordinate(combineResult?.shoulderPosition?.y)}
             <br />
-            z: {formatCoordinate(combineResult?.shoulderPosition.z)}
+            z: {formatCoordinate(combineResult?.shoulderPosition?.z)}
             <br />
           </Text>
         </Col>
