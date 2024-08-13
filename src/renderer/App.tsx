@@ -64,6 +64,10 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load calibration data:', error);
+        await window.electron.ipcRenderer.showNotification(
+          'Calibration data file does not exist',
+          'Failed to load calibration data',
+        );
       }
     };
 

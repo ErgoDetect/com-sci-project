@@ -1,27 +1,33 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useResData } from '../context';
 
 type WebSocketMessageHandler = (data: any) => void;
 
-const useWebSocket = (url: string, onMessage?: WebSocketMessageHandler) => {
+const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [message, setMessage] = useState<any>(null);
+  const { url } = useResData();
+  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
 
-  const isJSON = (str: string): boolean => {
+  const isJSON = useCallback((str: string): boolean => {
     try {
       JSON.parse(str);
       return true;
     } catch {
       return false;
     }
-  };
+  }, []);
 
   const initializeWebSocket = useCallback(() => {
-    const socket = new WebSocket(url);
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const socketUrl = `${protocol}://${url}/${dest}`;
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     const handleOpen = () => {
       console.info('WebSocket connection established');
+      setReconnectAttempts(0); // Reset the reconnect attempts after a successful connection
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -31,10 +37,8 @@ const useWebSocket = (url: string, onMessage?: WebSocketMessageHandler) => {
         inputData = JSON.parse(event.data);
       }
 
-      // Set the received message to state
       setMessage(inputData);
 
-      // If an external onMessage handler is provided, call it
       if (onMessage) {
         onMessage(inputData);
       }
@@ -49,7 +53,13 @@ const useWebSocket = (url: string, onMessage?: WebSocketMessageHandler) => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      reconnectTimeoutRef.current = setTimeout(initializeWebSocket, 5000);
+      reconnectTimeoutRef.current = setTimeout(
+        () => {
+          setReconnectAttempts((prev) => prev + 1);
+          initializeWebSocket();
+        },
+        Math.min(5000 * reconnectAttempts, 30000),
+      ); // Exponential backoff
     };
 
     socket.addEventListener('open', handleOpen);
@@ -67,7 +77,7 @@ const useWebSocket = (url: string, onMessage?: WebSocketMessageHandler) => {
         socket.close();
       }
     };
-  }, [url, onMessage]);
+  }, [url, dest, onMessage, isJSON, reconnectAttempts]);
 
   useEffect(() => {
     const cleanupWebSocket = initializeWebSocket();
