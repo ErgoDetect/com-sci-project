@@ -19,6 +19,12 @@ export interface PositionData {
   // shoulderPosition: Record<number, number>;
 }
 
+export interface xyzPosition {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface ResContextType {
   resData?: PositionData;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
@@ -28,13 +34,19 @@ export interface DebugData {
   frameCount: number;
   latency: number;
 }
+export interface CombineResult {
+  shoulderPosition: xyzPosition;
+  blinkRight: number;
+  blinkLeft: number;
+  leftIrisDiameter: number;
+  rightIrisDiameter: number;
+}
 
 export interface ContainerProps {
   children: React.ReactNode;
 }
 export interface Detection {
   children?: ReactNode;
-  combineResult: combineResult;
 }
 
 export interface InputProps {
@@ -48,7 +60,7 @@ export interface DeviceProps {
   deviceId?: string;
 }
 
-export interface videoFeedProps {
+export interface VideoFeedProps {
   width?: number | string;
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
@@ -71,7 +83,7 @@ export interface DeviceSelectorProps {
 }
 
 export interface PositionTabProps {
-  combineResult?: combineResult;
+  combineResult?: CombineResult;
   mode?: number;
 }
 
@@ -132,18 +144,4 @@ export interface websocketProcessData {
   shoulderPosition: xyzPosition;
   blinkRight: number;
   blinkLeft: number;
-}
-
-export interface xyzPosition {
-  x: number;
-  y: number;
-  z: number;
-}
-
-export interface combineResult {
-  shoulderPosition: xyzPosition;
-  blinkRight: number;
-  blinkLeft: number;
-  leftIrisDiameter: number;
-  rightIrisDiameter: number;
 }

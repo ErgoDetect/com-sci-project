@@ -25,23 +25,21 @@ export function filterLandmark(landMarkData: LandmarksResult): any {
 }
 
 export function getIrisDiameter(landMarkData: LandmarksResult): any {
-  let leftIris1 = landMarkData?.faceResults
+  const leftIris1 = landMarkData?.faceResults
     ?.faceLandmarks[0][474] as xyzPosition;
-  let leftIris2 = landMarkData?.faceResults
+  const leftIris2 = landMarkData?.faceResults
     ?.faceLandmarks[0][476] as xyzPosition;
-  let rightIris1 = landMarkData?.faceResults
+  const rightIris1 = landMarkData?.faceResults
     ?.faceLandmarks[0][469] as xyzPosition;
-  let rightIris2 = landMarkData?.faceResults
+  const rightIris2 = landMarkData?.faceResults
     ?.faceLandmarks[0][471] as xyzPosition;
 
   const result = {
     leftIrisDiameter: Math.sqrt(
-      Math.pow(leftIris1.x - leftIris2.x, 2) +
-        Math.pow(leftIris1.y - leftIris2.y, 2),
+      (leftIris1.x - leftIris2.x) ** 2 + (leftIris1.y - leftIris2.y) ** 2,
     ),
     rightIrisDiameter: Math.sqrt(
-      Math.pow(rightIris1.x - rightIris2.x, 2) +
-        Math.pow(rightIris1.y - rightIris2.y, 2),
+      (rightIris1.x - rightIris2.x) ** 2 + (rightIris1.y - rightIris2.y) ** 2,
     ),
   };
   return result;

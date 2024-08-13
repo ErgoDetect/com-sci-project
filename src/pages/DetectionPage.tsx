@@ -1,20 +1,18 @@
 /** @format */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Layout, Button, Tabs, Menu, Checkbox, theme } from 'antd';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Layout, Tabs, Menu, Checkbox, theme } from 'antd';
 import { LaptopOutlined } from '@ant-design/icons';
-import { PositionData, Detection } from '../interface/propsType';
+import { Detection } from '../interface/propsType';
 import { useResData } from '../context';
 import CustomSlider from '../components/slider';
 import PositionTab from '../components/positionTab';
 import '../styles/styles.css';
-import chalk from 'chalk';
 
 const { Content, Sider } = Layout;
 
-const DetectionPage: React.FC<Detection> = ({ children, combineResult }) => {
-  const { resData } = useResData();
-  const positionData = resData;
+const DetectionPage: React.FC<Detection> = ({ children }) => {
+  const { combineResult } = useResData();
 
   const [sliderValues, setSliderValues] = useState({
     headRotationX: 0.1,
@@ -107,7 +105,7 @@ const DetectionPage: React.FC<Detection> = ({ children, combineResult }) => {
         children: <PositionTab combineResult={combineResult} />,
       },
     ],
-    [sensitiveMenu],
+    [combineResult, sensitiveMenu],
   );
 
   const {

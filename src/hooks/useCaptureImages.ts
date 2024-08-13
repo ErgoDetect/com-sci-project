@@ -2,13 +2,12 @@ import { useEffect, useState, RefObject } from 'react';
 import { useResData } from '../context';
 
 const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
-  const { startCapture, setStartCapture, setCalibrationData } = useResData();
-  const captureDuration = 12000; // 12 seconds duration
-  const captureFPS = 12; // 12 FPS
+  const { startCapture, setStartCapture, setCalibrationData, url } =
+    useResData();
+  const captureDuration = 12000;
+  const captureFPS = 12;
   const maxImageCount = Math.floor((captureDuration / 1000) * captureFPS);
-  const endpointUrl = 'http://localhost:8000/upload-images'; // Adjusted for batch upload
-  const triggerURL = 'http://localhost:8000/trigger-calibration';
-  const [capturedImages, setCapturedImages] = useState<Blob[]>([]); // Store captured images
+  const [capturedImages, setCapturedImages] = useState<Blob[]>([]);
 
   useEffect(() => {
     if (!startCapture) return undefined;
@@ -22,7 +21,6 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
       const video = videoRef.current;
       if (video && imageCount < maxImageCount) {
         const imageBitmap = await createImageBitmap(video);
-
         const canvas = document.createElement('canvas');
         canvas.width = imageBitmap.width;
         canvas.height = imageBitmap.height;
@@ -32,7 +30,6 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           const blob = await new Promise<Blob | null>((resolve) => {
             canvas.toBlob(resolve, 'image/png');
           });
-
           if (blob) {
             newCapturedImages.push(blob);
             imageCount += 1;
@@ -49,60 +46,58 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           'Image capture is complete.',
         );
 
-        // Upload all images at once
         const formData = new FormData();
         newCapturedImages.forEach((image, index) => {
-          formData.append('files', image, `calibration_${index + 1}.png`); // Changed 'file' to 'files'
+          formData.append('files', image, `calibration_${index + 1}.png`);
         });
 
-        const response = await fetch(endpointUrl, {
+        const uploadResponse = await fetch(`http://${url}/upload-images`, {
           method: 'POST',
           body: formData,
         });
 
-        if (!response.ok) {
-          console.error(
-            'Failed to upload images:',
-            response.status,
-            await response.text(),
-          );
-        } else {
-          // Trigger calibration after all images are uploaded
-          const calibrationResponse = await fetch(triggerURL, {
-            method: 'POST',
-          });
-
-          if (!calibrationResponse.ok) {
-            console.error(
-              'Failed to calibrate camera:',
-              calibrationResponse.status,
-              await calibrationResponse.text(),
-            );
-          } else {
-            const data = await calibrationResponse.json();
-            console.log('Calibration result:', data);
-
-            // Fetch the calibration_data.json file
-            const jsonResponse = await fetch(
-              `http://localhost:8000/download/${data.calibration_file.split('/').pop()}`, // Extracts the filename from the path
-            );
-            const jsonData = await jsonResponse.json();
-            console.log('Calibration data:', jsonData);
-            setCalibrationData(jsonData);
-
-            await window.electron.ipcRenderer.showNotification(
-              'Calibrate Complete',
-              'The calibration process has completed successfully.',
-            );
-          }
+        if (!uploadResponse.ok) {
+          throw new Error('Image upload failed');
         }
+
+        const calibrationResponse = await fetch(
+          `http://${url}/trigger-calibration`,
+          {
+            method: 'POST',
+          },
+        );
+
+        if (!calibrationResponse.ok) {
+          throw new Error('Camera calibration failed');
+        }
+
+        const data = await calibrationResponse.json();
+        const jsonResponse = await fetch(
+          `http://${url}/download/${data.calibration_file.split('/').pop()}`,
+        );
+
+        if (!jsonResponse.ok) {
+          throw new Error('Download failed');
+        }
+
+        const jsonData = await jsonResponse.json();
+        console.log('Calibration data:', jsonData);
+
+        const filePath = await window.electron.fs.getUserDataPath();
+        await window.electron.fs.writeFile(filePath, JSON.stringify(jsonData));
+
+        setCalibrationData(jsonData);
+
+        await window.electron.ipcRenderer.showNotification(
+          'Calibrate Complete',
+          'The calibration process has completed successfully.',
+        );
       } catch (error) {
         console.error('Error in capture or calibration:', error);
       }
     };
 
     const intervalDuration = 1000 / captureFPS;
-
     intervalId = window.setInterval(async () => {
       await captureImage();
     }, intervalDuration);
@@ -111,8 +106,8 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
       console.log('Capture duration ended. Stopping image capture.');
       if (intervalId) clearInterval(intervalId);
       setStartCapture(false);
-      onCaptureComplete(); // Trigger calibration after capture completes
-      setCapturedImages(newCapturedImages); // Set captured images after capture completes
+      onCaptureComplete();
+      setCapturedImages(newCapturedImages);
     }, captureDuration);
 
     return () => {
@@ -125,10 +120,9 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
     captureDuration,
     maxImageCount,
     videoRef,
-    endpointUrl,
-    triggerURL,
     setStartCapture,
     setCalibrationData,
+    url,
   ]);
 
   return { capturedImages };

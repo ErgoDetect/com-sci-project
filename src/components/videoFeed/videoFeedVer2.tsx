@@ -1,29 +1,20 @@
-// ต้อง calibrate ด้วย checkerborad เพื่อหา focal length
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from 'antd';
-import { LandmarksResult, videoFeedProps } from '../../interface/propsType';
+import { VideoFeedProps } from '../../interface/propsType';
 import DeviceSelector from '../camera/deviceSelector';
 import WebcamDisplay from '../camera/webcamDisplay';
 import { useResData } from '../../context';
 import useDevices from '../../hooks/useDevices';
-import { filterLandmark } from '../../utility/filterLandMark';
-import useWebSocket from '../../utility/webSocketConfig';
-import useInterval from '../../hooks/useInterval';
+import useSendLandmarkData from '../../hooks/useSendLandMarkData';
 
-export const VideoFeedVer2: React.FC<videoFeedProps> = ({
-  width,
-  borderRadius,
-}) => {
+const VideoFeedVer2: React.FC<VideoFeedProps> = ({ width, borderRadius }) => {
   const { deviceId, devices, setDeviceId } = useDevices();
-  const { streaming, setStreaming, startCapture, setStartCapture } =
-    useResData();
+  const { streaming, setStreaming } = useResData();
   const [showBlendShapes, setShowBlendShapes] = useState<boolean>(true);
   const frameCountRef = useRef<number>(0);
-  const { landMarkData, setResData, url } = useResData();
-  const { send } = useWebSocket(`ws://${url}/landmark-results`, setResData);
 
-  const lastLogTimeRef = useRef<number>(0);
-  const logInterval = 1000;
+  // Use the hook without combining results, as per different purpose
+  useSendLandmarkData();
 
   const handleDeviceChange = useCallback(
     (value: string) => {
@@ -42,31 +33,6 @@ export const VideoFeedVer2: React.FC<videoFeedProps> = ({
   const toggleBlendShapes = useCallback(() => {
     setShowBlendShapes((prev) => !prev);
   }, []);
-
-  const toggleCapture = useCallback(() => {
-    setStartCapture((prev) => !prev);
-  }, [setStartCapture]);
-
-  const sendLandMarkData = useCallback(() => {
-    const currentTime = Date.now();
-
-    if (currentTime - lastLogTimeRef.current >= logInterval) {
-      try {
-        const filteredData = filterLandmark(landMarkData as LandmarksResult);
-        const dataToSend = JSON.stringify({
-          data: filteredData,
-          timestamp: currentTime,
-        });
-
-        send(dataToSend);
-        lastLogTimeRef.current = currentTime;
-      } catch (error) {
-        console.error('Failed to send landmark data:', error);
-      }
-    }
-  }, [landMarkData, logInterval, send]);
-
-  useInterval(sendLandMarkData, 1000, streaming);
 
   const deviceSelectorMemo = useMemo(
     () => (
@@ -102,24 +68,6 @@ export const VideoFeedVer2: React.FC<videoFeedProps> = ({
         <Button onClick={toggleBlendShapes}>
           {showBlendShapes ? 'Hide Blend Shapes' : 'Show Blend Shapes'}
         </Button>
-        <Button onClick={toggleCapture}>
-          {startCapture ? 'Stop Capture' : 'Start Capture'}
-        </Button>
-
-        {/* <Button
-          onClick={async () => {
-            console.log('Button clicked');
-            await Promise.all([
-              window.electron.ipcRenderer.invoke('play-alert-sound'),
-              window.electron.ipcRenderer.showNotification(
-                'Capture Complete',
-                'The calibration process has completed successfully.',
-              ),
-            ]);
-          }}
-        >
-          Test Sound and Badge
-        </Button> */}
         <Button
           onClick={async () => {
             const title = 'Test Notification';
@@ -136,3 +84,5 @@ export const VideoFeedVer2: React.FC<videoFeedProps> = ({
     </>
   );
 };
+
+export default VideoFeedVer2;

@@ -1,18 +1,24 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Layout, Menu, Modal, Button, RadioChangeEvent, Radio } from 'antd';
-import { DebugData, PositionData, combineResult } from '../interface/propsType';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Layout, Menu, Modal, Button, Radio, RadioChangeEvent } from 'antd';
 import DetectionPage from '../pages/DetectionPage';
 import ResultPage from '../pages/ResultPage';
-import { VideoFeedVer1 } from '../components/videoFeed/videoFeedVer1';
-import { VideoFeedVer2 } from '../components/videoFeed/videoFeedVer2';
+import VideoFeedVer1 from '../components/videoFeed/videoFeedVer1';
+import VideoFeedVer2 from '../components/videoFeed/videoFeedVer2';
 import { useResData } from '../context';
 
-// Define modal visibility and camera access state
-const App: React.FC = () => {
-  const { Header } = Layout;
-  const { resData, debugData } = useResData();
-  const [result, setResult] = useState();
+const { Header } = Layout;
 
+interface LandmarkState {
+  showHeadLandmark: boolean;
+  showShoulderLandmark: boolean;
+}
+
+interface ModalState {
+  visible: boolean;
+  hasCameraAccess: boolean;
+}
+
+const App: React.FC = () => {
   // Memoize menu items
   const headerMenu = useMemo(
     () => [
@@ -23,98 +29,68 @@ const App: React.FC = () => {
   );
 
   const [currentMenu, setCurrentMenu] = useState<string>('0');
-  const [landmarkState, setLandmarkState] = useState<{
-    showHeadLandmark: boolean;
-    showShoulderLandmark: boolean;
-  }>({
+  const [landmarkState, setLandmarkState] = useState<LandmarkState>({
     showHeadLandmark: false,
     showShoulderLandmark: false,
   });
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [hasCameraAccess, setHasCameraAccess] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>({
+    visible: false,
+    hasCameraAccess: false,
+  });
 
-  // Handle landmark visibility changes
-  const handleShowLandmarkChange = (updatedState: {
-    showHeadLandmark: boolean;
-    showShoulderLandmark: boolean;
-  }) => {
-    setLandmarkState(updatedState);
-  };
+  const [videoFeedVersion, setVideoFeedVersion] = useState<'1' | '2'>('1');
+  const { calibrationData, setCalibrationData } = useResData();
+  // Load calibration data when the app starts
+  useEffect(() => {
+    const loadCalibrationData = async () => {
+      try {
+        // Get the path to the hidden calibration data file
+        const filePath = await window.electron.fs.getUserDataPath();
 
-  // Initialize data variables
-  const positionData = resData as PositionData | undefined;
+        // Check if the file exists
+        const fileExists = await window.electron.fs.fileExists(filePath);
 
-  // Create drawArray with memoization
-  const drawArray = useMemo(
-    () => ({
-      x: [] as number[],
-      y: [] as number[],
-    }),
+        if (fileExists) {
+          // Read the file if it exists
+          const data = await window.electron.fs.readFile(filePath);
+
+          // Parse the JSON data and set it to state
+          setCalibrationData(JSON.parse(data));
+
+          console.log('Calibration data loaded successfully');
+        } else {
+          console.log('Calibration data file does not exist');
+        }
+      } catch (error) {
+        console.error('Failed to load calibration data:', error);
+      }
+    };
+
+    // Call the function to load the calibration data
+    loadCalibrationData();
+  }, [setCalibrationData]); // Only run on mount
+
+  const handleShowLandmarkChange = useCallback(
+    (updatedState: LandmarkState) => {
+      setLandmarkState(updatedState);
+    },
     [],
   );
 
-  const handleResult = (result: any) => {
-    // console.log('Received result:', result);
-    setResult(result);
-    // You can now use the result data here
-  };
-  // Update drawArray on data or landmark state change
-  // useEffect(() => {
-  //   if (resData) {
-  //     console.log(
-  //       'data :',
-  //       resData,
-  //       'Received Frame : ',
-  //       debugData?.frameCount,
-  //       'Latency : ',
-  //       debugData?.latency.toFixed(2),
-  //       'ms',
-  //     );
+  const handleMenuClick = useCallback(({ key }: { key: string }) => {
+    setCurrentMenu(key);
+  }, []);
 
-  //     drawArray.x.length = 0; // Clear x array
-  //     drawArray.y.length = 0; // Clear y array
+  const handleRadioChange = useCallback((e: RadioChangeEvent) => {
+    setVideoFeedVersion(e.target.value as '1' | '2');
+  }, []);
 
-  //     const headPosition = positionData?.headPosition;
-  //     const shoulderPosition = positionData?.shoulderPosition;
+  const videoFeed = useMemo(() => {
+    return videoFeedVersion === '1' ? <VideoFeedVer1 /> : <VideoFeedVer2 />;
+  }, [videoFeedVersion]);
 
-  //     if (landmarkState.showHeadLandmark && headPosition) {
-  //       drawArray.x.push(headPosition.x);
-  //       drawArray.y.push(headPosition.y);
-  //     }
-
-  //     if (landmarkState.showShoulderLandmark && shoulderPosition) {
-  //       drawArray.x.push(
-  //         shoulderPosition.shoulder_left.x,
-  //         shoulderPosition.shoulder_right.x,
-  //       );
-  //       drawArray.y.push(
-  //         shoulderPosition.shoulder_left.y,
-  //         shoulderPosition.shoulder_right.y,
-  //       );
-  //     }
-  //   }
-  // }, [
-  //   resData,
-  //   landmarkState,
-  //   positionData,
-  //   drawArray,
-  //   debugData?.frameCount,
-  //   debugData?.latency,
-  // ]);
-  // let videoFeed;
-  // let videoFeed;
-  const [videoFeed, setVideoFeed] = useState(
-    <VideoFeedVer1 onResult={handleResult}></VideoFeedVer1>,
-  );
-  const onChange = (e: RadioChangeEvent) => {
-    console.log(`radio checked:${e.target.value}`);
-    if (e.target.value === '1') {
-      setVideoFeed(<VideoFeedVer1 onResult={handleResult}></VideoFeedVer1>);
-    } else if (e.target.value === '2') {
-      setVideoFeed(<VideoFeedVer2></VideoFeedVer2>);
-    }
-  };
+  console.log(calibrationData);
 
   return (
     <Layout className="Layout">
@@ -128,41 +104,38 @@ const App: React.FC = () => {
           mode="horizontal"
           selectedKeys={[currentMenu]}
           items={headerMenu}
-          onClick={({ key }) => setCurrentMenu(key)}
+          onClick={handleMenuClick}
           style={{ flex: 1, minWidth: 0 }}
         />
       </Header>
-      {/* {modalVisible && (
-        <Modal
-          visible={modalVisible}
-          title="Camera Access Required"
-          onCancel={() => setModalVisible(false)}
-          footer={[
-            <Button key="back" onClick={() => setModalVisible(false)}>
-              Cancel
-            </Button>,
-            // <Button key="submit" type="primary" onClick={requestCameraAccess}>
-            //   Request Camera Access
-            // </Button>,
-          ]}
-        >
-          <p>
-            Your application needs access to the webcam to function correctly.
-            Please grant access when prompted.
-          </p>
-        </Modal>
-      )} */}
+
+      <Modal
+        visible={modalState.visible}
+        title="Camera Access Required"
+        onCancel={() => setModalState({ ...modalState, visible: false })}
+        footer={[
+          <Button
+            key="back"
+            onClick={() => setModalState({ ...modalState, visible: false })}
+          >
+            Cancel
+          </Button>,
+        ]}
+      >
+        <p>
+          Your application needs access to the webcam to function correctly.
+          Please grant access when prompted.
+        </p>
+      </Modal>
 
       {currentMenu === '0' && (
-        <>
-          <DetectionPage combineResult={result as unknown as combineResult}>
-            <Radio.Group onChange={onChange} defaultValue="1">
-              <Radio.Button value="1">Version 1</Radio.Button>
-              <Radio.Button value="2">Version 2</Radio.Button>
-            </Radio.Group>
-            {videoFeed}
-          </DetectionPage>
-        </>
+        <DetectionPage>
+          <Radio.Group onChange={handleRadioChange} value={videoFeedVersion}>
+            <Radio.Button value="1">Version 1</Radio.Button>
+            <Radio.Button value="2">Version 2</Radio.Button>
+          </Radio.Group>
+          {videoFeed}
+        </DetectionPage>
       )}
       {currentMenu === '1' && <ResultPage />}
     </Layout>
