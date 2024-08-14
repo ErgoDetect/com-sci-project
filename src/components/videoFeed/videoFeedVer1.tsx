@@ -54,23 +54,24 @@ const VideoFeedVer1: React.FC<VideoFeedProps> = ({ width, borderRadius }) => {
         throw new Error('Download failed');
       }
 
-      // Read the response data as text (assuming JSON format)
       const calibrationData = await response.text();
 
-      // Get the secure path to save the calibration data on the user's device
       const savePath = await window.electron.fs.getUserDataPath();
+      console.log('Saving calibration data to:', savePath);
 
-      // Write the calibration data to the file in a hidden directory
+      // Write the calibration data to the file
       await window.electron.fs.writeFile(savePath, calibrationData);
 
-      console.log(`Calibration data successfully saved to ${savePath}`);
+      console.log('File saved successfully.');
+      await window.electron.ipcRenderer.showNotification(
+        'Download Success',
+        'Calibration data downloaded and saved successfully.',
+      );
     } catch (error: any) {
       console.error(
         'Error downloading or saving calibration data:',
         error.message,
       );
-
-      // Optional: Show a user-friendly notification in case of failure
       await window.electron.ipcRenderer.showNotification(
         'Download Error',
         'Failed to download and save calibration data. Please try again.',

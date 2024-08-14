@@ -30,7 +30,7 @@ interface ResContextProps {
   setCombineResult: React.Dispatch<
     React.SetStateAction<CombineResult | undefined>
   >;
-  url: string;
+  url: string | undefined;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -48,7 +48,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [combineResult, setCombineResult] = useState<CombineResult | undefined>(
     undefined,
   );
-  const url = process.env.SEVER_URL || 'localhost:8000';
+  const url = 'localhost:8000';
+  // const url = '192.168.1.56:8000';
 
   const debugData = useMemo(() => {
     if (resData) {

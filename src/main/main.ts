@@ -1,7 +1,5 @@
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, Notification } from 'electron';
-// import { autoUpdater } from 'electron-updater';
-// import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import fs from 'fs';
@@ -52,11 +50,6 @@ ipcMain.handle('read-file', (event, filePath: string) => {
 // Handle checking if a file exists
 ipcMain.handle('file-exists', (event, filePath: string) => {
   return fs.existsSync(filePath);
-});
-
-// Handle playing alert sound
-ipcMain.handle('play-alert-sound', () => {
-  shell.beep();
 });
 
 // Handle showing notifications
@@ -131,6 +124,7 @@ const createWindow = async () => {
       mainWindow.minimize();
     } else {
       mainWindow.show();
+      mainWindow.webContents.openDevTools();
     }
   });
 
@@ -147,7 +141,27 @@ const createWindow = async () => {
   });
 
   // Remove this if your app does not use auto updates
-  // new AppUpdater();
+};
+
+const showInitialNotification = () => {
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: 'Welcome!',
+      body: 'Your application is running successfully!',
+    });
+
+    notification.show();
+
+    notification.on('click', () => {
+      console.log('Notification clicked');
+    });
+
+    notification.on('close', () => {
+      console.log('Notification closed');
+    });
+  } else {
+    console.error('Notifications are not supported on this platform.');
+  }
 };
 
 app.on('window-all-closed', () => {
@@ -160,8 +174,12 @@ app
   .whenReady()
   .then(() => {
     createWindow();
+
     app.on('activate', () => {
       if (mainWindow === null) createWindow();
     });
+
+    // Show an initial notification when the app is ready
+    showInitialNotification();
   })
   .catch(console.log);
