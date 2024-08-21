@@ -49,7 +49,10 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
     };
 
     const handleClose = () => {
-      console.info('WebSocket connection closed, attempting to reconnect');
+      console.info('WebSocket connection closed');
+      // Commenting out the reconnection logic to disable it
+      /*
+      console.info('Attempting to reconnect');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -60,6 +63,7 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
         },
         Math.min(5000 * reconnectAttempts, 30000),
       ); // Exponential backoff
+      */
     };
 
     socket.addEventListener('open', handleOpen);
@@ -77,18 +81,18 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
         socket.close();
       }
     };
-  }, [url, dest, onMessage, isJSON, reconnectAttempts]);
+  }, [url, dest, onMessage, isJSON]);
 
-  useEffect(() => {
-    const cleanupWebSocket = initializeWebSocket();
+  // useEffect(() => {
+  //   const cleanupWebSocket = initializeWebSocket();
 
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      cleanupWebSocket();
-    };
-  }, [initializeWebSocket]);
+  //   return () => {
+  //     if (reconnectTimeoutRef.current) {
+  //       clearTimeout(reconnectTimeoutRef.current);
+  //     }
+  //     cleanupWebSocket();
+  //   };
+  // }, [initializeWebSocket]);
 
   const send = useCallback((data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
