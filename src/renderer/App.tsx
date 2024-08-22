@@ -1,18 +1,18 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Layout, Menu, theme } from 'antd';
+import { Layout, Menu, Switch } from 'antd';
 import { RxDashboard } from 'react-icons/rx';
 import { IoIosSettings } from 'react-icons/io';
 import SummaryPage from '../pages/SummaryPage';
 import DashboardPage from '../pages/DashboardPage';
-// import SettingPage from'../pages/SettingPage
+import SettingPage from '../pages/SettingPage';
 import { useResData } from '../context';
 
 const { Content } = Layout;
 
 const App: React.FC = () => {
   const [currentMenu, setCurrentMenu] = useState<string>('dashboard');
-  const [videoFeedVersion, setVideoFeedVersion] = useState<'1' | '2'>('1');
-  const { setCalibrationData } = useResData();
+  const { setCalibrationData, theme, toggleTheme } = useResData();
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const loadCalibrationData = async () => {
@@ -40,56 +40,110 @@ const App: React.FC = () => {
   }, [setCalibrationData]);
 
   const handleMenuClick = useCallback(({ key }: { key: string }) => {
-    setCurrentMenu(key);
+    if (key === 'setting') {
+      setIsSettingsOpen(true);
+    } else {
+      setCurrentMenu(key);
+    }
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setIsSettingsOpen(false);
+    setCurrentMenu('dashboard');
   }, []);
 
   const renderContent = useMemo(() => {
+    if (isSettingsOpen) {
+      return (
+        <SettingPage
+          theme={theme}
+          fullScreen={false}
+          showDetailedData={false}
+          toggleTheme={toggleTheme}
+          onClose={handleCloseSettings}
+        />
+      );
+    }
+
     switch (currentMenu) {
       case 'dashboard':
         return (
           <DashboardPage
-            theme="light"
+            theme={theme}
             showDetailedData={false}
             onSessionComplete={() => {}}
           />
         );
-      case 'setting':
-        // return <SettingPage />;
-        return null;
       case 'summary':
-        return <SummaryPage theme="light" />;
+        return <SummaryPage theme={theme} />;
       default:
         return (
           <DashboardPage
-            theme="light"
+            theme={theme}
             showDetailedData={false}
             onSessionComplete={() => {}}
           />
         );
     }
-  }, [currentMenu]);
+  }, [currentMenu, handleCloseSettings, isSettingsOpen, theme, toggleTheme]);
+
+  const menuItems = useMemo(
+    () => [
+      {
+        key: 'dashboard',
+        icon: <RxDashboard />,
+        label: 'Dashboard',
+      },
+      {
+        key: 'summary',
+        icon: <IoIosSettings />,
+        label: 'Summary',
+      },
+      {
+        key: 'setting',
+        icon: <IoIosSettings />,
+        label: 'Setting',
+      },
+    ],
+    [],
+  );
 
   return (
     <>
-      <Menu
-        mode="horizontal"
-        selectedKeys={[currentMenu]}
-        onClick={handleMenuClick}
-        style={{
-          backgroundColor: 'transparent',
-          borderBottom: 'none',
-        }}
-      >
-        <Menu.Item key="dashboard" icon={<RxDashboard />}>
-          Dashboard
-        </Menu.Item>
-        <Menu.Item key="summary" icon={<IoIosSettings />}>
-          Summary
-        </Menu.Item>
-        <Menu.Item key="setting" icon={<IoIosSettings />}>
-          Setting
-        </Menu.Item>
-      </Menu>
+      {!isSettingsOpen && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Menu
+            mode="horizontal"
+            selectedKeys={[currentMenu]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            style={{
+              backgroundColor: 'transparent',
+              borderBottom: 'none',
+            }}
+          />
+          {/* <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginRight: '42px',
+            }}
+          >
+            <Switch
+              checked={theme === 'dark'}
+              onChange={toggleTheme}
+              checkedChildren="Dark"
+              unCheckedChildren="Light"
+            />
+          </div> */}
+        </div>
+      )}
+
       <Content
         style={{
           width: '100%',
