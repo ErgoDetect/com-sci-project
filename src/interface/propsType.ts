@@ -137,11 +137,22 @@ export interface ModalProps {
   onClose: () => void;
   confirmText?: string;
   cancelText?: string;
-  children: React.ReactNode;
+  items: React.ReactNode;
 }
 
 export interface websocketProcessData {
   shoulderPosition: xyzPosition;
   blinkRight: number;
   blinkLeft: number;
+}
+
+export interface VideoSourceCardProps {
+  useVideoFile: boolean;
+  setUseVideoFile: (value: boolean) => void;
+  videoFile: File | null;
+  setVideoFile: (file: File) => void;
+  isPlaying: boolean;
+  handlePlayPause: () => void;
+  deviceId: string | undefined;
+  theme: 'light' | 'dark';
 }

@@ -10,11 +10,11 @@ const ReusableModal: React.FC<ModalProps> = ({
   onClose,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  children,
+  items,
 }) => {
   return (
     <Modal
-      visible={visible}
+      open={visible}
       title={title}
       onCancel={onClose}
       footer={[
@@ -30,7 +30,7 @@ const ReusableModal: React.FC<ModalProps> = ({
         ),
       ]}
     >
-      {children}
+      {items}
     </Modal>
   );
 };

@@ -12,6 +12,9 @@ import {
   PositionData,
 } from '../interface/propsType';
 
+// Define the theme type
+type Theme = 'light' | 'dark';
+
 interface ResContextProps {
   resData: PositionData | undefined;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
@@ -31,6 +34,9 @@ interface ResContextProps {
     React.SetStateAction<CombineResult | undefined>
   >;
   url: string | undefined;
+  theme: Theme;
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -48,8 +54,15 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [combineResult, setCombineResult] = useState<CombineResult | undefined>(
     undefined,
   );
-  const url = 'localhost:8000';
-  // const url = '192.168.1.56:8000';
+
+  // Theme management
+  const [theme, setTheme] = useState<Theme>('light');
+
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
+
+  const url = 'localhost:8000'; // Change this based on environment
 
   const debugData = useMemo(() => {
     if (resData) {
@@ -74,6 +87,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       combineResult,
       setCombineResult,
       url,
+      theme,
+      toggleTheme,
+      setTheme,
     }),
     [
       resData,
@@ -84,7 +100,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       calibrationData,
       combineResult,
       url,
-    ], // Add calibrationData to dependencies
+      theme,
+    ],
   );
 
   return (

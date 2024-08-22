@@ -25,7 +25,7 @@ const DeviceSelector: React.FC<DeviceSelectorProps> = ({
       onChange={onChange}
       options={deviceOptions}
       size="middle"
-      style={{ width: '9rem' }}
+      style={{ width: '100%' }}
     />
   );
 };

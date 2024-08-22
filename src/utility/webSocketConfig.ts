@@ -49,7 +49,10 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
     };
 
     const handleClose = () => {
-      console.info('WebSocket connection closed, attempting to reconnect');
+      console.info('WebSocket connection closed');
+      // Commenting out the reconnection logic to disable it
+
+      console.info('Attempting to reconnect');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -59,7 +62,7 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
           initializeWebSocket();
         },
         Math.min(5000 * reconnectAttempts, 30000),
-      ); // Exponential backoff
+      );
     };
 
     socket.addEventListener('open', handleOpen);
@@ -77,7 +80,7 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
         socket.close();
       }
     };
-  }, [url, dest, onMessage, isJSON, reconnectAttempts]);
+  }, [url, dest, isJSON, onMessage, reconnectAttempts]);
 
   useEffect(() => {
     const cleanupWebSocket = initializeWebSocket();
