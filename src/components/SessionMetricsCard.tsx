@@ -1,5 +1,3 @@
-/** @format */
-
 import React from 'react';
 import { Statistic, Button, Typography } from 'antd';
 import {
@@ -10,25 +8,23 @@ import {
   SmileOutlined,
   FrownOutlined,
 } from '@ant-design/icons';
-import { MetricsCard, Indicator } from '../styles/styles';
+import Indicator from './Indicator';
 
 interface SessionMetricsCardProps {
   sessionActive: boolean;
-  startSession: () => void;
-  stopSession: () => void;
+  toggleStreaming: () => void;
   blinkRate: number;
   goodPostureTime: number;
 }
 
 const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   sessionActive,
-  startSession,
-  stopSession,
+  toggleStreaming,
   blinkRate,
   goodPostureTime,
 }) => {
   return (
-    <MetricsCard>
+    <div>
       <Statistic
         title="Session Duration"
         value={sessionActive ? '10:23' : '00:00'}
@@ -37,14 +33,14 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           fontSize: 24,
           fontWeight: 'bold',
         }}
-        style={{ marginBottom: 24 }} // Consistent margin
+        style={{ marginBottom: 24 }}
       />
       <Button
         type={sessionActive ? 'default' : 'primary'}
         icon={sessionActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-        onClick={sessionActive ? stopSession : startSession}
+        onClick={toggleStreaming}
         style={{
-          marginBottom: 24, // Consistent margin
+          marginBottom: 24,
           width: '100%',
           borderRadius: 8,
           fontSize: 22,
@@ -62,7 +58,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           fontSize: 24,
           fontWeight: 'bold',
         }}
-        style={{ marginBottom: 24 }} // Consistent margin
+        style={{ marginBottom: 24 }}
       />
       <Typography.Title
         level={5}
@@ -75,6 +71,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
       >
         Posture Quality
       </Typography.Title>
+
       <Indicator isGood={goodPostureTime >= 50}>
         {goodPostureTime >= 50 ? (
           <>
@@ -86,7 +83,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           </>
         )}
       </Indicator>
-    </MetricsCard>
+    </div>
   );
 };
 
