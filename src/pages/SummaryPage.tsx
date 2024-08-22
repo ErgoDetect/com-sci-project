@@ -6,7 +6,13 @@ import React, {
   useMemo,
 } from 'react';
 import { Layout, Card, Typography, Tooltip, Button } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons';
+import {
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  DownloadOutlined,
+} from '@ant-design/icons';
+import JsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import ProgressCard from '../components/ProgressCard';
 
 const { Content } = Layout;
@@ -24,6 +30,7 @@ interface ExampleEvent {
 
 const Summary: React.FC<SummaryProps> = ({ theme }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoDuration, setVideoDuration] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
@@ -44,15 +51,13 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
   const getCardTitle = (type: string) => {
     switch (type) {
       case 'blink':
-        return 'Time Since Last Blink (sec)';
+        return 'Not Blinking';
       case 'sitting':
-        return 'Sitting Duration (sec)';
+        return 'Sitting Too long';
       case 'proximity':
-        return 'Sitting Too Close to Screen Duration (sec)';
-      case 'distance':
-        return 'Distance to Monitor (cm)';
+        return 'Sitting Too Close to Screen';
       case 'hunchback':
-        return 'Hunching Duration (sec)';
+        return 'Hunchback Posture ';
       default:
         return '';
     }
@@ -66,8 +71,6 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
         return 'The teal segments indicate when the sitting duration exceeded the recommended time.';
       case 'proximity':
         return 'The amber segments indicate when proximity issues were detected, i.e., when the user sat too close to the screen for extended periods.';
-      case 'distance':
-        return "The blue segments indicate the user's distance to the monitor in centimeters.";
       case 'hunchback':
         return 'The green segments indicate when hunchback posture was detected. This helps track how long the user sat with poor posture.';
       default:
@@ -99,7 +102,7 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
       setCurrentTime(time);
-      videoRef.current.play(); // Optional: Play the video after seeking
+      videoRef.current.play();
       setIsPlaying(true);
     }
   }, []);
@@ -150,7 +153,10 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
                   borderRadius: '5px',
                   transition: 'background-color 0.3s ease',
                 }}
-                onClick={() => handleSeek(event.time)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSeek(event.time);
+                }}
               />
             </Tooltip>
           );
@@ -189,8 +195,8 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
         <video
           ref={videoRef}
           style={{ width: '100%', borderRadius: '12px' }}
-          controls
           autoPlay
+          controls
           src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
         />
         <Button
@@ -214,6 +220,31 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
     [isPlaying, handlePlayPause],
   );
 
+  const handleExportPDF = async () => {
+    if (summaryRef.current) {
+      const canvas = await html2canvas(summaryRef.current);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new JsPDF();
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save('summary.pdf');
+    }
+  };
+
   return (
     <Layout
       style={{
@@ -228,6 +259,7 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
       }}
     >
       <Content
+        ref={summaryRef}
         style={{
           width: '100%',
           maxWidth: '1200px',
@@ -252,21 +284,27 @@ const Summary: React.FC<SummaryProps> = ({ theme }) => {
           {videoPlayer}
         </Card>
 
-        {['blink', 'sitting', 'proximity', 'distance', 'hunchback'].map(
-          (type) => (
-            <ProgressCard
-              key={type}
-              title={getCardTitle(type)}
-              type={type}
-              expanded={expandedCard}
-              onExpandToggle={toggleExpand}
-              progressBar={createProgressBar(type)}
-              description={getCardDescription(type)}
-              themeStyles={themeStyles}
-            />
-          ),
-        )}
+        {['blink', 'sitting', 'proximity', 'hunchback'].map((type) => (
+          <ProgressCard
+            key={type}
+            title={getCardTitle(type)}
+            type={type}
+            expanded={expandedCard}
+            onExpandToggle={toggleExpand}
+            progressBar={createProgressBar(type)}
+            description={getCardDescription(type)}
+            themeStyles={themeStyles}
+          />
+        ))}
       </Content>
+      <Button
+        type="primary"
+        icon={<DownloadOutlined />}
+        onClick={handleExportPDF}
+        style={{ marginTop: '16px' }}
+      >
+        Export to PDF
+      </Button>
     </Layout>
   );
 };

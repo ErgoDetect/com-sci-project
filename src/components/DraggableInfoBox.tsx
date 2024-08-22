@@ -1,8 +1,8 @@
 /** @format */
 
 import React, { useRef, useCallback } from 'react';
-import { SmileOutlined, FrownOutlined } from '@ant-design/icons';
-import { InfoBox, Indicator } from '../styles/styles';
+
+import { InfoBox } from '../styles/styles';
 
 interface DraggableInfoBoxProps {
   blinkRate: number;
@@ -56,24 +56,6 @@ const DraggableInfoBox: React.FC<DraggableInfoBoxProps> = ({
       <div>Proximity Alerts: {proximityAlerts}</div>
       <div>Hunchback Alerts: {badPostureAlerts}</div>
       <div>Good Posture Time: {goodPostureTime} min</div>
-
-      <Indicator isGood={blinkRate >= 20}>
-        Blink Rate: {blinkRate >= 20 ? 'Good' : 'Too Low'}
-        {blinkRate >= 20 ? (
-          <SmileOutlined style={{ marginLeft: 8 }} />
-        ) : (
-          <FrownOutlined style={{ marginLeft: 8 }} />
-        )}
-      </Indicator>
-
-      <Indicator isGood={goodPostureTime >= 50}>
-        Posture Quality: {goodPostureTime >= 50 ? 'Good' : 'Needs Improvement'}
-        {goodPostureTime >= 50 ? (
-          <SmileOutlined style={{ marginLeft: 8 }} />
-        ) : (
-          <FrownOutlined style={{ marginLeft: 8 }} />
-        )}
-      </Indicator>
     </InfoBox>
   );
 };

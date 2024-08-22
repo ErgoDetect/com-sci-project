@@ -1,6 +1,4 @@
-/** @format */
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import useDevices from '../hooks/useDevices';
 import { Container, FlexRow } from '../styles/styles';
@@ -8,11 +6,11 @@ import VideoSourceCard from '../components/VideoSourceCard';
 import SessionMetricsCard from '../components/SessionMetricsCard';
 import SessionSummaryCard from '../components/SessionSummaryCard';
 import DraggableInfoBox from '../components/DraggableInfoBox';
+import { useResData } from '../context';
 
 interface DashboardProps {
   theme: 'light' | 'dark';
   showDetailedData: boolean;
-  // detectionCompleted: boolean;
   onSessionComplete: () => void;
 }
 
@@ -21,32 +19,37 @@ const Dashboard: React.FC<DashboardProps> = ({
   showDetailedData,
   onSessionComplete,
 }) => {
-  const [sessionActive, setSessionActive] = useState(false);
-  const [goodPostureTime, setGoodPostureTime] = useState(51);
-  const [badPostureAlerts, setBadPostureAlerts] = useState(2);
-  const [blinkRate, setBlinkRate] = useState(22);
-  const [proximityAlerts, setProximityAlerts] = useState(1);
   const [useVideoFile, setUseVideoFile] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 16, y: 16 });
 
+  // Metrics state
+  const [goodPostureTime, setGoodPostureTime] = useState(51);
+  const [badPostureAlerts, setBadPostureAlerts] = useState(2);
+  const [blinkRate, setBlinkRate] = useState(22);
+  const [proximityAlerts, setProximityAlerts] = useState(1);
+
+  const frameCountRef = useRef<number>(0);
+
   const { deviceId } = useDevices();
+  const { streaming, setStreaming } = useResData();
 
-  const startSession = useCallback(() => {
-    setSessionActive(true);
-    message.success('Session started!');
-  }, []);
+  const toggleStreaming = useCallback(() => {
+    if (streaming) {
+      frameCountRef.current = 0;
+      setStreaming(false);
+      onSessionComplete();
+      message.info('Session stopped.');
+    } else {
+      setStreaming(true);
+      message.success('Session started!');
+    }
+  }, [streaming, setStreaming, onSessionComplete]);
 
-  const stopSession = useCallback(() => {
-    setSessionActive(false);
-    message.info('Session stopped.');
-    onSessionComplete();
-  }, [onSessionComplete]);
-
-  const handlePlayPause = useCallback(() => {
+  const handlePlayPause = () => {
     setIsPlaying((prev) => !prev);
-  }, []);
+  };
 
   return (
     <Container>
@@ -63,9 +66,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         />
         {!useVideoFile && (
           <SessionMetricsCard
-            sessionActive={sessionActive}
-            startSession={startSession}
-            stopSession={stopSession}
+            sessionActive={streaming}
+            toggleStreaming={toggleStreaming}
             blinkRate={blinkRate}
             goodPostureTime={goodPostureTime}
           />
@@ -75,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       {showDetailedData && (
         <DraggableInfoBox
           blinkRate={blinkRate}
-          sessionDuration={sessionActive ? '10:23' : '00:00'}
+          sessionDuration={streaming ? '10:23' : '00:00'}
           proximityAlerts={proximityAlerts}
           badPostureAlerts={badPostureAlerts}
           goodPostureTime={goodPostureTime}
@@ -86,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       {!useVideoFile && (
         <SessionSummaryCard
-          sessionActive={sessionActive}
+          sessionActive={streaming}
           goodPostureTime={goodPostureTime}
           badPostureAlerts={badPostureAlerts}
           proximityAlerts={proximityAlerts}

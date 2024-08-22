@@ -1,31 +1,20 @@
-/** @format */
-
 import React, { useEffect, useMemo } from 'react';
-import { Switch, Button } from 'antd';
+import { Switch, Upload, message } from 'antd';
 import {
-  VideoCameraOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import {
   VideoCard,
   VideoContainer,
-  UploadButton,
   PlayPauseButton,
   VideoContent,
 } from '../styles/styles';
+import { VideoSourceCardProps } from '../interface/propsType';
 import WebcamDisplay from './camera/webcamDisplay';
 
-interface VideoSourceCardProps {
-  useVideoFile: boolean;
-  setUseVideoFile: (value: boolean) => void;
-  videoFile: File | null;
-  setVideoFile: (file: File) => void;
-  isPlaying: boolean;
-  handlePlayPause: () => void;
-  deviceId: string | undefined;
-  theme: 'light' | 'dark';
-}
+const { Dragger } = Upload;
 
 const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   useVideoFile,
@@ -37,20 +26,38 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   deviceId,
   theme,
 }) => {
+  // Generate video source URL from the selected file
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
   );
 
+  // Clean up the generated video URL when the component unmounts or videoFile changes
   useEffect(() => {
     return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
   }, [videoSrc]);
 
-  const handleVideoUpload = (file: File) => {
+  // Handle video file upload
+  const handleFileUpload = (file: File): boolean => {
     setVideoFile(file);
-    return false;
+    return false; // Prevent auto-upload by Ant Design
+  };
+
+  // Handle changes in file upload state
+  const handleUploadChange = (info: any): void => {
+    const { status } = info.file;
+    if (status === 'done') {
+      message.success(`${info.file.name} file uploaded successfully.`);
+    } else if (status === 'error') {
+      message.error(`${info.file.name} file upload failed.`);
+    }
+  };
+
+  // Handle files dropped into the drag area
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    console.log('Dropped files', e.dataTransfer.files);
   };
 
   return (
@@ -69,21 +76,30 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       <VideoContent>
         {useVideoFile ? (
           <VideoContainer>
-            <UploadButton
-              beforeUpload={handleVideoUpload}
+            <Dragger
+              name="file"
+              multiple={false}
               accept="video/*"
+              beforeUpload={handleFileUpload}
               showUploadList={false}
+              onChange={handleUploadChange}
+              onDrop={handleFileDrop}
             >
-              <Button icon={<VideoCameraOutlined />}>Upload Video File</Button>
-            </UploadButton>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Click or drag video file to this area to upload
+              </p>
+              <p className="ant-upload-hint">
+                Support for a single video file upload.
+              </p>
+            </Dragger>
             {videoFile && (
-              <div style={{ position: 'relative', marginTop: 16 }}>
+              <div className="video-wrapper">
                 <video
                   src={videoSrc}
-                  style={{
-                    width: '100%',
-                    filter: theme === 'dark' ? 'brightness(0.8)' : 'none',
-                  }}
+                  className={`video-element ${theme === 'dark' ? 'dark' : ''}`}
                   controls
                 />
                 <PlayPauseButton
@@ -96,12 +112,14 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             )}
           </VideoContainer>
         ) : (
-          <WebcamDisplay
-            deviceId={deviceId}
-            width="100%"
-            borderRadius={12}
-            showBlendShapes={false}
-          />
+          <div>
+            <WebcamDisplay
+              deviceId={deviceId}
+              width="100%"
+              borderRadius={12}
+              showBlendShapes={false}
+            />
+          </div>
         )}
       </VideoContent>
     </VideoCard>

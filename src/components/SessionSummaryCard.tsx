@@ -22,6 +22,7 @@ const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
 
   return (
     <SummaryCard title="Session Summary">
+      {/* need value to display from sever */}
       <Row gutter={16}>
         <Col xs={24} sm={12} md={6}>
           <Statistic
