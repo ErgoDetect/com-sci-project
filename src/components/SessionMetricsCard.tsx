@@ -9,6 +9,7 @@ import {
   FrownOutlined,
 } from '@ant-design/icons';
 import Indicator from './Indicator';
+import { MetricsCard } from '../styles/styles';
 
 interface SessionMetricsCardProps {
   sessionActive: boolean;
@@ -24,7 +25,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   goodPostureTime,
 }) => {
   return (
-    <div>
+    <MetricsCard>
       <Statistic
         title="Session Duration"
         value={sessionActive ? '10:23' : '00:00'}
@@ -83,7 +84,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           </>
         )}
       </Indicator>
-    </div>
+    </MetricsCard>
   );
 };
 
