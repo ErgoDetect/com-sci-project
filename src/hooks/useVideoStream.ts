@@ -21,7 +21,7 @@ const useVideoStream = ({
   const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
-  const { setLandMarkData, streaming } = useResData();
+  const { setLandMarkData } = useResData();
 
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
@@ -50,44 +50,18 @@ const useVideoStream = ({
       audio: false,
     };
 
-    const fallbackConstraints = [
-      {
-        width: 1280,
-        height: 720,
-        frameRate: 30,
-      },
-    ];
-
     try {
       stopVideoStream();
 
-      let videoStream: MediaProvider | null = null;
-      try {
-        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (error) {
-        console.warn(
-          'High-resolution camera access failed, attempting fallback resolutions.',
-        );
-
-        await fallbackConstraints.reduce(async (acc, fallback) => {
-          await acc;
-          if (!videoStream) {
-            try {
-              videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { ...fallback },
-                audio: false,
-              });
-              console.info(
-                `Fallback to resolution: ${fallback.width}x${fallback.height}`,
-              );
-            } catch (fallbackError) {
-              console.warn(
-                `Failed with resolution: ${fallback.width}x${fallback.height}`,
-              );
-            }
-          }
-        }, Promise.resolve());
-      }
+      const videoStream = await navigator.mediaDevices
+        .getUserMedia(constraints)
+        .catch(() => {
+          console.warn('High-res camera access failed, attempting fallback.');
+          return navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720, frameRate: 30 },
+            audio: false,
+          });
+        });
 
       if (!videoStream) {
         console.error(
@@ -104,19 +78,17 @@ const useVideoStream = ({
           await webcamRef.current?.play();
 
           const { videoWidth, videoHeight } = webcamRef.current!;
-          if (canvasRef.current) {
-            canvasRef.current.width = videoWidth;
-            canvasRef.current.height = videoHeight;
-          }
-          if (showCanvasRef.current) {
-            showCanvasRef.current.width = videoWidth;
-            showCanvasRef.current.height = videoHeight;
-          }
+          [canvasRef.current, showCanvasRef.current].forEach((canvas) => {
+            if (canvas) {
+              canvas.width = videoWidth;
+              canvas.height = videoHeight;
+            }
+          });
 
-          if (!faceLandmarkerRef.current && streaming) {
+          if (!faceLandmarkerRef.current) {
             faceLandmarkerRef.current = await initializeFaceLandmarker();
           }
-          if (!poseLandmarkerRef.current && streaming) {
+          if (!poseLandmarkerRef.current) {
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
           if (showCanvasRef.current) {
@@ -132,7 +104,7 @@ const useVideoStream = ({
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
-  }, [deviceId, stopVideoStream, streaming]);
+  }, [deviceId, stopVideoStream]);
 
   const renderFrame = useCallback(async () => {
     const showCanvas = showCanvasRef.current;
@@ -155,6 +127,7 @@ const useVideoStream = ({
               performance.now(),
             )
           : null;
+
         const poseResults = poseLandmarkerRef.current
           ? await poseLandmarkerRef.current.detectForVideo(
               webcam,

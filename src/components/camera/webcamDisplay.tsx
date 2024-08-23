@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
-import { useResData } from '../../context';
 import useCaptureImage from '../../hooks/useCaptureImages';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
@@ -11,7 +10,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   drawingDot,
   showBlendShapes,
 }) => {
-  const { streaming } = useResData();
   const { webcamRef, showCanvasRef, startVideoStream, stopVideoStream } =
     useVideoStream({
       deviceId,
@@ -19,7 +17,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       borderRadius,
       drawingDot,
       showBlendShapes,
-      showLandmarks: true,
+      showLandmarks: false,
     });
 
   useCaptureImage(webcamRef);
@@ -48,20 +46,20 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
           position: 'relative',
         }}
       />
-      {streaming && (
-        <canvas
-          ref={showCanvasRef}
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius,
-            transform: 'rotateY(180deg)',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-          }}
-        />
-      )}
+
+      <canvas
+        ref={showCanvasRef}
+        style={{
+          width: '100%',
+          height: 'auto',
+          borderRadius,
+          transform: 'rotateY(180deg)',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      />
+
       {showBlendShapes && (
         <div style={{ height: '2px' }} id="video-blend-shapes" />
       )}

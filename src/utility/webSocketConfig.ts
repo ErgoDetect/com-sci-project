@@ -3,7 +3,15 @@ import { useResData } from '../context';
 
 type WebSocketMessageHandler = (data: any) => void;
 
-const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
+interface UseWebSocketResult {
+  send: (data: any) => void;
+  message: any;
+}
+
+const useWebSocket = (
+  dest: string,
+  onMessage?: WebSocketMessageHandler,
+): UseWebSocketResult => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [message, setMessage] = useState<any>(null);
@@ -20,14 +28,14 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
   }, []);
 
   const initializeWebSocket = useCallback(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
     const socketUrl = `${protocol}://${url}/${dest}`;
-    const socket = new WebSocket(socketUrl);
+    const socket = new WebSocket(socketUrl); // Use the constructed socketUrl
     socketRef.current = socket;
 
     const handleOpen = () => {
       console.info('WebSocket connection established');
-      setReconnectAttempts(0); // Reset the reconnect attempts after a successful connection
+      setReconnectAttempts(0);
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -50,18 +58,17 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
 
     const handleClose = () => {
       console.info('WebSocket connection closed');
-      // Commenting out the reconnection logic to disable it
 
-      console.info('Attempting to reconnect');
+      // Reconnection logic
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       reconnectTimeoutRef.current = setTimeout(
         () => {
           setReconnectAttempts((prev) => prev + 1);
-          initializeWebSocket();
+          initializeWebSocket(); // Attempt to reconnect
         },
-        Math.min(5000 * reconnectAttempts, 30000),
+        Math.min(5000 * (reconnectAttempts + 1), 30000), // Exponential backoff with a max of 30 seconds
       );
     };
 
@@ -95,7 +102,7 @@ const useWebSocket = (dest: string, onMessage?: WebSocketMessageHandler) => {
 
   const send = useCallback((data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(data);
+      socketRef.current.send(JSON.stringify(data)); // Ensure the data is sent as JSON
     } else {
       console.error('WebSocket is not open. Unable to send data.');
     }
