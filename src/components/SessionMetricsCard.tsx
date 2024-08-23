@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Statistic, Button, Typography } from 'antd';
 import {
   ClockCircleOutlined,
@@ -9,6 +9,8 @@ import {
   FrownOutlined,
 } from '@ant-design/icons';
 import Indicator from './Indicator';
+import { MetricsCard } from '../styles/styles';
+import { useResData } from '../context';
 
 interface SessionMetricsCardProps {
   sessionActive: boolean;
@@ -23,8 +25,43 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   blinkRate,
   goodPostureTime,
 }) => {
+  const { landMarkData } = useResData();
+
+  const isButtonDisabled = useMemo(() => {
+    if (!landMarkData) return true;
+    const { faceResults, poseResults } = landMarkData;
+
+    // Check face landmarks
+    if (
+      !faceResults ||
+      !faceResults.faceLandmarks ||
+      faceResults.faceLandmarks.length === 0 ||
+      faceResults.faceLandmarks.some(
+        (landmarksArray) => landmarksArray === null,
+      )
+    ) {
+      return true;
+    }
+
+    // Check pose landmarks - Ensure shoulders (index 11 and 12) have high visibility
+    if (
+      !poseResults ||
+      !poseResults.landmarks ||
+      poseResults.landmarks.length === 0 ||
+      poseResults.landmarks[0][7]?.visibility < 0.99 ||
+      poseResults.landmarks[0][8]?.visibility < 0.99 ||
+      poseResults.landmarks[0][11]?.visibility < 0.99 ||
+      poseResults.landmarks[0][12]?.visibility < 0.99
+    ) {
+      return true;
+    }
+
+    // If no null values are found, the button should not be disabled
+    return false;
+  }, [landMarkData]);
+
   return (
-    <div>
+    <MetricsCard>
       <Statistic
         title="Session Duration"
         value={sessionActive ? '10:23' : '00:00'}
@@ -36,9 +73,10 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
         style={{ marginBottom: 24 }}
       />
       <Button
-        type={sessionActive ? 'default' : 'primary'}
+        type={!sessionActive && !isButtonDisabled ? 'primary' : 'default'}
         icon={sessionActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
         onClick={toggleStreaming}
+        disabled={isButtonDisabled}
         style={{
           marginBottom: 24,
           width: '100%',
@@ -83,7 +121,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           </>
         )}
       </Indicator>
-    </div>
+    </MetricsCard>
   );
 };
 

@@ -24,21 +24,17 @@ const useSendLandmarkData = ({
     if (landMarkData && currentTime - lastLogTimeRef.current >= logInterval) {
       try {
         const filteredData = filterLandmark(landMarkData as LandmarksResult);
-        const dataToSend = JSON.stringify({
+        const dataToSend = {
           data: filteredData,
           timestamp: currentTime,
-        });
+        };
 
-        send(dataToSend);
+        send(JSON.stringify(dataToSend));
         lastLogTimeRef.current = currentTime;
 
         if (combineResults) {
-          let parsedMessage;
-          if (typeof message === 'string') {
-            parsedMessage = JSON.parse(message);
-          } else {
-            parsedMessage = message;
-          }
+          const parsedMessage =
+            typeof message === 'string' ? JSON.parse(message) : message;
 
           const newResult = {
             ...parsedMessage,

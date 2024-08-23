@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [currentMenu, setCurrentMenu] = useState<string>('dashboard');
   const { setCalibrationData, theme, toggleTheme } = useResData();
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const { landMarkData } = useResData();
 
   useEffect(() => {
     const loadCalibrationData = async () => {
@@ -107,6 +108,8 @@ const App: React.FC = () => {
     ],
     [],
   );
+
+  console.log(landMarkData);
 
   return (
     <>
