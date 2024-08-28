@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Layout, Menu, Switch } from 'antd';
 import { RxDashboard } from 'react-icons/rx';
 import { IoIosSettings } from 'react-icons/io';
+import { FaRegUserCircle } from 'react-icons/fa';
 import SummaryPage from '../pages/SummaryPage';
 import DashboardPage from '../pages/DashboardPage';
 import SettingPage from '../pages/SettingPage';
@@ -14,6 +15,18 @@ const App: React.FC = () => {
   const { setCalibrationData, theme, toggleTheme } = useResData();
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const { landMarkData } = useResData();
+
+  // useEffect(() => {
+  //   console.log('Environment Variable HELLO:', window.electron.env.HELLO);
+  //   console.log(
+  //     'Environment Variable Client ID:',
+  //     window.electron.env.GOOGLE_CLIENT_ID,
+  //   );
+  //   console.log(
+  //     'Environment Variable Client SECRET:',
+  //     window.electron.env.GOOGLE_CLIENT_SECRET,
+  //   );
+  // }, []); // The empty dependency array ensures this runs only once
 
   useEffect(() => {
     const loadCalibrationData = async () => {
@@ -77,6 +90,8 @@ const App: React.FC = () => {
         );
       case 'summary':
         return <SummaryPage theme={theme} />;
+      // case 'login':
+      //   return <Login />;
       default:
         return (
           <DashboardPage
@@ -105,11 +120,14 @@ const App: React.FC = () => {
         icon: <IoIosSettings />,
         label: 'Setting',
       },
+      // {
+      //   key: 'login',
+      //   icon: <FaRegUserCircle />,
+      //   label: 'Login',
+      // },
     ],
     [],
   );
-
-  console.log(landMarkData);
 
   return (
     <>

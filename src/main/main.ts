@@ -3,6 +3,21 @@ import { app, BrowserWindow, shell, ipcMain, Notification } from 'electron';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+const loadEnvFile = () => {
+  const rootDir = path.resolve(__dirname, '../../');
+  const envFilePath =
+    process.env.NODE_ENV === 'production'
+      ? path.join(rootDir, '.env.production')
+      : path.join(rootDir, '.env');
+
+  console.log('Loading environment variables from:', envFilePath);
+
+  dotenv.config({ path: envFilePath });
+};
+
+loadEnvFile();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -21,7 +36,7 @@ ipcMain.handle('get-user-data-path', () => {
 
   // Hide the file on Windows
   if (process.platform === 'win32') {
-    require('child_process').execSync(`attrib +h ${calibrationFilePath}`);
+    require('child_process').execSync(`attrib +h "${calibrationFilePath}`);
   }
 
   // On Unix-like systems (macOS, Linux), hide the file by prefixing with a dot
@@ -174,7 +189,6 @@ app
   .whenReady()
   .then(() => {
     createWindow();
-
     app.on('activate', () => {
       if (mainWindow === null) createWindow();
     });
