@@ -156,3 +156,11 @@ export interface VideoSourceCardProps {
   deviceId: string | undefined;
   theme: 'light' | 'dark';
 }
+
+export interface OAuthTokens {
+  access_token: string;
+  refresh_token?: string | null | undefined;
+  scope?: string;
+  token_type?: string | null | undefined;
+  expiry_date?: number | null | undefined;
+}

@@ -6,12 +6,14 @@ import { ResProvider } from '../context';
 const container = document.getElementById('root') as HTMLElement;
 const root = createRoot(container);
 
-// const clientId = window.electron.env.GOOGLE_CLIENT_ID || '';
+const clientId = window.electron.env.GOOGLE_CLIENT_ID;
 
 // if (clientId) {
 root.render(
   <ResProvider>
-    <App />
+    <GoogleOAuthProvider clientId={`${clientId}`}>
+      <App />
+    </GoogleOAuthProvider>
   </ResProvider>,
 );
 // } else {

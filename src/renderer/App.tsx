@@ -7,6 +7,7 @@ import SummaryPage from '../pages/SummaryPage';
 import DashboardPage from '../pages/DashboardPage';
 import SettingPage from '../pages/SettingPage';
 import { useResData } from '../context';
+import GoogleLogin from '../components/Login/GoogleLogin';
 
 const { Content } = Layout;
 
@@ -90,8 +91,8 @@ const App: React.FC = () => {
         );
       case 'summary':
         return <SummaryPage theme={theme} />;
-      // case 'login':
-      //   return <Login />;
+      case 'login':
+        return <GoogleLogin />;
       default:
         return (
           <DashboardPage
@@ -120,11 +121,11 @@ const App: React.FC = () => {
         icon: <IoIosSettings />,
         label: 'Setting',
       },
-      // {
-      //   key: 'login',
-      //   icon: <FaRegUserCircle />,
-      //   label: 'Login',
-      // },
+      {
+        key: 'login',
+        icon: <FaRegUserCircle />,
+        label: 'Login',
+      },
     ],
     [],
   );

@@ -1,7 +1,11 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // Define your channels
-export type Channels = 'ipc-example' | 'play-alert-sound' | 'show-notification';
+export type Channels =
+  | 'ipc-example'
+  | 'play-alert-sound'
+  | 'show-notification'
+  | 'auth-complete';
 
 const electronHandler = {
   ipcRenderer: {
@@ -24,6 +28,9 @@ const electronHandler = {
     },
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
+    },
+    openAuthWindow() {
+      return ipcRenderer.invoke('open-auth-window');
     },
   },
   fs: {
