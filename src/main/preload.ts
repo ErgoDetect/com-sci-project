@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example' | 'play-alert-sound' | 'show-notification';
+// Define your channels
+export type Channels =
+  | 'ipc-example'
+  | 'play-alert-sound'
+  | 'show-notification'
+  | 'auth-complete';
 
 const electronHandler = {
   ipcRenderer: {
@@ -24,6 +29,9 @@ const electronHandler = {
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
     },
+    openAuthWindow() {
+      return ipcRenderer.invoke('open-auth-window');
+    },
   },
   fs: {
     getUserDataPath(): Promise<string> {
@@ -38,6 +46,11 @@ const electronHandler = {
     fileExists(filePath: string): Promise<boolean> {
       return ipcRenderer.invoke('file-exists', filePath);
     },
+  },
+  env: {
+    HELLO: process.env.HELLO,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   },
 };
 

@@ -40,4 +40,5 @@ build/*
 .eslintrc.js
 
 main
+main-util
 
