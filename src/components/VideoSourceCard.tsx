@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+// VideoSourceCard.tsx
+import React, {
+  useEffect,
+  useMemo,
+  useCallback,
+  useState,
+  useRef,
+} from 'react';
 import { Switch, Upload, message } from 'antd';
 import {
   PlayCircleOutlined,
@@ -26,7 +33,11 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   handlePlayPause,
   deviceId,
   theme,
+  streaming, // streaming state passed from Dashboard
 }) => {
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoChunks = useRef<Blob[]>([]);
+
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
@@ -61,6 +72,36 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     },
     [],
   );
+
+  // Recording logic for live feed
+  useEffect(() => {
+    if (streaming && !useVideoFile) {
+      // Get the webcam stream and start recording
+      const videoElement = document.querySelector('video') as HTMLVideoElement;
+      const stream = videoElement?.srcObject as MediaStream;
+      if (stream) {
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            videoChunks.current.push(event.data);
+          }
+        };
+        mediaRecorderRef.current.start();
+      }
+    } else if (!streaming && mediaRecorderRef.current) {
+      // Stop the recording when streaming stops
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.onstop = () => {
+        const videoBlob = new Blob(videoChunks.current, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        const a = document.createElement('a');
+        a.href = videoUrl;
+        a.download = 'recorded-video.webm';
+        a.click();
+        videoChunks.current = []; // Reset chunks after saving
+      };
+    }
+  }, [streaming, useVideoFile]);
 
   useSendLandmarkData();
 

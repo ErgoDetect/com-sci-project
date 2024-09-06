@@ -155,6 +155,7 @@ export interface VideoSourceCardProps {
   handlePlayPause: () => void;
   deviceId: string | undefined;
   theme: 'light' | 'dark';
+  streaming: boolean;
 }
 
 export interface OAuthTokens {
