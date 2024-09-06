@@ -63,6 +63,11 @@ const Dashboard: React.FC<DashboardProps> = ({
           handlePlayPause={handlePlayPause}
           deviceId={deviceId}
           theme={theme}
+          streaming={streaming} // Pass streaming state
+          onRecordingStart={() =>
+            message.success('Recording started automatically')
+          }
+          onRecordingStop={() => message.success('Recording stopped')}
         />
         {!useVideoFile && (
           <SessionMetricsCard

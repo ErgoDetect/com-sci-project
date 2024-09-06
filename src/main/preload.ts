@@ -5,7 +5,8 @@ export type Channels =
   | 'ipc-example'
   | 'play-alert-sound'
   | 'show-notification'
-  | 'auth-complete';
+  | 'auth-complete'
+  | 'save-video'; // Add 'save-video' channel
 
 const electronHandler = {
   ipcRenderer: {
@@ -51,6 +52,13 @@ const electronHandler = {
     HELLO: process.env.HELLO,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  },
+  video: {
+    saveVideo(
+      buffer: Uint8Array,
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+      return ipcRenderer.invoke('save-video', buffer);
+    },
   },
 };
 
