@@ -156,6 +156,8 @@ export interface VideoSourceCardProps {
   deviceId: string | undefined;
   theme: 'light' | 'dark';
   streaming: boolean;
+  onRecordingStart?: () => void; // Optional callback when recording starts
+  onRecordingStop?: () => void; // Optional callback when recording stops
 }
 
 export interface OAuthTokens {

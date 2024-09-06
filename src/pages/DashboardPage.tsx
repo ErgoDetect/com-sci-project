@@ -1,4 +1,3 @@
-// DashboardPage.tsx
 import React, { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import useDevices from '../hooks/useDevices';
@@ -65,6 +64,10 @@ const Dashboard: React.FC<DashboardProps> = ({
           deviceId={deviceId}
           theme={theme}
           streaming={streaming} // Pass streaming state
+          onRecordingStart={() =>
+            message.success('Recording started automatically')
+          }
+          onRecordingStop={() => message.success('Recording stopped')}
         />
         {!useVideoFile && (
           <SessionMetricsCard

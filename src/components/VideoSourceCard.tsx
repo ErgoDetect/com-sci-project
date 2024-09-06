@@ -1,16 +1,15 @@
-// VideoSourceCard.tsx
 import React, {
   useEffect,
   useMemo,
   useCallback,
-  useState,
   useRef,
+  useState,
 } from 'react';
 import { Switch, Upload, message } from 'antd';
 import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
   InboxOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import {
   VideoCard,
@@ -33,21 +32,31 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   handlePlayPause,
   deviceId,
   theme,
-  streaming, // streaming state passed from Dashboard
+  streaming,
+  onRecordingStart,
+  onRecordingStop,
 }) => {
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const videoChunks = useRef<Blob[]>([]);
-
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null,
+  );
+  const [recordingStarted, setRecordingStarted] = useState(false);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
   );
 
   useEffect(() => {
+    if (streaming) {
+      handleStartRecording();
+    } else {
+      handleStopRecording();
+    }
+
     return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
-  }, [videoSrc]);
+  }, [streaming]);
 
   const handleFileUpload = useCallback(
     (file: File): boolean => {
@@ -73,35 +82,60 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     [],
   );
 
-  // Recording logic for live feed
-  useEffect(() => {
-    if (streaming && !useVideoFile) {
-      // Get the webcam stream and start recording
-      const videoElement = document.querySelector('video') as HTMLVideoElement;
-      const stream = videoElement?.srcObject as MediaStream;
-      if (stream) {
-        mediaRecorderRef.current = new MediaRecorder(stream);
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            videoChunks.current.push(event.data);
-          }
-        };
-        mediaRecorderRef.current.start();
-      }
-    } else if (!streaming && mediaRecorderRef.current) {
-      // Stop the recording when streaming stops
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.onstop = () => {
-        const videoBlob = new Blob(videoChunks.current, { type: 'video/webm' });
-        const videoUrl = URL.createObjectURL(videoBlob);
-        const a = document.createElement('a');
-        a.href = videoUrl;
-        a.download = 'recorded-video.webm';
-        a.click();
-        videoChunks.current = []; // Reset chunks after saving
-      };
+  const handleStartRecording = useCallback(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          const recorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm',
+          });
+          setMediaRecorder(recorder);
+
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              recordedChunksRef.current.push(event.data);
+            }
+          };
+
+          recorder.onstop = async () => {
+            const blob = new Blob(recordedChunksRef.current, {
+              type: 'video/webm',
+            });
+            recordedChunksRef.current = [];
+            const arrayBuffer = await blob.arrayBuffer();
+            const buffer = new Uint8Array(arrayBuffer);
+
+            try {
+              const result = await window.electron.video.saveVideo(buffer);
+              if (result.success) {
+                message.success(`Video saved to ${result.filePath}`);
+              } else {
+                message.error(`Failed to save video: ${result.error}`);
+              }
+            } catch (error) {
+              message.error(`Error occurred: ${error}`);
+            }
+          };
+
+          recorder.start();
+          setRecordingStarted(true);
+        })
+        .catch((error) => {
+          console.error('Error accessing media devices.', error);
+          message.error('Error accessing media devices.');
+        });
+    } else {
+      message.error('Media devices not supported.');
     }
-  }, [streaming, useVideoFile]);
+  }, []);
+
+  const handleStopRecording = useCallback(() => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setRecordingStarted(false);
+    }
+  }, [mediaRecorder]);
 
   useSendLandmarkData();
 
