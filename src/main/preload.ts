@@ -1,11 +1,23 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import {
+  BrowserWindow,
+  contextBridge,
+  ipcRenderer,
+  IpcRendererEvent,
+} from 'electron';
 
 // Define your channels
 export type Channels =
   | 'ipc-example'
   | 'play-alert-sound'
   | 'show-notification'
-  | 'auth-complete';
+  | 'auth-complete'
+  | 'open-auth-window'
+  | 'get-cookie'
+  | 'get-user-data-path'
+  | 'write-file'
+  | 'read-file'
+  | 'file-exists'
+  | 'open-auth-url';
 
 const electronHandler = {
   ipcRenderer: {
@@ -29,8 +41,11 @@ const electronHandler = {
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
     },
-    openAuthWindow() {
-      return ipcRenderer.invoke('open-auth-window');
+    openUrl(url: string) {
+      return ipcRenderer.invoke('open-auth-url', url);
+    },
+    getCookie() {
+      return ipcRenderer.invoke('get-cookie');
     },
   },
   fs: {

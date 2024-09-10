@@ -1,25 +1,20 @@
-import { app, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, session, shell } from 'electron';
 import { Notification } from 'electron';
-import logger from '../main-util/logger';
+import { createMainWindow } from '../main-util/windowManager';
+
 import loadEnvFile from '../main-util/env';
-import { createMainWindow, handleAppEvents } from '../main-util/windowManager';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
-import { openAuthWindow } from '../main-util/auth';
 
 const showInitialNotification = (): void => {
-  // Check if Notifications are supported (specific to Electron)
   if (Notification.isSupported()) {
-    // Create a new notification instance
     const notification = new Notification({
       title: 'Welcome!',
       body: 'Your application is running successfully!',
     });
 
-    // Show the notification
     notification.show();
 
-    // Add event listeners for click and close events
     notification.on('click', () => {
       console.log('Notification clicked');
     });
@@ -33,17 +28,34 @@ const showInitialNotification = (): void => {
 };
 
 app.whenReady().then(() => {
+  // Load any .env or necessary config files
   loadEnvFile();
+
+  // Handle any file operations needed
   handleFileOperations(ipcMain);
+
+  // Show notifications
   handleNotifications();
 
-  ipcMain.handle('open-auth-window', openAuthWindow);
-
+  // Open the main window initially
   createMainWindow();
-  showInitialNotification();
-  handleAppEvents();
 
-  // Show initial notification
+  ipcMain.handle('get-cookie', async () => {
+    try {
+      const cookies = await session.defaultSession.cookies.get({
+        url: 'http://localhost:8000',
+      });
+      return cookies;
+    } catch (error) {
+      console.error('Error fetching cookies:', error);
+      throw error;
+    }
+  });
+
+  // Listen for the `open-auth-window` IPC event
+
+  // Show an initial notification
+  showInitialNotification();
 
   if (process.env.NODE_ENV === 'production') {
     const sourceMapSupport = require('source-map-support');
@@ -55,5 +67,19 @@ app.whenReady().then(() => {
     process.env.DEBUG_PROD === 'true'
   ) {
     require('electron-debug')();
+  }
+});
+
+// Handle app quit when all windows are closed, except on macOS
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// On macOS, recreate the main window when the dock icon is clicked and there are no open windows
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createMainWindow();
   }
 });

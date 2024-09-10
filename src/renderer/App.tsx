@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Layout, Menu, Switch } from 'antd';
+import { Layout, Menu } from 'antd';
 import { RxDashboard } from 'react-icons/rx';
 import { IoIosSettings } from 'react-icons/io';
 import { FaRegUserCircle } from 'react-icons/fa';
@@ -7,27 +7,22 @@ import SummaryPage from '../pages/SummaryPage';
 import DashboardPage from '../pages/DashboardPage';
 import SettingPage from '../pages/SettingPage';
 import { useResData } from '../context';
-import GoogleLogin from '../components/Login/GoogleLogin';
+import GoogleButton from '../components/Login/GoogleButton';
+import Login from '../pages/Login';
+import Signup from '../pages/SignUp';
 
 const { Content } = Layout;
 
 const App: React.FC = () => {
   const [currentMenu, setCurrentMenu] = useState<string>('dashboard');
-  const { setCalibrationData, theme, toggleTheme } = useResData();
+  const { setCalibrationData, theme, toggleTheme, loginResponse } =
+    useResData();
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const { landMarkData } = useResData();
+  const [isLogin, setIsLogin] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   console.log('Environment Variable HELLO:', window.electron.env.HELLO);
-  //   console.log(
-  //     'Environment Variable Client ID:',
-  //     window.electron.env.GOOGLE_CLIENT_ID,
-  //   );
-  //   console.log(
-  //     'Environment Variable Client SECRET:',
-  //     window.electron.env.GOOGLE_CLIENT_SECRET,
-  //   );
-  // }, []); // The empty dependency array ensures this runs only once
+  useEffect(() => {
+    setIsLogin(loginResponse);
+  }, [loginResponse]);
 
   useEffect(() => {
     const loadCalibrationData = async () => {
@@ -91,16 +86,14 @@ const App: React.FC = () => {
         );
       case 'summary':
         return <SummaryPage theme={theme} />;
+      case 'gglogin':
+        return <GoogleButton />;
       case 'login':
-        return <GoogleLogin />;
+        return <Login />;
+      case 'signup':
+        return <Signup setIsLogin={setIsLogin} />;
       default:
-        return (
-          <DashboardPage
-            theme={theme}
-            showDetailedData={false}
-            onSessionComplete={() => {}}
-          />
-        );
+        return <Login />;
     }
   }, [currentMenu, handleCloseSettings, isSettingsOpen, theme, toggleTheme]);
 
@@ -122,16 +115,28 @@ const App: React.FC = () => {
         label: 'Setting',
       },
       {
+        key: 'gglogin',
+        icon: <FaRegUserCircle />,
+        label: 'ggLogin',
+      },
+      {
         key: 'login',
         icon: <FaRegUserCircle />,
         label: 'Login',
+      },
+      {
+        key: 'signup',
+        icon: <FaRegUserCircle />,
+        label: 'Sign Up',
       },
     ],
     [],
   );
 
-  return (
-    <>
+  return !isLogin ? (
+    <Login />
+  ) : (
+    <div>
       {!isSettingsOpen && (
         <div
           style={{
@@ -149,20 +154,6 @@ const App: React.FC = () => {
               borderBottom: 'none',
             }}
           />
-          {/* <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginRight: '42px',
-            }}
-          >
-            <Switch
-              checked={theme === 'dark'}
-              onChange={toggleTheme}
-              checkedChildren="Dark"
-              unCheckedChildren="Light"
-            />
-          </div> */}
         </div>
       )}
 
@@ -175,7 +166,7 @@ const App: React.FC = () => {
       >
         {renderContent}
       </Content>
-    </>
+    </div>
   );
 };
 

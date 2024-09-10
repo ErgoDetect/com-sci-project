@@ -18,6 +18,8 @@ type Theme = 'light' | 'dark';
 interface ResContextProps {
   resData: PositionData | undefined;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+  loginResponse: boolean;
+  setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>;
   debugData: DebugData | undefined;
   landMarkData: LandmarksResult | undefined;
   setLandMarkData: React.Dispatch<
@@ -33,7 +35,7 @@ interface ResContextProps {
   setCombineResult: React.Dispatch<
     React.SetStateAction<CombineResult | undefined>
   >;
-  url: string | undefined;
+  url: string;
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
@@ -45,6 +47,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
+  const [loginResponse, setLoginResponse] = useState<boolean>(false);
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
     undefined,
   );
@@ -90,6 +93,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       theme,
       toggleTheme,
       setTheme,
+      loginResponse,
+      setLoginResponse,
     }),
     [
       resData,
@@ -99,8 +104,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       startCapture,
       calibrationData,
       combineResult,
-      url,
       theme,
+      loginResponse,
     ],
   );
 
