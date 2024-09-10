@@ -11,13 +11,13 @@ export type Channels =
   | 'play-alert-sound'
   | 'show-notification'
   | 'auth-complete'
-  | 'open-auth-window'
   | 'get-cookie'
   | 'get-user-data-path'
   | 'write-file'
   | 'read-file'
   | 'file-exists'
-  | 'open-auth-url';
+  | 'open-auth-url'
+  | 'save-video'; // Add 'save-video' channel
 
 const electronHandler = {
   ipcRenderer: {
@@ -66,6 +66,13 @@ const electronHandler = {
     HELLO: process.env.HELLO,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  },
+  video: {
+    saveVideo(
+      buffer: Uint8Array,
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+      return ipcRenderer.invoke('save-video', buffer);
+    },
   },
 };
 

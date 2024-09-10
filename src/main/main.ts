@@ -1,10 +1,20 @@
 import { app, BrowserWindow, ipcMain, session, shell } from 'electron';
 import { Notification } from 'electron';
 import { createMainWindow } from '../main-util/windowManager';
-
+import * as path from 'path';
+import * as fs from 'fs';
+import logger from '../main-util/logger';
 import loadEnvFile from '../main-util/env';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
+
+// Create a folder for saving videos
+const saveFolderPath = path.join(app.getPath('userData'), 'result');
+
+// Ensure the directory exists
+if (!fs.existsSync(saveFolderPath)) {
+  fs.mkdirSync(saveFolderPath, { recursive: true });
+}
 
 const showInitialNotification = (): void => {
   if (Notification.isSupported()) {
@@ -38,6 +48,29 @@ app.whenReady().then(() => {
   handleNotifications();
 
   // Open the main window initially
+  // Handle the 'save-video' IPC call
+  ipcMain.handle('save-video', async (event, buffer: Buffer) => {
+    try {
+      // Create a unique file name
+      const videoFileName = `recorded_video_${Date.now()}.webm`;
+      const filePath = path.join(saveFolderPath, videoFileName);
+
+      // Write the video buffer to a file
+      fs.writeFileSync(filePath, buffer);
+
+      return { success: true, filePath };
+    } catch (error) {
+      // Type assertion to ensure `error` is a known type
+      if (error instanceof Error) {
+        console.error('Error saving video:', error.message);
+        return { success: false, error: error.message };
+      } else {
+        console.error('Unexpected error:', error);
+        return { success: false, error: 'An unexpected error occurred' };
+      }
+    }
+  });
+
   createMainWindow();
 
   ipcMain.handle('get-cookie', async () => {

@@ -1,9 +1,15 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 import { Switch, Upload, message } from 'antd';
 import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
   InboxOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import {
   VideoCard,
@@ -26,17 +32,31 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   handlePlayPause,
   deviceId,
   theme,
+  streaming,
+  onRecordingStart,
+  onRecordingStop,
 }) => {
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null,
+  );
+  const [recordingStarted, setRecordingStarted] = useState(false);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
   );
 
   useEffect(() => {
+    if (streaming) {
+      handleStartRecording();
+    } else {
+      handleStopRecording();
+    }
+
     return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
-  }, [videoSrc]);
+  }, [streaming]);
 
   const handleFileUpload = useCallback(
     (file: File): boolean => {
@@ -61,6 +81,61 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     },
     [],
   );
+
+  const handleStartRecording = useCallback(() => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          const recorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm',
+          });
+          setMediaRecorder(recorder);
+
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              recordedChunksRef.current.push(event.data);
+            }
+          };
+
+          recorder.onstop = async () => {
+            const blob = new Blob(recordedChunksRef.current, {
+              type: 'video/webm',
+            });
+            recordedChunksRef.current = [];
+            const arrayBuffer = await blob.arrayBuffer();
+            const buffer = new Uint8Array(arrayBuffer);
+
+            try {
+              const result = await window.electron.video.saveVideo(buffer);
+              if (result.success) {
+                message.success(`Video saved to ${result.filePath}`);
+              } else {
+                message.error(`Failed to save video: ${result.error}`);
+              }
+            } catch (error) {
+              message.error(`Error occurred: ${error}`);
+            }
+          };
+
+          recorder.start();
+          setRecordingStarted(true);
+        })
+        .catch((error) => {
+          console.error('Error accessing media devices.', error);
+          message.error('Error accessing media devices.');
+        });
+    } else {
+      message.error('Media devices not supported.');
+    }
+  }, []);
+
+  const handleStopRecording = useCallback(() => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setRecordingStarted(false);
+    }
+  }, [mediaRecorder]);
 
   useSendLandmarkData();
 
