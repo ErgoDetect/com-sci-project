@@ -1,4 +1,9 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import {
+  BrowserWindow,
+  contextBridge,
+  ipcRenderer,
+  IpcRendererEvent,
+} from 'electron';
 
 // Define your channels
 export type Channels =
@@ -6,6 +11,12 @@ export type Channels =
   | 'play-alert-sound'
   | 'show-notification'
   | 'auth-complete'
+  | 'get-cookie'
+  | 'get-user-data-path'
+  | 'write-file'
+  | 'read-file'
+  | 'file-exists'
+  | 'open-auth-url'
   | 'save-video'; // Add 'save-video' channel
 
 const electronHandler = {
@@ -30,8 +41,11 @@ const electronHandler = {
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
     },
-    openAuthWindow() {
-      return ipcRenderer.invoke('open-auth-window');
+    openUrl(url: string) {
+      return ipcRenderer.invoke('open-auth-url', url);
+    },
+    getCookie() {
+      return ipcRenderer.invoke('get-cookie');
     },
   },
   fs: {

@@ -30,7 +30,16 @@ const useWebSocket = (
   const initializeWebSocket = useCallback(() => {
     const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
     const socketUrl = `${protocol}://${url}/${dest}`;
-    const socket = new WebSocket(socketUrl); // Use the constructed socketUrl
+
+    // Close previous WebSocket if still open
+    if (
+      socketRef.current &&
+      socketRef.current.readyState !== WebSocket.CLOSED
+    ) {
+      socketRef.current.close();
+    }
+
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     const handleOpen = () => {
@@ -39,16 +48,10 @@ const useWebSocket = (
     };
 
     const handleMessage = (event: MessageEvent) => {
-      let inputData: any = event.data;
-
-      if (isJSON(event.data)) {
-        inputData = JSON.parse(event.data);
-      }
-
-      setMessage(inputData);
-
+      const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
+      setMessage(data);
       if (onMessage) {
-        onMessage(inputData);
+        onMessage(data);
       }
     };
 
@@ -58,8 +61,6 @@ const useWebSocket = (
 
     const handleClose = () => {
       console.info('WebSocket connection closed');
-
-      // Reconnection logic
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -68,8 +69,8 @@ const useWebSocket = (
           setReconnectAttempts((prev) => prev + 1);
           initializeWebSocket(); // Attempt to reconnect
         },
-        Math.min(5000 * (reconnectAttempts + 1), 30000), // Exponential backoff with a max of 30 seconds
-      );
+        Math.min(5000 * (reconnectAttempts + 1), 30000),
+      ); // Exponential backoff
     };
 
     socket.addEventListener('open', handleOpen);
@@ -102,7 +103,7 @@ const useWebSocket = (
 
   const send = useCallback((data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(data)); // Ensure the data is sent as JSON
+      socketRef.current.send(JSON.stringify(data));
     } else {
       console.error('WebSocket is not open. Unable to send data.');
     }
