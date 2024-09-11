@@ -1,4 +1,4 @@
-import { BrowserWindow, app, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
 import path from 'path';
 import { resolveHtmlPath } from '../main/util';
 import installExtensions from './extensions';
@@ -61,6 +61,9 @@ const handleReadyToShow = (window: BrowserWindow): void => {
 
 // Handle URL opening in external browser
 const handleAuthUrlOpening = (): void => {
+  ipcMain.removeHandler('open-auth-url');
+
+  // Register the new handler
   ipcMain.handle('open-auth-url', async (event, url: string) => {
     try {
       await shell.openExternal(url);
@@ -86,17 +89,4 @@ export const createMainWindow = async (): Promise<void> => {
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
-};
-
-// Handle application-level events
-export const handleAppEvents = (): void => {
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-      app.quit();
-    }
-  });
-
-  app.on('activate', () => {
-    if (mainWindow === null) createMainWindow();
-  });
 };

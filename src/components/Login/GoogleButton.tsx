@@ -3,12 +3,14 @@ import { useState, useCallback } from 'react';
 import GoogleIcon from '../../icons/googleIcon.svg';
 import { useResData } from '../../context';
 
-const fetchAuthUrl = async () => {
+// Fetch the Google authentication URL
+const fetchAuthUrl = async (baseUrl: string) => {
+  const url = `http://${baseUrl}/auth/google`;
+
   try {
-    const response = await fetch('http://localhost:8000/auth/google');
-    if (!response.ok) {
-      throw new Error('Failed to fetch Google auth URL');
-    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch Google auth URL');
+
     const data = await response.json();
     return data.url;
   } catch (error) {
@@ -17,36 +19,74 @@ const fetchAuthUrl = async () => {
   }
 };
 
-const handleSSE = (
-  url: string,
+// Fetch and log cookies from the Electron renderer process
+const fetchToken = async (baseUrl: string) => {
+  const url = `http://${baseUrl}/auth/google/set-cookies`;
+
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+    });
+    if (!response.ok)
+      throw new Error('Failed to fetch token from set-cookies endpoint');
+
+    try {
+      const cookies = await window.electron.ipcRenderer.getCookie();
+      console.log('Cookies:', cookies);
+    } catch (cookieError) {
+      console.error('Error fetching cookies from Electron:', cookieError);
+    }
+  } catch (fetchError) {
+    console.error('Error during token fetch:', fetchError);
+    throw new Error('Failed to get token');
+  }
+};
+
+// Handle Server-Sent Events (SSE) for authentication
+const handleSSE = async (
+  baseUrl: string,
   setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
-  return new Promise((resolve, reject) => {
-    const eventSource = new EventSource(`http://${url}/auth/google/sse`, {
-      withCredentials: true,
-    });
+  const url = `http://${baseUrl}/auth/google/sse`;
+
+  return new Promise<void>((resolve, reject) => {
+    const eventSource = new EventSource(url);
+    const timeoutId = setTimeout(() => {
+      eventSource.close();
+      reject(new Error('SSE connection timed out'));
+    }, 10000); // 10 seconds timeout
 
     eventSource.onopen = () => {
       console.log('SSE connection opened.');
+      clearTimeout(timeoutId); // Clear timeout when connection is successfully opened
     };
 
-    eventSource.onmessage = (event) => {
-      console.log('SSE message received:', event.data);
-      const data = JSON.parse(event.data);
-      if (data.success) {
-        setLoginResponse(true);
-        resolve(data);
-      } else {
-        setLoginResponse(false);
-        reject(new Error('Login failed'));
+    eventSource.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('SSE message received:', data);
+
+        if (data.user.success) {
+          setLoginResponse(true);
+          resolve();
+        } else {
+          setLoginResponse(false);
+          reject(new Error('Login failed'));
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error);
+        reject(error);
+      } finally {
+        eventSource.close(); // Close connection after receiving the message
+        console.log('SSE connection closed.');
       }
-      eventSource.close();
     };
 
-    eventSource.onerror = (error) => {
+    eventSource.onerror = (error: any) => {
+      clearTimeout(timeoutId);
       console.error('SSE error:', error);
       eventSource.close();
-      reject(error);
+      reject(new Error(`SSE connection error: ${error.message}`));
     };
   });
 };
@@ -54,29 +94,22 @@ const handleSSE = (
 const GoogleButton: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { setLoginResponse, url } = useResData();
+
+  // Handle the Google login button click
   const handleLogin = useCallback(async () => {
     setLoading(true);
     try {
-      const authUrl = await fetchAuthUrl();
-
+      // Fetch the Google authentication URL
+      const authUrl = await fetchAuthUrl(url);
       if (authUrl) {
+        // Open the authentication URL in Electron's browser window
         await window.electron.ipcRenderer.openUrl(authUrl);
 
-        const data: any = await handleSSE(url, setLoginResponse);
-        console.log('User Info:', data.user_info);
+        // Handle the Server-Sent Events (SSE) from the server for login
+        await handleSSE(url, setLoginResponse);
 
-        if (data) {
-          try {
-            const cookies = await window.electron.ipcRenderer.getCookie();
-            console.log('Cookies:', cookies);
-          } catch (error) {
-            console.error('Error fetching cookies:', error);
-          }
-        }
-
-        // Optionally handle callback here if needed
-        // const callbackResponse = await handleCallback(url, data.code, data.state);
-        // console.log('Callback Response:', callbackResponse);
+        // Fetch cookies after successful login
+        await fetchToken(url);
       }
     } catch (error) {
       console.error('Error during login:', error);

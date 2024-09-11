@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import { Notification } from 'electron';
 import { createMainWindow } from '../main-util/windowManager';
 import * as path from 'path';
@@ -103,6 +103,14 @@ app.whenReady().then(() => {
   }
 });
 
+app.on('ready', () => {
+  if (process.platform === 'darwin') {
+    app.commandLine.appendSwitch(
+      'applicationSupportsSecureRestorableState',
+      'true',
+    );
+  }
+});
 // Handle app quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
