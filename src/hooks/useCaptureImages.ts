@@ -51,7 +51,7 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           formData.append('files', image, `calibration_${index + 1}.png`);
         });
 
-        const uploadResponse = await fetch(`http://${url}/upload-images`, {
+        const uploadResponse = await fetch(`http://${url}/images/upload/`, {
           method: 'POST',
           body: formData,
         });
@@ -60,38 +60,39 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           throw new Error('Image upload failed');
         }
 
-        const calibrationResponse = await fetch(
-          `http://${url}/trigger-calibration`,
-          {
-            method: 'POST',
-          },
-        );
+        //! Still dev
+        // const calibrationResponse = await fetch(
+        //   `http://${url}/trigger-calibration`,
+        //   {
+        //     method: 'POST',
+        //   },
+        // );
 
-        if (!calibrationResponse.ok) {
-          throw new Error('Camera calibration failed');
-        }
+        // if (!calibrationResponse.ok) {
+        //   throw new Error('Camera calibration failed');
+        // }
 
-        const data = await calibrationResponse.json();
-        const jsonResponse = await fetch(
-          `http://${url}/download/${data.calibration_file.split('/').pop()}`,
-        );
+        // const data = await calibrationResponse.json();
+        // const jsonResponse = await fetch(
+        //   `http://${url}/download/${data.calibration_file.split('/').pop()}`,
+        // );
 
-        if (!jsonResponse.ok) {
-          throw new Error('Download failed');
-        }
+        // if (!jsonResponse.ok) {
+        //   throw new Error('Download failed');
+        // }
 
-        const jsonData = await jsonResponse.json();
-        console.log('Calibration data:', jsonData);
+        // const jsonData = await jsonResponse.json();
+        // console.log('Calibration data:', jsonData);
 
-        const filePath = await window.electron.fs.getUserDataPath();
-        await window.electron.fs.writeFile(filePath, JSON.stringify(jsonData));
+        // const filePath = await window.electron.fs.getUserDataPath();
+        // await window.electron.fs.writeFile(filePath, JSON.stringify(jsonData));
 
-        setCalibrationData(jsonData);
+        // setCalibrationData(jsonData);
 
-        await window.electron.ipcRenderer.showNotification(
-          'Calibrate Complete',
-          'The calibration process has completed successfully.',
-        );
+        // await window.electron.ipcRenderer.showNotification(
+        //   'Calibrate Complete',
+        //   'The calibration process has completed successfully.',
+        // );
       } catch (error) {
         console.error('Error in capture or calibration:', error);
       }

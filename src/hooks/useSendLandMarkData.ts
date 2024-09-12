@@ -16,7 +16,7 @@ const useSendLandmarkData = ({
   const logInterval = 1000;
   const { landMarkData, setResData, streaming, setCombineResult } =
     useResData();
-  const { send, message } = useWebSocket('landmark-results', setResData);
+  const { send, message } = useWebSocket('landmark/results/', setResData);
 
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
