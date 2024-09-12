@@ -5,7 +5,7 @@ import { useResData } from '../../context';
 
 // Fetch the Google authentication URL
 const fetchAuthUrl = async (baseUrl: string) => {
-  const url = `http://${baseUrl}/auth/google`;
+  const url = `http://${baseUrl}/auth/google/login/`;
 
   try {
     const response = await fetch(url);
@@ -21,7 +21,7 @@ const fetchAuthUrl = async (baseUrl: string) => {
 
 // Fetch and log cookies from the Electron renderer process
 const fetchToken = async (baseUrl: string) => {
-  const url = `http://${baseUrl}/auth/google/set-cookies`;
+  const url = `http://${baseUrl}/auth/google/set-cookies/`;
 
   try {
     const response = await fetch(url, {
@@ -47,7 +47,7 @@ const handleSSE = async (
   baseUrl: string,
   setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
-  const url = `http://${baseUrl}/auth/google/sse`;
+  const url = `http://${baseUrl}/auth/google/sse/`;
 
   return new Promise<void>((resolve, reject) => {
     const eventSource = new EventSource(url);

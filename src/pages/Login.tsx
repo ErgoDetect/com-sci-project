@@ -16,7 +16,7 @@ const Login = () => {
     console.log('Form submitted with values:', values);
 
     try {
-      const response = await fetch(`http://${url}/auth/login`, {
+      const response = await fetch(`http://${url}/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
