@@ -26,13 +26,9 @@ const Signup: React.FC = () => {
     email: string;
     password: string;
     confirm: string;
-  }) => {
-    console.log('Success:', values);
-  };
+  }) => {};
 
-  const onFinishFailed = (errorInfo: any) => {
-    console.log('Failed:', errorInfo);
-  };
+  const onFinishFailed = (errorInfo: any) => {};
 
   return (
     <div style={styles.container}>
