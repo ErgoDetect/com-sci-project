@@ -165,8 +165,7 @@
     "files": [
       "dist",
       "node_modules",
-      "package.json",
-      ".env.production"
+      "package.json"
     ],
     "mac": {
       "sign": ".erb/scripts/notarize.js",
