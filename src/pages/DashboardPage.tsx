@@ -8,17 +8,8 @@ import SessionSummaryCard from '../components/SessionSummaryCard';
 import DraggableInfoBox from '../components/DraggableInfoBox';
 import { useResData } from '../context';
 
-interface DashboardProps {
-  theme: 'light' | 'dark';
-  showDetailedData: boolean;
-  onSessionComplete: () => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({
-  theme,
-  showDetailedData,
-  onSessionComplete,
-}) => {
+const Dashboard = () => {
+  const { theme, showDetailedData } = useResData();
   const [useVideoFile, setUseVideoFile] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -39,13 +30,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (streaming) {
       frameCountRef.current = 0;
       setStreaming(false);
-      onSessionComplete();
       message.info('Session stopped.');
     } else {
       setStreaming(true);
       message.success('Session started!');
     }
-  }, [streaming, setStreaming, onSessionComplete]);
+  }, [streaming, setStreaming]);
 
   const handlePlayPause = () => {
     setIsPlaying((prev) => !prev);

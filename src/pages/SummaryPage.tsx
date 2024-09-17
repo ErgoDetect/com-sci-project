@@ -14,13 +14,10 @@ import {
 import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import ProgressCard from '../components/ProgressCard';
+import { useResData } from '../context';
 
 const { Content } = Layout;
 const { Title } = Typography;
-
-interface SummaryProps {
-  theme: 'light' | 'dark';
-}
 
 interface ExampleEvent {
   time: number;
@@ -28,13 +25,14 @@ interface ExampleEvent {
   length: number;
 }
 
-const Summary: React.FC<SummaryProps> = ({ theme }) => {
+const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoDuration, setVideoDuration] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const { theme } = useResData();
 
   const exampleEvents = useMemo<ExampleEvent[]>(
     () => [
