@@ -9,21 +9,15 @@ import App from './App';
 const container = document.getElementById('root') as HTMLElement;
 const root = ReactDom.createRoot(container);
 
-const clientId = window.electron.env.GOOGLE_CLIENT_ID;
-
-if (clientId) {
-  root.render(
-    <React.StrictMode>
-      <GoogleOAuthProvider clientId={clientId}>
-        <ResProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </ResProvider>
-      </GoogleOAuthProvider>
-    </React.StrictMode>,
-  );
-}
+root.render(
+  <React.StrictMode>
+    <ResProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ResProvider>
+  </React.StrictMode>,
+);
 
 window.electron.ipcRenderer.once('ipc-example', (arg) => {
   console.log(arg);
