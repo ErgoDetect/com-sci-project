@@ -1,6 +1,6 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
-import { Button, Checkbox, Divider, Form, Input } from 'antd';
+import { Button, Divider, Form, Input } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import GoogleButton from '../components/Login/GoogleButton';
 import useAuth from '../hooks/useAuth';
