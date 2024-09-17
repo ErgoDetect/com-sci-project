@@ -1,9 +1,7 @@
 import React from 'react';
 import { Form, Input, Button } from 'antd';
+import { useResData } from '../context';
 
-interface SignupProps {
-  setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
-}
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     width: '300px',
@@ -22,7 +20,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 };
 
-const Signup: React.FC<SignupProps> = ({ setIsLogin }) => {
+const Signup: React.FC = () => {
+  const { setIsLogin } = useResData();
   const onFinish = (values: {
     email: string;
     password: string;

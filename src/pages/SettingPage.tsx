@@ -17,31 +17,21 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { IoIosCloseCircleOutline } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
 import DeviceSelector from '../components/camera/deviceSelector';
 import useDevices from '../hooks/useDevices';
 import CalibrationModal from '../components/modal/CalibrationModal';
+import { useResData } from '../context';
 
 const { Sider, Content } = Layout;
 const { Title } = Typography;
 
-interface SettingsProps {
-  theme: 'light' | 'dark';
-  fullScreen: boolean;
-  showDetailedData: boolean;
-  onClose: (showDetailedData: boolean) => void;
-  toggleTheme: (theme: 'light' | 'dark') => void;
-}
-
-const Settings: React.FC<SettingsProps> = ({
-  theme,
-  fullScreen,
-  showDetailedData,
-  toggleTheme,
-  onClose,
-}) => {
+const Settings = () => {
+  const { showDetailedData, theme } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const [detailedData, setDetailedData] = useState<boolean>(showDetailedData);
   const { deviceId, devices, setDeviceId } = useDevices();
+  const navigate = useNavigate();
 
   const handleDeviceChange = useCallback(
     (value: string) => {
@@ -214,7 +204,9 @@ const Settings: React.FC<SettingsProps> = ({
               }}
             />
           }
-          onClick={() => onClose(detailedData)}
+          onClick={() => {
+            navigate(-1);
+          }}
           style={{
             fontSize: '16px',
             color: theme === 'dark' ? '#f4f5f7' : '#23272A',

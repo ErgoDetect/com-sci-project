@@ -1,172 +1,36 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Layout, Menu } from 'antd';
-import { RxDashboard } from 'react-icons/rx';
-import { IoIosSettings } from 'react-icons/io';
-import { FaRegUserCircle } from 'react-icons/fa';
-import SummaryPage from '../pages/SummaryPage';
+import React, { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import DashboardPage from '../pages/DashboardPage';
-import SettingPage from '../pages/SettingPage';
-import { useResData } from '../context';
-import GoogleButton from '../components/Login/GoogleButton';
 import Login from '../pages/Login';
 import Signup from '../pages/SignUp';
-
-const { Content } = Layout;
+import SummaryPage from '../pages/SummaryPage';
+import SettingPage from '../pages/SettingPage';
+import GoogleButton from '../components/Login/GoogleButton';
+import useAuth from '../hooks/useAuth';
+import useCheckCookies from '../hooks/useCheckCookies';
 
 const App: React.FC = () => {
-  const [currentMenu, setCurrentMenu] = useState<string>('dashboard');
-  const { setCalibrationData, theme, toggleTheme, loginResponse } =
-    useResData();
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isLogin, setIsLogin] = useState<boolean>(false);
+  const { loading } = useAuth();
+  const { checkCookies } = useCheckCookies();
 
+  // Run checkCookies only once when the app starts
   useEffect(() => {
-    setIsLogin(loginResponse);
-  }, [loginResponse]);
+    checkCookies();
+  }, [checkCookies]); // Memoized checkCookies ensures it only runs once
 
-  useEffect(() => {
-    const loadCalibrationData = async () => {
-      try {
-        const filePath = await window.electron.fs.getUserDataPath();
-        const fileExists = await window.electron.fs.fileExists(filePath);
+  if (loading) {
+    return <div>Loading...</div>; // Replace with a proper loading spinner or component
+  }
 
-        if (fileExists) {
-          const data = await window.electron.fs.readFile(filePath);
-          setCalibrationData(JSON.parse(data));
-          console.log('Calibration data loaded successfully');
-        } else {
-          console.log('Calibration data file does not exist');
-        }
-      } catch (error) {
-        console.error('Failed to load calibration data:', error);
-        await window.electron.ipcRenderer.showNotification(
-          'Calibration data file does not exist',
-          'Failed to load calibration data',
-        );
-      }
-    };
-
-    loadCalibrationData();
-  }, [setCalibrationData]);
-
-  const handleMenuClick = useCallback(({ key }: { key: string }) => {
-    if (key === 'setting') {
-      setIsSettingsOpen(true);
-    } else {
-      setCurrentMenu(key);
-    }
-  }, []);
-
-  const handleCloseSettings = useCallback(() => {
-    setIsSettingsOpen(false);
-    setCurrentMenu('dashboard');
-  }, []);
-
-  const renderContent = useMemo(() => {
-    if (isSettingsOpen) {
-      return (
-        <SettingPage
-          theme={theme}
-          fullScreen={false}
-          showDetailedData={false}
-          toggleTheme={toggleTheme}
-          onClose={handleCloseSettings}
-        />
-      );
-    }
-
-    switch (currentMenu) {
-      case 'dashboard':
-        return (
-          <DashboardPage
-            theme={theme}
-            showDetailedData={false}
-            onSessionComplete={() => {}}
-          />
-        );
-      case 'summary':
-        return <SummaryPage theme={theme} />;
-      case 'gglogin':
-        return <GoogleButton />;
-      case 'login':
-        return <Login />;
-      case 'signup':
-        return <Signup setIsLogin={setIsLogin} />;
-      default:
-        return <Login />;
-    }
-  }, [currentMenu, handleCloseSettings, isSettingsOpen, theme, toggleTheme]);
-
-  const menuItems = useMemo(
-    () => [
-      {
-        key: 'dashboard',
-        icon: <RxDashboard />,
-        label: 'Dashboard',
-      },
-      {
-        key: 'summary',
-        icon: <IoIosSettings />,
-        label: 'Summary',
-      },
-      {
-        key: 'setting',
-        icon: <IoIosSettings />,
-        label: 'Setting',
-      },
-      {
-        key: 'gglogin',
-        icon: <FaRegUserCircle />,
-        label: 'ggLogin',
-      },
-      {
-        key: 'login',
-        icon: <FaRegUserCircle />,
-        label: 'Login',
-      },
-      {
-        key: 'signup',
-        icon: <FaRegUserCircle />,
-        label: 'Sign Up',
-      },
-    ],
-    [],
-  );
-
-  return !isLogin ? (
-    <Login />
-  ) : (
-    <div>
-      {!isSettingsOpen && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Menu
-            mode="horizontal"
-            selectedKeys={[currentMenu]}
-            items={menuItems}
-            onClick={handleMenuClick}
-            style={{
-              backgroundColor: 'transparent',
-              borderBottom: 'none',
-            }}
-          />
-        </div>
-      )}
-
-      <Content
-        style={{
-          width: '100%',
-          height: '100vh',
-          transition: 'background 0.3s ease',
-        }}
-      >
-        {renderContent}
-      </Content>
-    </div>
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/summary" element={<SummaryPage />} />
+      <Route path="/setting" element={<SettingPage />} />
+      <Route path="/gglogin" element={<GoogleButton />} />
+    </Routes>
   );
 };
 

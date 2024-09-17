@@ -18,6 +18,8 @@ type Theme = 'light' | 'dark';
 interface ResContextProps {
   resData: PositionData | undefined;
   setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+  isLogin: boolean;
+  setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
   loginResponse: boolean;
   setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>;
   debugData: DebugData | undefined;
@@ -39,6 +41,8 @@ interface ResContextProps {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  showDetailedData: boolean;
+  setShowDetailedData: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -47,6 +51,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<PositionData | undefined>(undefined);
+  const [isLogin, setIsLogin] = useState<boolean>(false);
   const [loginResponse, setLoginResponse] = useState<boolean>(false);
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
     undefined,
@@ -64,6 +69,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
+  const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
 
   const url = 'localhost:8000'; // Change this based on environment
 
@@ -95,6 +101,10 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setTheme,
       loginResponse,
       setLoginResponse,
+      isLogin,
+      setIsLogin,
+      showDetailedData,
+      setShowDetailedData,
     }),
     [
       resData,
@@ -106,6 +116,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       combineResult,
       theme,
       loginResponse,
+      isLogin,
+      showDetailedData,
     ],
   );
 
