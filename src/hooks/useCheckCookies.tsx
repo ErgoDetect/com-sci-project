@@ -27,6 +27,7 @@ const useCheckCookies = () => {
         }
       } else {
         setIsLogin(true);
+        navigate('/');
       }
     } catch (error) {
       console.error('Error checking cookies:', error);
