@@ -37,7 +37,6 @@ interface ResContextProps {
   setCombineResult: React.Dispatch<
     React.SetStateAction<CombineResult | undefined>
   >;
-  url: string;
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
@@ -71,8 +70,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   };
   const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
 
-  const url = 'localhost:8000'; // Change this based on environment
-
   const debugData = useMemo(() => {
     if (resData) {
       return { ...resData } as unknown as DebugData;
@@ -95,7 +92,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setCalibrationData,
       combineResult,
       setCombineResult,
-      url,
       theme,
       toggleTheme,
       setTheme,

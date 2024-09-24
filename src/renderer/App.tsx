@@ -11,12 +11,12 @@ import useCheckCookies from '../hooks/useCheckCookies';
 
 const App: React.FC = () => {
   const { loading } = useAuth();
-  const { checkCookies } = useCheckCookies();
+  const { checkLoginStatus } = useCheckCookies(); // Renamed for clarity
 
-  // Run checkCookies only once when the app starts
+  // Run checkLoginStatus only once when the app starts
   useEffect(() => {
-    checkCookies();
-  }, [checkCookies]); // Memoized checkCookies ensures it only runs once
+    checkLoginStatus(); // Check the login state via the server
+  }, [checkLoginStatus]);
 
   if (loading) {
     return <div>Loading...</div>; // Replace with a proper loading spinner or component

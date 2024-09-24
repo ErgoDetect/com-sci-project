@@ -1,26 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResData } from '../context'; // Assuming this handles app-level state
+import axiosInstance from '../utility/axiosInstance'; // Import your axios instance
 
-// Helper function to perform fetch requests
-const fetchRequest = async (url: string, options: RequestInit) => {
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return response.json();
-  } catch (error) {
-    console.error('Fetch request error:', error);
-    throw error;
-  }
+// Centralized error logger
+const logError = (message: string, error: unknown) => {
+  console.error(`${message}:`, error);
 };
 
 // SSE handler for Google login
 const handleSSE = async (
-  baseUrl: string,
   setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   return new Promise<void>((resolve, reject) => {
-    const eventSource = new EventSource(`http://${baseUrl}/auth/google/sse/`);
+    const eventSource = new EventSource(
+      `http://localhost:8000/auth/google/sse/`,
+    );
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -31,7 +26,7 @@ const handleSSE = async (
           reject(new Error('Login failed via SSE'));
         }
       } catch (error) {
-        console.error('Error parsing SSE message:', error);
+        logError('Error parsing SSE message', error);
         reject(error);
       } finally {
         eventSource.close();
@@ -39,7 +34,7 @@ const handleSSE = async (
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
+      logError('SSE connection error', error);
       eventSource.close();
       reject(error);
     };
@@ -47,123 +42,122 @@ const handleSSE = async (
 };
 
 // Fetch Google Auth URL
-const fetchAuthUrl = async (baseUrl: string) => {
-  const url = `http://${baseUrl}/auth/google/login/`;
-  return fetchRequest(url, { method: 'GET' }).then((data) => data.url);
+const fetchAuthUrl = async () => {
+  try {
+    const { data } = await axiosInstance.get(`/auth/google/login/`);
+    return data.url;
+  } catch (error) {
+    logError('Error fetching Google Auth URL', error);
+    throw error;
+  }
 };
 
 // Fetch token and set cookies
-const fetchToken = async (baseUrl: string) => {
-  const url = `http://${baseUrl}/auth/google/set-cookies/`;
-  return fetchRequest(url, { credentials: 'include' });
+const fetchToken = async () => {
+  try {
+    await axiosInstance.get(`/auth/google/set-cookies/`, {
+      withCredentials: true,
+    });
+  } catch (error) {
+    logError('Error fetching token and setting cookies', error);
+    throw error;
+  }
+};
+
+// Utility to check cookies via Electron
+const checkCookies = async () => {
+  try {
+    // Call Electron IPC to get the cookies
+    const cookies = await window.electron.ipcRenderer.getCookie();
+
+    // Check if the access_token is present
+    return !!cookies.access_token; // Simply check if access_token exists
+  } catch (error) {
+    logError('Error fetching cookies', error);
+    throw error;
+  }
 };
 
 // Optimized hook for authentication
 const useAuth = () => {
-  const { url, setIsLogin, isLogin } = useResData(); // Assuming useResData provides these
+  const { isLogin, setIsLogin } = useResData(); // Assuming useResData provides these
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Unified error logging function
-  const logError = useCallback((message: string, error: unknown) => {
-    console.error(`${message}:`, error);
-  }, []);
-
-  // Function to check login status via cookies
-  // const checkLoginStatus = useCallback(async () => {
-  //   try {
-  //     const cookies = await window.electron.ipcRenderer.getCookie();
-  //     const accessToken = cookies.find(
-  //       (cookie: any) => cookie.name === 'access_token',
-  //     );
-
-  //     const isLoggedIn = !!accessToken;
-  //     setIsLogin(isLoggedIn);
-
-  //     // Conditional navigation based on login state
-  //     navigate(isLoggedIn ? '/' : '/login');
-  //   } catch (error) {
-  //     logError('Error checking login status', error);
-  //   }
-  // }, [navigate, setIsLogin, logError]);
+  useEffect(() => {
+    if (isLogin) {
+      console.log('Login state updated, navigating to root...');
+      navigate('/'); // Navigate only after login state is true
+    }
+  }, [isLogin, navigate]);
 
   // Login with email
   const loginWithEmail = useCallback(
     async (email: string, password: string) => {
       setLoading(true);
       try {
-        const data = await fetchRequest(`http://${url}/auth/login/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          credentials: 'include',
-        });
+        const response = await axiosInstance.post(
+          `/auth/login/`,
+          {
+            email,
+            password,
+          },
+          {
+            withCredentials: true, // Ensures cookies are sent and received
+          },
+        );
 
-        if (data) {
-          const cookies = await window.electron.ipcRenderer.getCookie();
-          setIsLogin(!!cookies); // Update login state based on cookies
+        if (response.data) {
+          // Step 1: Check cookies client-side for faster validation
+          const isLoggedIn = await checkCookies();
 
-          // Navigate to home on successful login
-          navigate('/');
+          // Step 2: Optionally send a request to the server to verify token validity
+          if (isLoggedIn) {
+            console.log('Navigating to root...');
+            setIsLogin(true);
+            navigate('/');
+          } else {
+            throw new Error('Login failed: Unable to find valid cookies');
+          }
         }
       } catch (error) {
-        logError('Error during email login', error);
+        logError('Login error', error);
       } finally {
         setLoading(false); // Ensure loading state is reset
       }
     },
-    [url, setIsLogin, navigate, logError],
+    [setIsLogin, navigate],
   );
 
   // Login with Google OAuth
   const loginWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
-      const authUrl = await fetchAuthUrl(url);
+      const authUrl = await fetchAuthUrl();
       await window.electron.ipcRenderer.openUrl(authUrl);
 
-      await handleSSE(url, setIsLogin);
-      await fetchToken(url);
+      // Step 1: Handle login response through SSE
+      await handleSSE(setIsLogin);
 
-      const cookies = await window.electron.ipcRenderer.getCookie();
-      setIsLogin(!!cookies); // Update login state
+      // Step 2: Fetch token and set cookies on successful login
+      await fetchToken();
 
-      // Navigate to home after successful login
-      navigate('/');
+      // Step 3: Check if cookies are set and update login state
+      const isLoggedIn = await checkCookies();
+
+      if (isLoggedIn) {
+        console.log('Navigating to root...');
+        setIsLogin(true);
+        navigate('/');
+      } else {
+        throw new Error('Login failed: Unable to find valid cookies');
+      }
     } catch (error) {
       logError('Google login error', error);
     } finally {
       setLoading(false); // Ensure loading state is reset
     }
-  }, [url, setIsLogin, navigate, logError]);
-
-  // Monitor cookies and handle navigation based on cookie state
-  // useEffect(() => {
-  //   const checkCookies = async () => {
-  //     try {
-  //       const cookies = await window.electron.ipcRenderer.getCookie();
-  //       console.log('Fetched cookies:', cookies); // Log to verify cookie structure
-
-  //       const accessToken = cookies.find(
-  //         (cookie: any) => cookie.name === 'access_token',
-  //       );
-  //       const isLoggedIn = !!accessToken;
-
-  //       if (!isLoggedIn) {
-  //         console.log('No access token found, redirecting to login...');
-  //         setIsLogin(false);
-  //         navigate('/login');
-  //       }
-  //     } catch (error) {
-  //       console.error('Error checking cookies:', error);
-  //     }
-  //   };
-
-  //   checkCookies(); // Initial check on mount
-
-  //   const interval = setInterval(checkCookies, 5000); // Continuous cookie check
-  //   return () => clearInterval(interval); // Cleanup on unmount
-  // }, [navigate, setIsLogin]);
+  }, [setIsLogin, navigate]);
 
   return {
     loading,
