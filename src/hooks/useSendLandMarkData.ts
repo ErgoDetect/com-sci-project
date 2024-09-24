@@ -29,7 +29,8 @@ const useSendLandmarkData = ({
           timestamp: currentTime,
         };
 
-        send(JSON.stringify(dataToSend));
+        // send(JSON.stringify(dataToSend));
+        send(dataToSend);
         lastLogTimeRef.current = currentTime;
 
         if (combineResults) {
