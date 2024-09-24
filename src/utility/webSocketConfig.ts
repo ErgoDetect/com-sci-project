@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { useResData } from '../context';
 
 type WebSocketMessageHandler = (data: any) => void;
 
@@ -15,7 +14,6 @@ const useWebSocket = (
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [message, setMessage] = useState<any>(null);
-  const { url } = useResData();
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
 
   const isJSON = useCallback((str: string): boolean => {
@@ -29,7 +27,7 @@ const useWebSocket = (
 
   const initializeWebSocket = useCallback(() => {
     const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
-    const socketUrl = `${protocol}://${url}/${dest}`;
+    const socketUrl = `${protocol}://localhost:8000/${dest}`;
 
     // Close previous WebSocket if still open
     if (
@@ -88,7 +86,7 @@ const useWebSocket = (
         socket.close();
       }
     };
-  }, [url, dest, isJSON, onMessage, reconnectAttempts]);
+  }, [dest, isJSON, onMessage, reconnectAttempts]);
 
   useEffect(() => {
     const cleanupWebSocket = initializeWebSocket();

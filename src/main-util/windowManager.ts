@@ -76,7 +76,7 @@ const handleAuthUrlOpening = (): void => {
 };
 
 // Create the main application window
-export const createMainWindow = async (): Promise<void> => {
+export const createMainWindow = async (): Promise<BrowserWindow | null> => {
   await installExtensions();
   mainWindow = configureMainWindow();
 
@@ -89,4 +89,6 @@ export const createMainWindow = async (): Promise<void> => {
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
+
+  return mainWindow;
 };

@@ -1,9 +1,9 @@
 import { useEffect, useState, RefObject } from 'react';
 import { useResData } from '../context';
+import axiosInstance from '../utility/axiosInstance';
 
 const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
-  const { startCapture, setStartCapture, setCalibrationData, url } =
-    useResData();
+  const { startCapture, setStartCapture, setCalibrationData } = useResData();
   const captureDuration = 12000;
   const captureFPS = 12;
   const maxImageCount = Math.floor((captureDuration / 1000) * captureFPS);
@@ -51,12 +51,20 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
           formData.append('files', image, `calibration_${index + 1}.png`);
         });
 
-        const uploadResponse = await fetch(`http://${url}/images/upload/`, {
-          method: 'POST',
-          body: formData,
-        });
+        try {
+          const uploadResponse = await axiosInstance.post(
+            '/images/upload/',
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data', // Set content type for file upload
+              },
+            },
+          );
 
-        if (!uploadResponse.ok) {
+          console.log('Upload successful:', uploadResponse.data);
+        } catch (error) {
+          console.error('Image upload failed:', error);
           throw new Error('Image upload failed');
         }
 
@@ -123,7 +131,6 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
     videoRef,
     setStartCapture,
     setCalibrationData,
-    url,
   ]);
 
   return { capturedImages };

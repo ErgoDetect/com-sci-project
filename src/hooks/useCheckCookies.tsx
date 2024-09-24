@@ -1,40 +1,78 @@
+/* eslint-disable camelcase */
 import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axiosInstance from '../utility/axiosInstance'; // Use axiosInstance
 import { useResData } from '../context'; // Access app-level state
 
-const useCheckCookies = () => {
-  const { setIsLogin } = useResData();
+const useCheckLoginStatus = () => {
+  const { isLogin, setIsLogin } = useResData();
   const navigate = useNavigate();
   const location = useLocation(); // To get the current route
 
-  // Memoize checkCookies to prevent it from being redefined on every render
-  const checkCookies = useCallback(async () => {
+  const handleRedirection = useCallback(
+    (currentPath: string) => {
+      if (isLogin && currentPath !== '/') {
+        navigate('/');
+      } else if (!isLogin && currentPath !== '/login') {
+        navigate('/login');
+      }
+    },
+    [isLogin, navigate],
+  );
+
+  const checkLoginStatus = useCallback(async () => {
     try {
       const cookies = await window.electron.ipcRenderer.getCookie();
-      console.log('Fetched cookies:', cookies); // Logs cookies fetched
 
-      const accessToken = cookies.find(
-        (cookie: any) => cookie.name === 'access_token',
-      );
-      const isLoggedIn = !!accessToken;
+      // Check if access token exists
+      if (cookies.access_token) {
+        const response = await axiosInstance.get('/auth/status/', {
+          withCredentials: true,
+        });
+        setIsLogin(response.data.is_login);
+        handleRedirection(location.pathname);
+        return; // Exit early if access token is valid
+      }
 
-      if (!isLoggedIn) {
-        console.log('No access token found, redirecting to login...');
+      // Check for refresh token and attempt to refresh access token
+      if (cookies.refresh_token) {
+        const refreshResponse = await axiosInstance.post(
+          '/auth/refresh-token/',
+          {
+            withCredentials: true,
+          },
+        );
+
+        if (refreshResponse.data.access_token_is_set) {
+          const statusResponse = await axiosInstance.get('/auth/status/', {
+            withCredentials: true,
+          });
+          setIsLogin(statusResponse.data.is_login);
+          handleRedirection(location.pathname);
+        } else {
+          // If refresh token didn't set a new access token
+          setIsLogin(false);
+          if (location.pathname !== '/login') {
+            navigate('/login');
+          }
+        }
+      } else {
+        // If no refresh token
         setIsLogin(false);
-        // Prevent redirect loop if already on login page
         if (location.pathname !== '/login') {
           navigate('/login');
         }
-      } else {
-        setIsLogin(true);
-        navigate('/');
       }
     } catch (error) {
-      console.error('Error checking cookies:', error);
+      console.error('Error checking login status:', error);
+      setIsLogin(false);
+      if (location.pathname !== '/login') {
+        navigate('/login');
+      }
     }
-  }, [setIsLogin, navigate, location.pathname]); // Ensure location.pathname is included
+  }, [location.pathname, navigate, setIsLogin, handleRedirection]);
 
-  return { checkCookies };
+  return { checkLoginStatus };
 };
 
-export default useCheckCookies;
+export default useCheckLoginStatus;

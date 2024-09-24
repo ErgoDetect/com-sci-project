@@ -46,18 +46,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     [videoFile],
   );
 
-  useEffect(() => {
-    if (streaming) {
-      handleStartRecording();
-    } else {
-      handleStopRecording();
-    }
-
-    return () => {
-      if (videoSrc) URL.revokeObjectURL(videoSrc);
-    };
-  }, [streaming]);
-
   const handleFileUpload = useCallback(
     (file: File): boolean => {
       setVideoFile(file);
@@ -84,7 +72,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   const handleStartRecording = useCallback(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
+      return navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((stream) => {
           const recorder = new MediaRecorder(stream, {
@@ -120,14 +108,19 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
           recorder.start();
           setRecordingStarted(true);
+
+          // Return something to comply with the ESLint rule
+          return recorder;
         })
         .catch((error) => {
           console.error('Error accessing media devices.', error);
           message.error('Error accessing media devices.');
+          throw error; // Maintain promise chain
         });
-    } else {
-      message.error('Media devices not supported.');
     }
+
+    message.error('Media devices not supported.');
+    return Promise.reject(new Error('Media devices not supported.')); // Explicitly return a rejected promise
   }, []);
 
   const handleStopRecording = useCallback(() => {
@@ -136,6 +129,18 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       setRecordingStarted(false);
     }
   }, [mediaRecorder]);
+
+  useEffect(() => {
+    if (streaming) {
+      handleStartRecording();
+    } else {
+      handleStopRecording();
+    }
+
+    return () => {
+      if (videoSrc) URL.revokeObjectURL(videoSrc);
+    };
+  }, [handleStartRecording, handleStopRecording, streaming, videoSrc]);
 
   useSendLandmarkData();
 
