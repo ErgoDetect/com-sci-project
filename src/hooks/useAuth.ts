@@ -19,7 +19,8 @@ const handleSSE = async (
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data?.user?.success) {
+
+        if (data?.success) {
           setLoginResponse(true);
           resolve();
         } else {

@@ -33,6 +33,7 @@ const configureMainWindow = (): BrowserWindow => {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
+      backgroundThrottling: false,
     },
   });
 
