@@ -6,6 +6,7 @@ import {
   Notification,
   Tray,
   Menu,
+  powerSaveBlocker, // Import powerSaveBlocker
 } from 'electron';
 import { createMainWindow } from '../main-util/windowManager'; // Ensure this returns BrowserWindow or null
 import * as path from 'path';
@@ -18,6 +19,7 @@ import handleNotifications from '../main-util/notification';
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null; // System Tray reference
 let isQuitting = false; // Flag to track if the app is quitting
+let powerSaveBlockerId: number | null = null; // Keep a reference for powerSaveBlocker
 
 // Folder for saving videos
 const saveFolderPath = path.join(app.getPath('userData'), 'result');
@@ -107,6 +109,12 @@ app.whenReady().then(async () => {
     createTray();
   }
 
+  // Start powerSaveBlocker to prevent system suspension
+  if (!powerSaveBlockerId) {
+    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+    console.log('Power save blocker started:', powerSaveBlockerId);
+  }
+
   showInitialNotification();
 
   // Electron debug and production mode handling
@@ -125,6 +133,14 @@ app.whenReady().then(async () => {
 // Handle app quitting
 app.on('before-quit', () => {
   isQuitting = true;
+
+  // Stop the powerSaveBlocker if it's running
+  if (powerSaveBlockerId !== null) {
+    powerSaveBlocker.stop(powerSaveBlockerId);
+    console.log('Power save blocker stopped:', powerSaveBlockerId);
+    powerSaveBlockerId = null;
+  }
+
   if (tray) {
     tray.destroy();
   }
