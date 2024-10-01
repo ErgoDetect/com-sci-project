@@ -17,7 +17,6 @@ const useVideoStream = ({
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
   const webcamRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
@@ -28,8 +27,10 @@ const useVideoStream = ({
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
 
   const stopVideoStream = useCallback(() => {
-    videoStreamRef.current?.getTracks().forEach((track) => track.stop());
-    videoStreamRef.current = null;
+    if (videoStreamRef.current) {
+      videoStreamRef.current.getTracks().forEach((track) => track.stop());
+      videoStreamRef.current = null;
+    }
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
     }
@@ -43,6 +44,7 @@ const useVideoStream = ({
 
     const constraints = {
       video: {
+        deviceId: { exact: deviceId },
         width: { ideal: 1280 },
         height: { ideal: 720 },
         frameRate: { ideal: 30 },
@@ -50,18 +52,30 @@ const useVideoStream = ({
       audio: false,
     };
 
+    const fallbackConstraints = {
+      video: {
+        deviceId: { exact: deviceId },
+        width: 640,
+        height: 480,
+        frameRate: 15,
+      },
+      audio: false,
+    };
+
     try {
       stopVideoStream();
 
-      const videoStream = await navigator.mediaDevices
-        .getUserMedia(constraints)
-        .catch(() => {
-          console.warn('High-res camera access failed, attempting fallback.');
-          return navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720, frameRate: 30 },
-            audio: false,
-          });
-        });
+      let videoStream: MediaStream | null = null;
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        console.warn(
+          'High-res camera access failed, attempting fallback.',
+          error,
+        );
+        videoStream =
+          await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      }
 
       if (!videoStream) {
         console.error(
@@ -71,19 +85,20 @@ const useVideoStream = ({
       }
 
       videoStreamRef.current = videoStream;
+
       if (webcamRef.current) {
         webcamRef.current.srcObject = videoStream;
 
         webcamRef.current.onloadedmetadata = async () => {
           await webcamRef.current?.play();
 
-          const { videoWidth, videoHeight } = webcamRef.current!;
-          [canvasRef.current, showCanvasRef.current].forEach((canvas) => {
-            if (canvas) {
-              canvas.width = videoWidth;
-              canvas.height = videoHeight;
-            }
-          });
+          const { videoWidth } = webcamRef.current!;
+          const { videoHeight } = webcamRef.current!;
+
+          if (showCanvasRef.current) {
+            showCanvasRef.current.width = videoWidth;
+            showCanvasRef.current.height = videoHeight;
+          }
 
           if (!faceLandmarkerRef.current) {
             faceLandmarkerRef.current = await initializeFaceLandmarker();
@@ -113,7 +128,6 @@ const useVideoStream = ({
     if (
       showCanvas &&
       webcam &&
-      webcam.srcObject &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
       (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
@@ -121,19 +135,16 @@ const useVideoStream = ({
       if (context) {
         context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
 
-        const faceResults = faceLandmarkerRef.current
-          ? await faceLandmarkerRef.current.detectForVideo(
-              webcam,
-              performance.now(),
-            )
-          : null;
+        const timestamp = performance.now();
 
-        const poseResults = poseLandmarkerRef.current
-          ? await poseLandmarkerRef.current.detectForVideo(
-              webcam,
-              performance.now(),
-            )
-          : null;
+        const [faceResults, poseResults] = await Promise.all([
+          faceLandmarkerRef.current
+            ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
+            : Promise.resolve(null),
+          poseLandmarkerRef.current
+            ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
+            : Promise.resolve(null),
+        ]);
 
         const results: LandmarksResult = { faceResults, poseResults };
         setLandMarkData(results);
@@ -166,8 +177,9 @@ const useVideoStream = ({
       if (animationFrameIdRef.current !== undefined) {
         cancelAnimationFrame(animationFrameIdRef.current);
       }
+      stopVideoStream();
     };
-  }, [renderFrame]);
+  }, [renderFrame, stopVideoStream]);
 
   return { webcamRef, showCanvasRef, startVideoStream, stopVideoStream };
 };

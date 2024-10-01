@@ -1,6 +1,7 @@
-import React from 'react';
-import { Form, Input, Button } from 'antd';
-import { useResData } from '../context';
+import React, { useState } from 'react';
+import { Form, Input, Button, message } from 'antd';
+import axios from 'axios';
+import axiosInstance from '../utility/axiosInstance';
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
@@ -21,14 +22,38 @@ const styles: { [key: string]: React.CSSProperties } = {
 };
 
 const Signup: React.FC = () => {
-  const { setIsLogin } = useResData();
-  const onFinish = (values: {
+  const [loading, setLoading] = useState(false);
+
+  const onFinish = async (values: {
     email: string;
     password: string;
-    confirm: string;
-  }) => {};
+    display_name: string;
+  }) => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post('/auth/signup/', {
+        email: values.email,
+        password: values.password,
+        display_name: values.display_name,
+      });
+      message.success(
+        'User created successfully! Please check your email to verify your account.',
+      );
+    } catch (error) {
+      // Use axios.isAxiosError to check if the error is from Axios
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        message.error('Email already registered.');
+      } else {
+        message.error('An error occurred. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const onFinishFailed = (errorInfo: any) => {};
+  const onFinishFailed = (errorInfo: any) => {
+    message.error('Failed to submit. Please check your input.');
+  };
 
   return (
     <div style={styles.container}>
@@ -41,8 +66,19 @@ const Signup: React.FC = () => {
         style={styles.form}
       >
         <Form.Item
+          name="display_name"
+          rules={[
+            { required: true, message: 'Please input your Display Name!' },
+          ]}
+        >
+          <Input placeholder="Display Name" />
+        </Form.Item>
+        <Form.Item
           name="email"
-          rules={[{ required: true, message: 'Please input your Email!' }]}
+          rules={[
+            { required: true, message: 'Please input your Email!' },
+            { type: 'email', message: 'Please enter a valid email!' },
+          ]}
         >
           <Input placeholder="Email" />
         </Form.Item>
@@ -77,17 +113,14 @@ const Signup: React.FC = () => {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" block>
+          <Button type="primary" htmlType="submit" block loading={loading}>
             Sign Up
           </Button>
         </Form.Item>
 
         <div style={styles.footerText}>
           <p>
-            Already have an account?{' '}
-            <span onClick={() => setIsLogin(true)} style={styles.link}>
-              Login
-            </span>
+            Already have an account? <a href="/login">Login</a>
           </p>
         </div>
       </Form>

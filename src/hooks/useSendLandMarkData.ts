@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { LandmarksResult } from '../interface/propsType';
 import { filterLandmark, getIrisDiameter } from '../utility/filterLandMark';
 import useInterval from './useInterval';
@@ -29,33 +29,31 @@ const useSendLandmarkData = ({
           timestamp: currentTime,
         };
 
-        // send(JSON.stringify(dataToSend));
-        send(dataToSend);
+        send(JSON.stringify(dataToSend));
         lastLogTimeRef.current = currentTime;
-
-        if (combineResults) {
-          const parsedMessage =
-            typeof message === 'string' ? JSON.parse(message) : message;
-
-          const newResult = {
-            ...parsedMessage,
-            ...getIrisDiameter(landMarkData as LandmarksResult),
-          };
-
-          setCombineResult(newResult);
-        }
       } catch (error) {
         console.error('Failed to send landmark data:', error);
       }
     }
-  }, [
-    landMarkData,
-    logInterval,
-    send,
-    message,
-    setCombineResult,
-    combineResults,
-  ]);
+  }, [landMarkData, send]);
+
+  useEffect(() => {
+    if (combineResults && message && landMarkData) {
+      try {
+        const parsedMessage =
+          typeof message === 'string' ? JSON.parse(message) : message;
+
+        const newResult = {
+          ...parsedMessage,
+          ...getIrisDiameter(landMarkData as LandmarksResult),
+        };
+
+        setCombineResult(newResult);
+      } catch (error) {
+        console.error('Failed to combine results:', error);
+      }
+    }
+  }, [combineResults, message, landMarkData, setCombineResult]);
 
   useInterval(sendLandMarkData, logInterval, streaming);
 };

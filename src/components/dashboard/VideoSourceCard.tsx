@@ -16,10 +16,10 @@ import {
   VideoContainer,
   PlayPauseButton,
   VideoContent,
-} from '../styles/styles';
-import { VideoSourceCardProps } from '../interface/propsType';
-import WebcamDisplay from './camera/webcamDisplay';
-import useSendLandmarkData from '../hooks/useSendLandMarkData';
+} from '../../styles/styles';
+import { VideoSourceCardProps } from '../../interface/propsType';
+import WebcamDisplay from '../camera/webcamDisplay';
+import useSendLandmarkData from '../../hooks/useSendLandMarkData';
 
 const { Dragger } = Upload;
 
@@ -70,58 +70,60 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     [],
   );
 
+  const saveRecordedVideo = useCallback(async () => {
+    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+    recordedChunksRef.current = [];
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    try {
+      const result = await window.electron.video.saveVideo(buffer);
+      if (result.success) {
+        message.success(`Video saved to ${result.filePath}`);
+      } else {
+        message.error(`Failed to save video: ${result.error}`);
+      }
+    } catch (error) {
+      message.error(`Error occurred: ${error}`);
+    }
+  }, []);
+
+  const startRecording = useCallback(
+    (stream: MediaStream) => {
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      setMediaRecorder(recorder);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = saveRecordedVideo;
+      recorder.start();
+      setRecordingStarted(true);
+    },
+    [saveRecordedVideo],
+  );
+
   const handleStartRecording = useCallback(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       return navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((stream) => {
-          const recorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm',
-          });
-          setMediaRecorder(recorder);
-
-          recorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              recordedChunksRef.current.push(event.data);
-            }
-          };
-
-          recorder.onstop = async () => {
-            const blob = new Blob(recordedChunksRef.current, {
-              type: 'video/webm',
-            });
-            recordedChunksRef.current = [];
-            const arrayBuffer = await blob.arrayBuffer();
-            const buffer = new Uint8Array(arrayBuffer);
-
-            try {
-              const result = await window.electron.video.saveVideo(buffer);
-              if (result.success) {
-                message.success(`Video saved to ${result.filePath}`);
-              } else {
-                message.error(`Failed to save video: ${result.error}`);
-              }
-            } catch (error) {
-              message.error(`Error occurred: ${error}`);
-            }
-          };
-
-          recorder.start();
-          setRecordingStarted(true);
-
-          // Return something to comply with the ESLint rule
-          return recorder;
+          startRecording(stream);
+          return stream; // Explicit return to comply with ESLint
         })
         .catch((error) => {
           console.error('Error accessing media devices.', error);
           message.error('Error accessing media devices.');
-          throw error; // Maintain promise chain
+          throw error; // Re-throw to maintain promise chain and comply with ESLint
         });
     }
 
     message.error('Media devices not supported.');
-    return Promise.reject(new Error('Media devices not supported.')); // Explicitly return a rejected promise
-  }, []);
+    return Promise.reject(new Error('Media devices not supported.')); // Explicit rejection
+  }, [startRecording]);
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorder) {

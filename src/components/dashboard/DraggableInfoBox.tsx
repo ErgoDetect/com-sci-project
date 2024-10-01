@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback } from 'react';
 
-import { InfoBox } from '../styles/styles';
+import { InfoBox } from '../../styles/styles';
 
 interface DraggableInfoBoxProps {
   blinkRate: number;

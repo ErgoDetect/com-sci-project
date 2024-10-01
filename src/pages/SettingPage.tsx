@@ -26,12 +26,15 @@ import { useResData } from '../context';
 const { Sider, Content } = Layout;
 const { Title } = Typography;
 
-const Settings = () => {
+interface SettingsProps {
+  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
   const { showDetailedData, theme } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const [detailedData, setDetailedData] = useState<boolean>(showDetailedData);
   const { deviceId, devices, setDeviceId } = useDevices();
-  const navigate = useNavigate();
 
   const handleDeviceChange = useCallback(
     (value: string) => {
@@ -72,7 +75,10 @@ const Settings = () => {
           <Form.Item label="Select Camera">{deviceSelectorMemo}</Form.Item>
           <Form.Item label="Camera Calibration">
             <CalibrationModal />
-            <Tooltip title="Calibrating the camera can improve detection accuracy.">
+            <Tooltip
+              title="Calibrating the camera can improve detection accuracy."
+              placement="topLeft"
+            >
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
             </Tooltip>
           </Form.Item>
@@ -205,7 +211,7 @@ const Settings = () => {
             />
           }
           onClick={() => {
-            navigate(-1);
+            setIsSettingsOpen(false);
           }}
           style={{
             fontSize: '16px',

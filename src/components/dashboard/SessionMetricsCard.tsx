@@ -8,15 +8,16 @@ import {
   SmileOutlined,
   FrownOutlined,
 } from '@ant-design/icons';
-import Indicator from './Indicator';
-import { MetricsCard } from '../styles/styles';
-import { useResData } from '../context';
+import Indicator from '../Indicator';
+import { MetricsCard } from '../../styles/styles';
+import { useResData } from '../../context';
 
 interface SessionMetricsCardProps {
   sessionActive: boolean;
   toggleStreaming: () => void;
   blinkRate: number;
   goodPostureTime: number;
+  sessionDuration: string; // Added for dynamic session duration
 }
 
 const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
@@ -24,6 +25,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   toggleStreaming,
   blinkRate,
   goodPostureTime,
+  sessionDuration,
 }) => {
   const { landMarkData } = useResData();
 
@@ -31,32 +33,50 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
     if (!landMarkData) return true;
     const { faceResults, poseResults } = landMarkData;
 
-    // Check face landmarks
+    // Helper function to validate face landmarks
+    const isFaceLandmarksValid = (faceResult: any): boolean => {
+      if (
+        !faceResult ||
+        !Array.isArray(faceResult.faceLandmarks) ||
+        faceResult.faceLandmarks.length === 0
+      ) {
+        return false;
+      }
+
+      return faceResult.faceLandmarks.every(
+        (landmarksArray: any) =>
+          Array.isArray(landmarksArray) && landmarksArray.length > 0,
+      );
+    };
+
+    // Helper function to validate pose landmarks
+    const isPoseLandmarksValid = (poseResult: any): boolean => {
+      if (
+        !poseResult ||
+        !Array.isArray(poseResult.landmarks) ||
+        poseResult.landmarks.length === 0 ||
+        !Array.isArray(poseResult.landmarks[0]) ||
+        poseResult.landmarks[0].length < 13
+      ) {
+        return false;
+      }
+
+      const requiredIndices = [7, 8, 11, 12];
+
+      return requiredIndices.every((index) => {
+        const landmark = poseResults.landmarks[0][index];
+        return landmark && (landmark.visibility ?? 0) >= 0.99;
+      });
+    };
+
+    // Disable button if landmarks are invalid
     if (
-      !faceResults ||
-      !faceResults.faceLandmarks ||
-      faceResults.faceLandmarks.length === 0 ||
-      faceResults.faceLandmarks.some(
-        (landmarksArray) => landmarksArray === null,
-      )
+      !isFaceLandmarksValid(faceResults) ||
+      !isPoseLandmarksValid(poseResults)
     ) {
       return true;
     }
 
-    // Check pose landmarks - Ensure shoulders (index 11 and 12) have high visibility
-    if (
-      !poseResults ||
-      !poseResults.landmarks ||
-      poseResults.landmarks.length === 0 ||
-      poseResults.landmarks[0][7]?.visibility < 0.99 ||
-      poseResults.landmarks[0][8]?.visibility < 0.99 ||
-      poseResults.landmarks[0][11]?.visibility < 0.99 ||
-      poseResults.landmarks[0][12]?.visibility < 0.99
-    ) {
-      return true;
-    }
-
-    // If no null values are found, the button should not be disabled
     return false;
   }, [landMarkData]);
 
@@ -64,7 +84,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
     <MetricsCard>
       <Statistic
         title="Session Duration"
-        value={sessionActive ? '10:23' : '00:00'}
+        value={sessionActive ? sessionDuration : '00:00'}
         prefix={<ClockCircleOutlined />}
         valueStyle={{
           fontSize: 24,
@@ -82,7 +102,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
           width: '100%',
           borderRadius: 8,
           fontSize: 22,
-          padding: '19px 0 ',
+          padding: '19px 0',
         }}
       >
         {sessionActive ? 'Stop Session' : 'Start Session'}

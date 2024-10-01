@@ -9,16 +9,11 @@ const container = document.getElementById('root') as HTMLElement;
 const root = ReactDom.createRoot(container);
 
 root.render(
-  <React.StrictMode>
-    <ResProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </ResProvider>
-  </React.StrictMode>,
+  // <React.StrictMode>
+  <ResProvider>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </ResProvider>,
+  // </React.StrictMode>,
 );
-
-window.electron.ipcRenderer.once('ipc-example', (arg) => {
-  console.log(arg);
-});
-window.electron.ipcRenderer.sendMessage('ipc-example', ['ping']);

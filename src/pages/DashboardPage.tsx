@@ -2,29 +2,32 @@ import React, { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import useDevices from '../hooks/useDevices';
 import { Container, FlexRow } from '../styles/styles';
-import VideoSourceCard from '../components/VideoSourceCard';
-import SessionMetricsCard from '../components/SessionMetricsCard';
+import VideoSourceCard from '../components/dashboard/VideoSourceCard';
+import SessionMetricsCard from '../components/dashboard/SessionMetricsCard';
 import SessionSummaryCard from '../components/SessionSummaryCard';
-import DraggableInfoBox from '../components/DraggableInfoBox';
+import DraggableInfoBox from '../components/dashboard/DraggableInfoBox';
 import { useResData } from '../context';
 
 const Dashboard = () => {
-  const { theme, showDetailedData } = useResData();
-  const [useVideoFile, setUseVideoFile] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { theme, showDetailedData, streaming, setStreaming } = useResData();
+  const { deviceId } = useDevices();
+
+  const [videoState, setVideoState] = useState({
+    useVideoFile: false,
+    videoFile: null as File | null,
+    isPlaying: false,
+  });
+
+  const [metrics, setMetrics] = useState({
+    goodPostureTime: 51,
+    badPostureAlerts: 2,
+    blinkRate: 22,
+    proximityAlerts: 1,
+  });
+
   const [dragPosition, setDragPosition] = useState({ x: 16, y: 16 });
 
-  // Metrics state
-  const [goodPostureTime, setGoodPostureTime] = useState(51);
-  const [badPostureAlerts, setBadPostureAlerts] = useState(2);
-  const [blinkRate, setBlinkRate] = useState(22);
-  const [proximityAlerts, setProximityAlerts] = useState(1);
-
   const frameCountRef = useRef<number>(0);
-
-  const { deviceId } = useDevices();
-  const { streaming, setStreaming } = useResData();
 
   const toggleStreaming = useCallback(() => {
     if (streaming) {
@@ -38,55 +41,64 @@ const Dashboard = () => {
   }, [streaming, setStreaming]);
 
   const handlePlayPause = () => {
-    setIsPlaying((prev) => !prev);
+    setVideoState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
+  };
+
+  const updateMetrics = (newMetrics: Partial<typeof metrics>) => {
+    setMetrics((prev) => ({ ...prev, ...newMetrics }));
   };
 
   return (
     <Container>
       <FlexRow>
         <VideoSourceCard
-          useVideoFile={useVideoFile}
-          setUseVideoFile={setUseVideoFile}
-          videoFile={videoFile}
-          setVideoFile={setVideoFile}
-          isPlaying={isPlaying}
+          useVideoFile={videoState.useVideoFile}
+          setUseVideoFile={(value: any) =>
+            setVideoState((prev) => ({ ...prev, useVideoFile: value }))
+          }
+          videoFile={videoState.videoFile}
+          setVideoFile={(file: any) =>
+            setVideoState((prev) => ({ ...prev, videoFile: file }))
+          }
+          isPlaying={videoState.isPlaying}
           handlePlayPause={handlePlayPause}
           deviceId={deviceId}
           theme={theme}
-          streaming={streaming} // Pass streaming state
+          streaming={streaming}
           onRecordingStart={() =>
             message.success('Recording started automatically')
           }
           onRecordingStop={() => message.success('Recording stopped')}
         />
-        {!useVideoFile && (
+        {!videoState.useVideoFile && (
           <SessionMetricsCard
             sessionActive={streaming}
+            sessionDuration=""
             toggleStreaming={toggleStreaming}
-            blinkRate={blinkRate}
-            goodPostureTime={goodPostureTime}
+            blinkRate={metrics.blinkRate}
+            goodPostureTime={metrics.goodPostureTime}
           />
         )}
       </FlexRow>
 
       {showDetailedData && (
         <DraggableInfoBox
-          blinkRate={blinkRate}
+          blinkRate={metrics.blinkRate}
           sessionDuration={streaming ? '10:23' : '00:00'}
-          proximityAlerts={proximityAlerts}
-          badPostureAlerts={badPostureAlerts}
-          goodPostureTime={goodPostureTime}
+          proximityAlerts={metrics.proximityAlerts}
+          badPostureAlerts={metrics.badPostureAlerts}
+          goodPostureTime={metrics.goodPostureTime}
           position={dragPosition}
           setPosition={setDragPosition}
         />
       )}
 
-      {!useVideoFile && (
+      {!videoState.useVideoFile && (
         <SessionSummaryCard
           sessionActive={streaming}
-          goodPostureTime={goodPostureTime}
-          badPostureAlerts={badPostureAlerts}
-          proximityAlerts={proximityAlerts}
+          goodPostureTime={metrics.goodPostureTime}
+          badPostureAlerts={metrics.badPostureAlerts}
+          proximityAlerts={metrics.proximityAlerts}
         />
       )}
     </Container>

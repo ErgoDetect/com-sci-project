@@ -2,32 +2,35 @@ import {
   app,
   BrowserWindow,
   ipcMain,
-  session,
   Notification,
   Tray,
   Menu,
-  powerSaveBlocker, // Import powerSaveBlocker
+  powerSaveBlocker,
 } from 'electron';
-import { createMainWindow } from '../main-util/windowManager'; // Ensure this returns BrowserWindow or null
+import { createMainWindow } from '../main-util/windowManager';
 import * as path from 'path';
 import * as fs from 'fs';
 import logger from '../main-util/logger';
 import loadEnvFile from '../main-util/env';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
+import getMacAddress from '../main-util/getMacAddress';
 
 let mainWindow: BrowserWindow | null = null;
-let tray: Tray | null = null; // System Tray reference
-let isQuitting = false; // Flag to track if the app is quitting
-let powerSaveBlockerId: number | null = null; // Keep a reference for powerSaveBlocker
+let tray: Tray | null = null;
+let isQuitting = false;
+let powerSaveBlockerId: number | null = null;
 
-// Folder for saving videos
 const saveFolderPath = path.join(app.getPath('userData'), 'result');
-if (!fs.existsSync(saveFolderPath)) {
-  fs.mkdirSync(saveFolderPath, { recursive: true });
-}
 
-// Function to show an initial notification when the app starts
+// Ensure save folder exists
+const ensureSaveFolderExists = (): void => {
+  if (!fs.existsSync(saveFolderPath)) {
+    fs.mkdirSync(saveFolderPath, { recursive: true });
+  }
+};
+
+// Show a welcome notification when the app starts
 const showInitialNotification = (): void => {
   if (Notification.isSupported()) {
     const notification = new Notification({
@@ -39,21 +42,13 @@ const showInitialNotification = (): void => {
     notification.on('click', () => console.log('Notification clicked'));
     notification.on('close', () => console.log('Notification closed'));
   } else {
-    console.error('Notifications are not supported on this platform.');
+    logger.error('Notifications are not supported on this platform.');
   }
 };
 
-// Create System Tray and set a context menu
+// Create system tray and context menu
 const createTray = (): void => {
-  const iconPath = path.join(
-    __dirname,
-    '../../',
-    'assets',
-    'icons',
-    '16x16.png',
-  ); // Update this path to your tray icon
-  console.log(iconPath);
-
+  const iconPath = path.join(__dirname, '../../assets/icons/16x16.png');
   tray = new Tray(iconPath);
 
   const contextMenu = Menu.buildFromTemplate([
@@ -69,55 +64,109 @@ const createTray = (): void => {
 
   tray.setToolTip('Electron App');
   tray.setContextMenu(contextMenu);
+  tray.on('click', () => mainWindow?.show());
+};
 
-  // Restore the window when the tray icon is clicked
-  tray.on('click', () => {
+// Handle application events
+const setupAppEvents = (): void => {
+  // Handle close event to minimize to tray
+  mainWindow?.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+
+      if (process.platform === 'darwin') {
+        app.dock.hide();
+      }
+    } else if (tray) {
+      tray.destroy();
+    }
+  });
+
+  // Quitting the app
+  app.on('before-quit', () => {
+    isQuitting = true;
+
+    // Stop power save blocker
+    if (powerSaveBlockerId !== null) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+      powerSaveBlockerId = null;
+    }
+
+    // Clean up tray
     if (tray) {
+      tray.destroy();
+    }
+  });
+
+  // Handle app lifecycle for macOS
+  app.on('window-all-closed', () => {
+    if (process.platform === 'darwin') {
+      app.dock.hide();
+    } else {
+      app.quit();
+    }
+  });
+
+  app.on('activate', async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = await createMainWindow();
+    } else {
       mainWindow?.show();
     }
   });
 };
 
-// Application startup logic
-app.whenReady().then(async () => {
-  loadEnvFile(); // Load environment files if any
-  handleFileOperations(ipcMain); // Handle file operations via IPC
-  handleNotifications(); // Set up notifications
+// Set up IPC handlers
+const setupIPCHandlers = (): void => {
+  ipcMain.handle('save-video', async (event, buffer: Buffer) => {
+    try {
+      const videoFileName = `recorded_video_${Date.now()}.webm`;
+      const filePath = path.join(saveFolderPath, videoFileName);
+      fs.writeFileSync(filePath, buffer);
+      return { success: true, filePath };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
 
-  // Create the main window
-  mainWindow = await createMainWindow(); // Await the promise and assign the result to mainWindow
+  // Add other IPC handlers if needed
+};
 
-  if (mainWindow) {
-    // Minimize to tray instead of closing the app
-    mainWindow.on('close', (event) => {
-      if (!isQuitting) {
-        event.preventDefault();
-        mainWindow?.hide();
-
-        if (process.platform === 'darwin') {
-          app.dock.hide();
-        }
-      } else {
-        // Destroy the tray to clean up resources
-        if (tray) {
-          tray.destroy();
-        }
-      }
-    });
-
-    // Create System Tray
-    createTray();
-  }
-
-  // Start powerSaveBlocker to prevent system suspension
-  if (!powerSaveBlockerId) {
+// Start power save blocker
+const startPowerSaveBlocker = (): void => {
+  if (powerSaveBlockerId === null) {
     powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
     console.log('Power save blocker started:', powerSaveBlockerId);
   }
+};
 
-  showInitialNotification();
+// Main application startup logic
+app.whenReady().then(async () => {
+  // Load environment variables
+  loadEnvFile();
 
-  // Electron debug and production mode handling
+  // Ensure save folder exists
+  ensureSaveFolderExists();
+
+  // Set up file operations and notifications
+  handleFileOperations();
+  handleNotifications();
+
+  // Create the main window
+  mainWindow = await createMainWindow();
+
+  if (mainWindow) {
+    setupAppEvents();
+    setupIPCHandlers(); // Added this call to set up IPC handlers
+    createTray();
+    showInitialNotification();
+    startPowerSaveBlocker();
+  }
+
   if (process.env.NODE_ENV === 'production') {
     require('source-map-support').install();
   }
@@ -128,75 +177,18 @@ app.whenReady().then(async () => {
   ) {
     require('electron-debug')();
   }
+
+  console.log('CPU Usage:', process.getCPUUsage());
+  console.log('System Memory Info:', process.getSystemMemoryInfo());
 });
 
-// Handle app quitting
-app.on('before-quit', () => {
-  isQuitting = true;
-
-  // Stop the powerSaveBlocker if it's running
-  if (powerSaveBlockerId !== null) {
-    powerSaveBlocker.stop(powerSaveBlockerId);
-    console.log('Power save blocker stopped:', powerSaveBlockerId);
-    powerSaveBlockerId = null;
-  }
-
-  if (tray) {
-    tray.destroy();
-  }
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// IPC handlers for saving video and getting cookies
-ipcMain.handle('save-video', async (event, buffer: Buffer) => {
-  try {
-    const videoFileName = `recorded_video_${Date.now()}.webm`;
-    const filePath = path.join(saveFolderPath, videoFileName);
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, filePath };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unexpected error',
-    };
-  }
-});
-
-ipcMain.handle('get-cookie', async () => {
-  try {
-    const cookies = await session.defaultSession.cookies.get({
-      url: 'http://localhost:8000',
-    });
-    const accessToken = cookies.find(
-      (cookie) => cookie.name === 'access_token',
-    );
-    const refreshToken = cookies.find(
-      (cookie) => cookie.name === 'refresh_token',
-    );
-    if (!accessToken || !refreshToken)
-      throw new Error('Required token(s) missing');
-    return {
-      access_token: accessToken.value,
-      refresh_token: refreshToken.value,
-    };
-  } catch (error) {
-    console.error('Error occurred in get-cookie:', error);
-    throw error;
-  }
-});
-
-// App lifecycle management
-app.on('window-all-closed', () => {
-  // Hide dock icon for macOS
-  if (process.platform === 'darwin') {
-    app.dock.hide();
-  }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', async () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    mainWindow = await createMainWindow(); // Ensure it's awaited and assigned properly
-  }
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  app.quit();
 });

@@ -4,6 +4,7 @@ import {
   ipcRenderer,
   IpcRendererEvent,
 } from 'electron';
+import getMacAddress from '../main-util/getMacAddress';
 
 // Define your channels
 export type Channels =
@@ -17,7 +18,8 @@ export type Channels =
   | 'read-file'
   | 'file-exists'
   | 'open-auth-url'
-  | 'save-video'; // Add 'save-video' channel
+  | 'save-video' // Add 'save-video' channel
+  | 'get-mac-address';
 
 const electronHandler = {
   ipcRenderer: {
@@ -44,8 +46,8 @@ const electronHandler = {
     openUrl(url: string) {
       return ipcRenderer.invoke('open-auth-url', url);
     },
-    getCookie() {
-      return ipcRenderer.invoke('get-cookie');
+    getMacAddress() {
+      return ipcRenderer.invoke('get-mac-address');
     },
   },
   fs: {
