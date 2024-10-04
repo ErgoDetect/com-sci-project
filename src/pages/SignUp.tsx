@@ -1,7 +1,11 @@
+// Signup.tsx
+
 import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../utility/axiosInstance';
+import { SignUpFormValues } from '../interface/propsType';
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
@@ -22,13 +26,9 @@ const styles: { [key: string]: React.CSSProperties } = {
 };
 
 const Signup: React.FC = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const onFinish = async (values: {
-    email: string;
-    password: string;
-    display_name: string;
-  }) => {
+  const onFinish = async (values: SignUpFormValues) => {
     setLoading(true);
     try {
       const response = await axiosInstance.post('/auth/signup/', {
@@ -36,15 +36,19 @@ const Signup: React.FC = () => {
         password: values.password,
         display_name: values.display_name,
       });
-      message.success(
-        'User created successfully! Please check your email to verify your account.',
-      );
+
+      if (response.status === 201) {
+        message.success('Signup successful! Please verify your email.');
+      }
     } catch (error) {
-      // Use axios.isAxiosError to check if the error is from Axios
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
-        message.error('Email already registered.');
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          message.error('Email already registered.');
+        } else {
+          message.error('An error occurred. Please try again.');
+        }
       } else {
-        message.error('An error occurred. Please try again.');
+        message.error('An unexpected error occurred.');
       }
     } finally {
       setLoading(false);
@@ -53,6 +57,7 @@ const Signup: React.FC = () => {
 
   const onFinishFailed = (errorInfo: any) => {
     message.error('Failed to submit. Please check your input.');
+    console.error('Failed:', errorInfo);
   };
 
   return (
@@ -64,16 +69,21 @@ const Signup: React.FC = () => {
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
         style={styles.form}
+        layout="vertical"
       >
         <Form.Item
+          label="Display Name"
           name="display_name"
           rules={[
             { required: true, message: 'Please input your Display Name!' },
+            { min: 3, message: 'Display Name must be at least 3 characters.' },
           ]}
         >
           <Input placeholder="Display Name" />
         </Form.Item>
+
         <Form.Item
+          label="Email"
           name="email"
           rules={[
             { required: true, message: 'Please input your Email!' },
@@ -84,21 +94,26 @@ const Signup: React.FC = () => {
         </Form.Item>
 
         <Form.Item
+          label="Password"
           name="password"
-          rules={[{ required: true, message: 'Please input your Password!' }]}
+          rules={[
+            { required: true, message: 'Please input your Password!' },
+            { min: 6, message: 'Password must be at least 6 characters.' },
+          ]}
           hasFeedback
         >
           <Input.Password placeholder="Password" />
         </Form.Item>
 
         <Form.Item
+          label="Confirm Password"
           name="confirm"
           dependencies={['password']}
           hasFeedback
           rules={[
             { required: true, message: 'Please confirm your password!' },
             ({ getFieldValue }) => ({
-              validator(_, value) {
+              validator(_: any, value: string) {
                 if (!value || getFieldValue('password') === value) {
                   return Promise.resolve();
                 }
@@ -120,7 +135,9 @@ const Signup: React.FC = () => {
 
         <div style={styles.footerText}>
           <p>
-            Already have an account? <a href="/login">Login</a>
+            Already have an account?{' '}
+            {/* Use react-router's Link component for client-side routing */}
+            <Link to="/login">Login</Link>
           </p>
         </div>
       </Form>

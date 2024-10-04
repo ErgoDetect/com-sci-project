@@ -23,7 +23,7 @@ const { Header, Content, Footer } = Layout;
 
 const App: React.FC = () => {
   const [renderSettings, setRenderSettings] = useState(false);
-  const { checkAuthStatus, loading, loginWithGoogle } = useAuth();
+  const { checkAuthStatus, loading } = useAuth();
   const [authChecked, setAuthChecked] = useState(false); // New state to track auth status check
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +44,14 @@ const App: React.FC = () => {
       setAuthChecked(true); // For login/signup pages, no need to check auth
     }
   }, [checkAuthStatus, navigate, location.pathname]);
+
+  // useEffect(() => {
+  //   window.electron.ipcRenderer.onDeepLink((route: string) => {
+  //     if (route === '/login') {
+  //       navigate('/login');
+  //     }
+  //   });
+  // }, [navigate]);
 
   // Show a loading spinner until authentication check is complete
   if (loading || !authChecked) {
@@ -106,6 +114,12 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/summary" element={<SummaryPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/setting"
+            element={<SettingPage setIsSettingsOpen={closeSettings} />}
+          />
         </Routes>
       </Content>
 

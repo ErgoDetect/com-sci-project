@@ -17,7 +17,6 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { IoIosCloseCircleOutline } from 'react-icons/io';
-import { useNavigate } from 'react-router-dom';
 import DeviceSelector from '../components/camera/deviceSelector';
 import useDevices from '../hooks/useDevices';
 import CalibrationModal from '../components/modal/CalibrationModal';

@@ -187,3 +187,20 @@ export interface AuthStatusResponse {
   message?: string; // Optional error or informational message
   user_id?: string; // Optional user ID if needed
 }
+
+// types.ts
+
+export interface SignUpFormValues {
+  email: string;
+  password: string;
+  display_name: string;
+  confirm: string;
+}
+
+export interface FormErrorInfo {
+  errorFields: Array<{
+    name: string[];
+    errors: string[];
+  }>;
+  outOfDate: boolean;
+}

@@ -19,7 +19,8 @@ export type Channels =
   | 'file-exists'
   | 'open-auth-url'
   | 'save-video' // Add 'save-video' channel
-  | 'get-mac-address';
+  | 'get-mac-address'
+  | 'deep-link';
 
 const electronHandler = {
   ipcRenderer: {
@@ -49,6 +50,11 @@ const electronHandler = {
     getMacAddress() {
       return ipcRenderer.invoke('get-mac-address');
     },
+    // onDeepLink: (callback: (route: string) => void) => {
+    //   ipcRenderer.on('deep-link', (_event: IpcRendererEvent, route: string) => {
+    //     callback(route);
+    //   });
+    // },
   },
   fs: {
     getUserDataPath(): Promise<string> {
