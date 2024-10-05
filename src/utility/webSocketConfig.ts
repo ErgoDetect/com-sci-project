@@ -29,7 +29,6 @@ const useWebSocket = (
     const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
     const socketUrl = `${protocol}://localhost:8000/${dest}`;
 
-    // Close previous WebSocket if still open
     if (
       socketRef.current &&
       socketRef.current.readyState !== WebSocket.CLOSED
@@ -47,10 +46,9 @@ const useWebSocket = (
 
     const handleMessage = (event: MessageEvent) => {
       const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
+      console.info('WebSocket message received:', data);
       setMessage(data);
-      if (onMessage) {
-        onMessage(data);
-      }
+      onMessage?.(data);
     };
 
     const handleError = (error: Event) => {
@@ -65,10 +63,10 @@ const useWebSocket = (
       reconnectTimeoutRef.current = setTimeout(
         () => {
           setReconnectAttempts((prev) => prev + 1);
-          initializeWebSocket(); // Attempt to reconnect
+          initializeWebSocket();
         },
         Math.min(5000 * (reconnectAttempts + 1), 30000),
-      ); // Exponential backoff
+      );
     };
 
     socket.addEventListener('open', handleOpen);
@@ -100,7 +98,7 @@ const useWebSocket = (
   }, [initializeWebSocket]);
 
   const send = useCallback((data: any) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(data));
     } else {
       console.error('WebSocket is not open. Unable to send data.');

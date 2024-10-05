@@ -2,122 +2,253 @@ import {
   app,
   BrowserWindow,
   ipcMain,
-  session,
   Notification,
   Tray,
   Menu,
-  powerSaveBlocker, // Import powerSaveBlocker
+  powerSaveBlocker,
+  dialog,
 } from 'electron';
-import { createMainWindow } from '../main-util/windowManager'; // Ensure this returns BrowserWindow or null
+import { createMainWindow } from '../main-util/windowManager';
 import * as path from 'path';
 import * as fs from 'fs';
 import logger from '../main-util/logger';
 import loadEnvFile from '../main-util/env';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
+import log from 'electron-log';
 
 let mainWindow: BrowserWindow | null = null;
-let tray: Tray | null = null; // System Tray reference
-let isQuitting = false; // Flag to track if the app is quitting
-let powerSaveBlockerId: number | null = null; // Keep a reference for powerSaveBlocker
+let tray: Tray | null = null;
+let isQuitting = false;
+let powerSaveBlockerId: number | null = null;
 
-// Folder for saving videos
-const saveFolderPath = path.join(app.getPath('userData'), 'result');
-if (!fs.existsSync(saveFolderPath)) {
-  fs.mkdirSync(saveFolderPath, { recursive: true });
+if (process.defaultApp && process.argv.length >= 2) {
+  app.setAsDefaultProtocolClient('ergodetect', process.execPath, [
+    path.resolve(process.argv[1]),
+  ]);
+} else {
+  app.setAsDefaultProtocolClient('ergodetect');
 }
 
-// Function to show an initial notification when the app starts
+// Define a helper to retrieve asset paths
+const getAssetPath = (...paths: string[]): string => {
+  const RESOURCES_PATH = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '../../assets');
+  return path.join(RESOURCES_PATH, ...paths);
+};
+
+// Ensure save folder exists
+const ensureSaveFolderExists = (): void => {
+  const saveFolderPath = path.join(app.getPath('userData'), 'result');
+  if (!fs.existsSync(saveFolderPath)) {
+    fs.mkdirSync(saveFolderPath, { recursive: true });
+  }
+};
+
+// Show a welcome notification when the app starts
 const showInitialNotification = (): void => {
   if (Notification.isSupported()) {
     const notification = new Notification({
       title: 'Welcome!',
       body: 'Your application is running successfully!',
     });
-
     notification.show();
     notification.on('click', () => console.log('Notification clicked'));
     notification.on('close', () => console.log('Notification closed'));
   } else {
-    console.error('Notifications are not supported on this platform.');
+    logger.error('Notifications are not supported on this platform.');
   }
 };
 
-// Create System Tray and set a context menu
+// Create system tray and context menu
 const createTray = (): void => {
-  const iconPath = path.join(
-    __dirname,
-    '../../',
-    'assets',
-    'icons',
-    '16x16.png',
-  ); // Update this path to your tray icon
-  console.log(iconPath);
+  const iconPath = getAssetPath('icons', '16x16.png');
 
-  tray = new Tray(iconPath);
+  // Log if the tray icon path does not exist
+  if (!fs.existsSync(iconPath)) {
+    log.error(`Tray icon not found at: ${iconPath}`);
+    return;
+  }
 
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show App', click: () => mainWindow?.show() },
-    {
-      label: 'Quit',
-      click: () => {
-        isQuitting = true;
-        app.quit();
+  try {
+    tray = new Tray(iconPath);
+
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Show App', click: () => mainWindow?.show() },
+      {
+        label: 'Quit',
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        },
       },
-    },
-  ]);
+    ]);
 
-  tray.setToolTip('Electron App');
-  tray.setContextMenu(contextMenu);
+    tray.setToolTip('Electron App');
+    tray.setContextMenu(contextMenu);
+    tray.on('click', () => mainWindow?.show());
 
-  // Restore the window when the tray icon is clicked
-  tray.on('click', () => {
+    log.info('Tray created successfully');
+  } catch (error) {
+    log.error('Failed to create tray:', error);
+  }
+};
+
+// Handle application events
+const setupAppEvents = (): void => {
+  // Handle close event to hide the window instead of quitting
+  mainWindow?.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow?.hide(); // Hide the window instead of closing
+      if (process.platform === 'darwin') {
+        app.dock.hide(); // Hide the dock icon on macOS
+      }
+    } else {
+      mainWindow = null;
+    }
+  });
+
+  // Handle quitting the app
+  app.on('before-quit', () => {
+    isQuitting = true;
     if (tray) {
+      tray.destroy(); // Destroy the tray only when actually quitting
+    }
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform === 'darwin') {
+      app.dock.hide();
+    } else {
+      app.quit();
+    }
+  });
+
+  app.on('activate', async () => {
+    if (BrowserWindow.getAllWindows().length === 0 && !mainWindow) {
+      mainWindow = await createMainWindow();
+    } else {
       mainWindow?.show();
+    }
+  });
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    const urlPath = new URL(url).pathname;
+
+    if (urlPath === '/login') {
+      mainWindow?.webContents.send('web-redirect', '/login');
     }
   });
 };
 
-// Application startup logic
-app.whenReady().then(async () => {
-  loadEnvFile(); // Load environment files if any
-  handleFileOperations(ipcMain); // Handle file operations via IPC
-  handleNotifications(); // Set up notifications
+// Set up IPC handlers
+const setupIPCHandlers = (): void => {
+  ipcMain.handle('save-video', async (event, buffer: Buffer) => {
+    try {
+      const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      const videoFileName = `recorded_video_${Date.now()}.webm`;
+      const filePath = path.join(saveFolderPath, videoFileName);
+      fs.writeFileSync(filePath, buffer);
+      return { success: true, filePath };
+    } catch (error) {
+      logger.error('Error saving video:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
+};
 
-  // Create the main window
-  mainWindow = await createMainWindow(); // Await the promise and assign the result to mainWindow
-
-  if (mainWindow) {
-    // Minimize to tray instead of closing the app
-    mainWindow.on('close', (event) => {
-      if (!isQuitting) {
-        event.preventDefault();
-        mainWindow?.hide();
-
-        if (process.platform === 'darwin') {
-          app.dock.hide();
-        }
-      } else {
-        // Destroy the tray to clean up resources
-        if (tray) {
-          tray.destroy();
-        }
-      }
-    });
-
-    // Create System Tray
-    createTray();
-  }
-
-  // Start powerSaveBlocker to prevent system suspension
-  if (!powerSaveBlockerId) {
+// Start power save blocker
+const startPowerSaveBlocker = (): void => {
+  if (powerSaveBlockerId === null) {
     powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.log('Power save blocker started:', powerSaveBlockerId);
+    logger.info('Power save blocker started:', powerSaveBlockerId);
+  }
+};
+
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+    const deepLinkUrl = commandLine.pop();
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${deepLinkUrl}`);
+  });
+}
+
+// const handleDeepLinks = (): void => {
+//   // macOS open-url event
+//   app.on('open-url', (event, url) => {
+//     event.preventDefault();
+//     const urlPath = new URL(url).pathname;
+
+//     // Log the URL path and the event
+//     log.info('Received open-url event:', url);
+
+//     if (mainWindow) {
+//       if (urlPath === '/login') {
+//         log.info('Navigating to login page via deep link');
+//         mainWindow.webContents.send('deep-link', '/login');
+//       } else {
+//         log.warn('Unrecognized deep link path:', urlPath);
+//       }
+//     } else {
+//       log.error('Main window is not available to handle deep link');
+//     }
+//   });
+
+//   // Handle deep links from command line for Windows/Linux
+//   app.on('second-instance', (event, commandLine) => {
+//     log.info(
+//       'Received second-instance event with command line arguments:',
+//       commandLine,
+//     );
+
+//     if (mainWindow) {
+//       const deepLinkUrl = commandLine.find((arg) =>
+//         arg.startsWith('ergodetect://'),
+//       );
+
+//       if (deepLinkUrl) {
+//         const urlPath = new URL(deepLinkUrl).pathname;
+//         log.info('Navigating to deep link path:', urlPath);
+//         mainWindow.webContents.send('deep-link', urlPath);
+//       } else {
+//         log.warn('No valid deep link found in command line arguments');
+//       }
+//     } else {
+//       log.error('Main window is not available to handle second-instance event');
+//     }
+//   });
+// };
+
+// Main application startup logic
+app.whenReady().then(async () => {
+  loadEnvFile();
+  ensureSaveFolderExists();
+  handleFileOperations();
+  handleNotifications();
+  // handleDeepLinks();
+
+  mainWindow = await createMainWindow();
+  if (mainWindow) {
+    setupAppEvents();
+    setupIPCHandlers();
+    createTray();
+    showInitialNotification();
+    startPowerSaveBlocker();
   }
 
-  showInitialNotification();
-
-  // Electron debug and production mode handling
   if (process.env.NODE_ENV === 'production') {
     require('source-map-support').install();
   }
@@ -128,75 +259,17 @@ app.whenReady().then(async () => {
   ) {
     require('electron-debug')();
   }
+
+  logger.info('CPU Usage:', process.getCPUUsage());
+  logger.info('System Memory Info:', process.getSystemMemoryInfo());
 });
 
-// Handle app quitting
-app.on('before-quit', () => {
-  isQuitting = true;
-
-  // Stop the powerSaveBlocker if it's running
-  if (powerSaveBlockerId !== null) {
-    powerSaveBlocker.stop(powerSaveBlockerId);
-    console.log('Power save blocker stopped:', powerSaveBlockerId);
-    powerSaveBlockerId = null;
-  }
-
-  if (tray) {
-    tray.destroy();
-  }
+// Error Handling for unhandled rejections and exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// IPC handlers for saving video and getting cookies
-ipcMain.handle('save-video', async (event, buffer: Buffer) => {
-  try {
-    const videoFileName = `recorded_video_${Date.now()}.webm`;
-    const filePath = path.join(saveFolderPath, videoFileName);
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, filePath };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unexpected error',
-    };
-  }
-});
-
-ipcMain.handle('get-cookie', async () => {
-  try {
-    const cookies = await session.defaultSession.cookies.get({
-      url: 'http://localhost:8000',
-    });
-    const accessToken = cookies.find(
-      (cookie) => cookie.name === 'access_token',
-    );
-    const refreshToken = cookies.find(
-      (cookie) => cookie.name === 'refresh_token',
-    );
-    if (!accessToken || !refreshToken)
-      throw new Error('Required token(s) missing');
-    return {
-      access_token: accessToken.value,
-      refresh_token: refreshToken.value,
-    };
-  } catch (error) {
-    console.error('Error occurred in get-cookie:', error);
-    throw error;
-  }
-});
-
-// App lifecycle management
-app.on('window-all-closed', () => {
-  // Hide dock icon for macOS
-  if (process.platform === 'darwin') {
-    app.dock.hide();
-  }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', async () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    mainWindow = await createMainWindow(); // Ensure it's awaited and assigned properly
-  }
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  app.quit();
 });

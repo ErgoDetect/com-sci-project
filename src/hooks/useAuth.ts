@@ -1,11 +1,50 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { message } from 'antd';
 import { useResData } from '../context'; // Assuming this handles app-level state
-import axiosInstance from '../utility/axiosInstance'; // Import your axios instance
+import axiosInstance from '../utility/axiosInstance'; // Your axios instance
+import { AuthStatusResponse } from '../interface/propsType';
+
+// Define URLs
+const GOOGLE_SSE_URL = `http://localhost:8000/auth/google/sse/`;
+const GOOGLE_LOGIN_URL = `/auth/google/login/`;
+const GOOGLE_SET_COOKIES_URL = `/auth/google/set-cookies/`;
+const LOGIN_URL = `/auth/login/`;
+const REFRESH_TOKEN_URL = `/auth/refresh-token/`;
+const AUTH_STATUS_URL = `/auth/status/`;
 
 // Centralized error logger
-const logError = (message: string, error: unknown) => {
-  console.error(`${message}:`, error);
+const logError = (messageText: string, error: unknown) => {
+  console.error(`${messageText}:`, error);
+};
+
+// Helper to handle different server errors
+const handleServerError = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const serverError = error.response?.data?.detail;
+    const errorMessages: Record<string, string> = {
+      'Email does not exist.': 'Email does not exist. Please register.',
+      'Email not verified.': 'Email not verified. Please check your inbox.',
+      'Incorrect password.': 'Incorrect password. Please try again.',
+    };
+
+    const messageText =
+      errorMessages[serverError] ||
+      'An error occurred. Please try again later.';
+    message.error(messageText);
+  } else {
+    message.error('Network error. Please check your connection.');
+  }
+};
+
+// Helper to get device identifier
+const getDeviceIdentifier = async (): Promise<string> => {
+  const deviceIdentifier = await window.electron.ipcRenderer.getMacAddress();
+  if (!deviceIdentifier) {
+    throw new Error('Device identifier not found');
+  }
+  return deviceIdentifier;
 };
 
 // SSE handler for Google login
@@ -13,39 +52,40 @@ const handleSSE = async (
   setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   return new Promise<void>((resolve, reject) => {
-    const eventSource = new EventSource(
-      `http://localhost:8000/auth/google/sse/`,
-    );
+    const eventSource = new EventSource(GOOGLE_SSE_URL); // Open the SSE connection
+
     eventSource.onmessage = (event) => {
       try {
+        console.log('SSE message received:', event.data);
         const data = JSON.parse(event.data);
-
         if (data?.success) {
-          setLoginResponse(true);
-          resolve();
+          setLoginResponse(data.success); // Set login response in global state
+          resolve(); // Resolve the promise, indicating login success
         } else {
-          reject(new Error('Login failed via SSE'));
+          reject(new Error('Login failed via SSE')); // Reject if login failed
         }
       } catch (error) {
         logError('Error parsing SSE message', error);
-        reject(error);
+        reject(error); // Reject the promise if parsing error occurs
       } finally {
-        eventSource.close();
+        eventSource.close(); // Close the SSE connection
       }
     };
 
     eventSource.onerror = (error) => {
-      logError('SSE connection error', error);
-      eventSource.close();
-      reject(error);
+      logError('SSE connection error', error); // Log any errors in SSE
+      eventSource.close(); // Close the SSE connection
+      reject(error); // Reject the promise if an error occurs
     };
   });
 };
 
 // Fetch Google Auth URL
-const fetchAuthUrl = async () => {
+const fetchGoogleAuthUrl = async (deviceIdentifier: string) => {
   try {
-    const { data } = await axiosInstance.get(`/auth/google/login/`);
+    const { data } = await axiosInstance.get(GOOGLE_LOGIN_URL, {
+      headers: { 'Device-Identifier': deviceIdentifier },
+    });
     return data.url;
   } catch (error) {
     logError('Error fetching Google Auth URL', error);
@@ -54,114 +94,141 @@ const fetchAuthUrl = async () => {
 };
 
 // Fetch token and set cookies
-const fetchToken = async () => {
+const fetchGoogleToken = async () => {
   try {
-    await axiosInstance.get(`/auth/google/set-cookies/`, {
-      withCredentials: true,
-    });
+    await axiosInstance.get(GOOGLE_SET_COOKIES_URL);
   } catch (error) {
     logError('Error fetching token and setting cookies', error);
     throw error;
   }
 };
 
-// Utility to check cookies via Electron
-const checkCookies = async () => {
+// Refresh token logic
+const refreshAccessToken = async () => {
   try {
-    // Call Electron IPC to get the cookies
-    const cookies = await window.electron.ipcRenderer.getCookie();
-
-    // Check if the access_token is present
-    return !!cookies.access_token; // Simply check if access_token exists
+    await axiosInstance.post(REFRESH_TOKEN_URL, {}, { withCredentials: true });
   } catch (error) {
-    logError('Error fetching cookies', error);
+    logError('Error refreshing access token', error);
     throw error;
+  }
+};
+
+// Check token status
+const checkTokenStatus = async (
+  deviceIdentifier: string,
+): Promise<AuthStatusResponse> => {
+  try {
+    const { data } = await axiosInstance.get<AuthStatusResponse>(
+      AUTH_STATUS_URL,
+      {
+        withCredentials: true,
+        headers: { 'Device-Identifier': deviceIdentifier },
+      },
+    );
+
+    return data;
+  } catch (error) {
+    logError('Error checking token status', error);
+    return { status: 'LoginRequired', message: 'Authentication failed' };
   }
 };
 
 // Optimized hook for authentication
 const useAuth = () => {
-  const { isLogin, setIsLogin } = useResData(); // Assuming useResData provides these
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setLoginResponse } = useResData(); // Assuming this handles global login state
 
-  useEffect(() => {
-    if (isLogin) {
-      console.log('Login state updated, navigating to root...');
-      navigate('/'); // Navigate only after login state is true
+  // Centralized function to handle successful login
+  const handleSuccessfulLogin = useCallback(() => {
+    navigate('/'); // Redirect to dashboard or home
+  }, [navigate]);
+
+  // Token status check
+  const checkAuthStatus = useCallback(async (): Promise<AuthStatusResponse> => {
+    try {
+      setLoading(true);
+      const deviceIdentifier = await getDeviceIdentifier();
+      return await checkTokenStatus(deviceIdentifier);
+    } catch (error) {
+      logError('Error during token status check', error);
+      return { status: 'LoginRequired', message: 'Authentication failed' };
+    } finally {
+      setLoading(false);
     }
-  }, [isLogin, navigate]);
+  }, []);
 
   // Login with email
   const loginWithEmail = useCallback(
     async (email: string, password: string) => {
-      setLoading(true);
       try {
+        setLoading(true);
+        const deviceIdentifier = await getDeviceIdentifier();
+
         const response = await axiosInstance.post(
-          `/auth/login/`,
-          {
-            email,
-            password,
-          },
-          {
-            withCredentials: true, // Ensures cookies are sent and received
-          },
+          LOGIN_URL,
+          { email, password },
+          { headers: { 'Device-Identifier': deviceIdentifier } },
         );
 
-        if (response.data) {
-          // Step 1: Check cookies client-side for faster validation
-          const isLoggedIn = await checkCookies();
-
-          // Step 2: Optionally send a request to the server to verify token validity
-          if (isLoggedIn) {
-            console.log('Navigating to root...');
-            setIsLogin(true);
-            navigate('/');
+        if (response.status === 200) {
+          message.success('Login successful');
+          const authStatus = await checkAuthStatus();
+          if (authStatus.status === 'Authenticated') {
+            handleSuccessfulLogin();
+          } else if (authStatus.status === 'Refresh') {
+            await refreshAccessToken();
+            handleSuccessfulLogin();
           } else {
-            throw new Error('Login failed: Unable to find valid cookies');
+            navigate('/login');
           }
         }
       } catch (error) {
+        handleServerError(error);
         logError('Login error', error);
       } finally {
-        setLoading(false); // Ensure loading state is reset
+        setLoading(false);
       }
     },
-    [setIsLogin, navigate],
+    [checkAuthStatus, handleSuccessfulLogin, navigate],
   );
 
   // Login with Google OAuth
   const loginWithGoogle = useCallback(async () => {
-    setLoading(true);
     try {
-      const authUrl = await fetchAuthUrl();
+      setLoading(true);
+      const deviceIdentifier = await getDeviceIdentifier();
+      const authUrl = await fetchGoogleAuthUrl(deviceIdentifier);
+
       await window.electron.ipcRenderer.openUrl(authUrl);
 
-      // Step 1: Handle login response through SSE
-      await handleSSE(setIsLogin);
+      // Wait for SSE message indicating login success
+      await handleSSE(setLoginResponse);
 
-      // Step 2: Fetch token and set cookies on successful login
-      await fetchToken();
+      // Fetch token and set cookies
+      await fetchGoogleToken();
 
-      // Step 3: Check if cookies are set and update login state
-      const isLoggedIn = await checkCookies();
-
-      if (isLoggedIn) {
-        console.log('Navigating to root...');
-        setIsLogin(true);
-        navigate('/');
+      // Check authentication status
+      const authStatus = await checkAuthStatus();
+      if (authStatus.status === 'Authenticated') {
+        handleSuccessfulLogin();
+      } else if (authStatus.status === 'Refresh') {
+        await refreshAccessToken();
+        handleSuccessfulLogin();
       } else {
-        throw new Error('Login failed: Unable to find valid cookies');
+        navigate('/login');
       }
     } catch (error) {
       logError('Google login error', error);
+      message.error('Google login failed. Please try again.');
     } finally {
-      setLoading(false); // Ensure loading state is reset
+      setLoading(false);
     }
-  }, [setIsLogin, navigate]);
+  }, [checkAuthStatus, handleSuccessfulLogin, navigate, setLoginResponse]);
 
   return {
     loading,
+    checkAuthStatus,
     loginWithEmail,
     loginWithGoogle,
   };

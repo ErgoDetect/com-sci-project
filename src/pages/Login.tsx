@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Button, Divider, Form, Input } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import GoogleButton from '../components/Login/GoogleButton';
 import useAuth from '../hooks/useAuth';
 
@@ -14,7 +15,7 @@ const Login: React.FC = () => {
   };
 
   // Handle form submission
-  const onFinish = (values: any) => {
+  const onFinish = (values: { email: string; password: string }) => {
     const { email, password } = values;
     loginWithEmail(email, password); // Call the centralized login logic
   };
@@ -73,7 +74,7 @@ const Login: React.FC = () => {
           </Form>
 
           <h4 style={{ textAlign: 'center' }}>
-            Don&apos;t have an account? <a href="/signup">Sign up</a>
+            Don&apos;t have an account? <Link to="/signup">Sign up</Link>
           </h4>
         </div>
 

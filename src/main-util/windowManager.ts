@@ -1,8 +1,9 @@
-import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
-import path from 'path';
+import { BrowserWindow, app, ipcMain, shell } from 'electron';
+import * as path from 'path';
 import { resolveHtmlPath } from '../main/util';
 import installExtensions from './extensions';
 import MenuBuilder from '../main/menu';
+import getMacAddress from './getMacAddress';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -15,7 +16,7 @@ const getAssetPath = (...paths: string[]): string => {
 };
 
 // Create and configure the main BrowserWindow
-const configureMainWindow = (): BrowserWindow => {
+const createBrowserWindow = (): BrowserWindow => {
   const window = new BrowserWindow({
     show: false,
     width: 1024,
@@ -37,13 +38,17 @@ const configureMainWindow = (): BrowserWindow => {
     },
   });
 
-  window.loadURL(resolveHtmlPath('index.html'));
+  // Handle new window events to prevent opening external URLs in the app
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
 
   return window;
 };
 
-// Handle the "ready-to-show" event
-const handleReadyToShow = (window: BrowserWindow): void => {
+// Show window when ready, open dev tools in dev mode
+const setupWindowEvents = (window: BrowserWindow): void => {
   window.on('ready-to-show', () => {
     if (process.env.START_MINIMIZED) {
       window.minimize();
@@ -58,14 +63,15 @@ const handleReadyToShow = (window: BrowserWindow): void => {
       window.webContents.openDevTools();
     }
   });
+
+  window.on('closed', () => {
+    mainWindow = null;
+  });
 };
 
-// Handle URL opening in external browser
+// Handle opening URLs externally
 const handleAuthUrlOpening = (): void => {
-  ipcMain.removeHandler('open-auth-url');
-
-  // Register the new handler
-  ipcMain.handle('open-auth-url', async (event, url: string) => {
+  ipcMain.handle('open-auth-url', async (_event, url: string) => {
     try {
       await shell.openExternal(url);
       return { success: true };
@@ -76,17 +82,24 @@ const handleAuthUrlOpening = (): void => {
   });
 };
 
-// Create the main application window
-export const createMainWindow = async (): Promise<BrowserWindow | null> => {
-  await installExtensions();
-  mainWindow = configureMainWindow();
+ipcMain.handle('get-mac-address', () => {
+  return getMacAddress(); // Call the function to retrieve the MAC address
+});
 
-  handleReadyToShow(mainWindow);
+// Create and initialize the main application window
+export const createMainWindow = async (): Promise<BrowserWindow> => {
+  if (
+    process.env.NODE_ENV === 'development' ||
+    process.env.DEBUG_PROD === 'true'
+  ) {
+    await installExtensions();
+  }
+
+  mainWindow = createBrowserWindow();
+  setupWindowEvents(mainWindow);
   handleAuthUrlOpening();
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+  await mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();

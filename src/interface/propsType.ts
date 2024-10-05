@@ -181,3 +181,26 @@ export interface GoogleAuthResponse {
   access_token: string;
   success: boolean;
 }
+
+export interface AuthStatusResponse {
+  status: 'Authenticated' | 'Refresh' | 'LoginRequired'; // Expected status values
+  message?: string; // Optional error or informational message
+  user_id?: string; // Optional user ID if needed
+}
+
+// types.ts
+
+export interface SignUpFormValues {
+  email: string;
+  password: string;
+  display_name: string;
+  confirm: string;
+}
+
+export interface FormErrorInfo {
+  errorFields: Array<{
+    name: string[];
+    errors: string[];
+  }>;
+  outOfDate: boolean;
+}
