@@ -6,7 +6,7 @@ import {
   useNavigate,
   useLocation,
 } from 'react-router-dom';
-import { Layout, Menu, Spin } from 'antd';
+import { Layout, Menu, Modal, Spin } from 'antd';
 import {
   DashboardOutlined,
   SettingOutlined,
@@ -23,13 +23,21 @@ const { Header, Content, Footer } = Layout;
 
 const App: React.FC = () => {
   const [renderSettings, setRenderSettings] = useState(false);
-  const { checkAuthStatus, loading } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false); // New state to track auth status check
+  const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // State to manage the visibility of the modal
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   useEffect(() => {
-    // Only check authentication status on protected pages, like dashboard and summary
+    if (tryCount >= 12) {
+      setIsModalVisible(true);
+    }
+  }, [tryCount]);
+
+  useEffect(() => {
     const checkAuthentication = async () => {
       const authStatus = await checkAuthStatus();
       if (authStatus.status === 'LoginRequired') {
@@ -45,17 +53,13 @@ const App: React.FC = () => {
     }
   }, [checkAuthStatus, navigate, location.pathname]);
 
-  // useEffect(() => {
-  //   window.electron.ipcRenderer.onDeepLink((route: string) => {
-  //     if (route === '/login') {
-  //       navigate('/login');
-  //     }
-  //   });
-  // }, [navigate]);
+  // Function to close Settings and return to normal Layout
+  const closeSettings = () => setRenderSettings(false);
 
-  // Show a loading spinner until authentication check is complete
-  if (loading || !authChecked) {
-    return (
+  // Conditionally render components
+  let content;
+  if (loading || !authChecked || !isConnected) {
+    content = (
       <div
         style={{
           display: 'flex',
@@ -67,67 +71,72 @@ const App: React.FC = () => {
         <Spin size="large" />
       </div>
     );
-  }
+  } else if (renderSettings) {
+    content = <SettingPage setIsSettingsOpen={closeSettings} />;
+  } else if (location.pathname === '/login') {
+    content = <Login />;
+  } else if (location.pathname === '/signup') {
+    content = <Signup />;
+  } else {
+    content = (
+      <Layout
+        style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+      >
+        {/* Ant Design Header */}
+        <Header>
+          <div className="logo" />
+          <Menu theme="dark" mode="horizontal">
+            <Menu.Item key="/" icon={<DashboardOutlined />}>
+              <Link to="/">Dashboard</Link>
+            </Menu.Item>
+            <Menu.Item key="/summary" icon={<FileTextOutlined />}>
+              <Link to="/summary">Summary</Link>
+            </Menu.Item>
+            <Menu.Item
+              key="/setting"
+              icon={<SettingOutlined />}
+              onClick={() => setRenderSettings(true)}
+            >
+              Settings
+            </Menu.Item>
+          </Menu>
+        </Header>
 
-  // Function to close Settings and return to normal Layout
-  const closeSettings = () => setRenderSettings(false);
+        {/* Main Content */}
+        <Content style={{ padding: 0 }}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/summary" element={<SummaryPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route
+              path="/setting"
+              element={<SettingPage setIsSettingsOpen={closeSettings} />}
+            />
+          </Routes>
+        </Content>
 
-  // Conditionally render either the SettingPage, Login, Signup, or the main layout
-  if (renderSettings) {
-    return <SettingPage setIsSettingsOpen={closeSettings} />;
-  }
-
-  if (location.pathname === '/login') {
-    return <Login />;
-  }
-
-  if (location.pathname === '/signup') {
-    return <Signup />;
+        {/* Footer */}
+        <Footer style={{ textAlign: 'center' }}>
+          Ant Design Layout ©2023 Created by Your Name
+        </Footer>
+      </Layout>
+    );
   }
 
   return (
-    <Layout
-      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
-    >
-      {/* Ant Design Header */}
-      <Header>
-        <div className="logo" />
-        <Menu theme="dark" mode="horizontal">
-          <Menu.Item key="/" icon={<DashboardOutlined />}>
-            <Link to="/">Dashboard</Link>
-          </Menu.Item>
-          <Menu.Item key="/summary" icon={<FileTextOutlined />}>
-            <Link to="/summary">Summary</Link>
-          </Menu.Item>
-          <Menu.Item
-            key="/setting"
-            icon={<SettingOutlined />}
-            onClick={() => setRenderSettings(true)}
-          >
-            Settings
-          </Menu.Item>
-        </Menu>
-      </Header>
-
-      {/* Main Content */}
-      <Content style={{ padding: 0 }}>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/summary" element={<SummaryPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/setting"
-            element={<SettingPage setIsSettingsOpen={closeSettings} />}
-          />
-        </Routes>
-      </Content>
-
-      {/* Footer */}
-      <Footer style={{ textAlign: 'center' }}>
-        Ant Design Layout ©2023 Created by Your Name
-      </Footer>
-    </Layout>
+    <>
+      {/* Modal for connection error */}
+      <Modal
+        title="Connection Error"
+        visible={isModalVisible}
+        onOk={() => setIsModalVisible(false)}
+        onCancel={() => setIsModalVisible(false)}
+      >
+        <p>Unable to connect to the server. Please try again later.</p>
+      </Modal>
+      {content}
+    </>
   );
 };
 
