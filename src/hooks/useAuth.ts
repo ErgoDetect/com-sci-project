@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { message } from 'antd';
@@ -136,6 +136,8 @@ const checkTokenStatus = async (
 // Optimized hook for authentication
 const useAuth = () => {
   const [loading, setLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [tryCount, setTryCount] = useState(0); // State to track connection attempts
   const navigate = useNavigate();
   const { setLoginResponse } = useResData(); // Assuming this handles global login state
 
@@ -144,13 +146,61 @@ const useAuth = () => {
     navigate('/'); // Redirect to dashboard or home
   }, [navigate]);
 
+  // Check server connection
+  const checkServerConnection = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/'); // Adjust the axios instance if needed
+
+      // Check if the response status is in the range 200-299
+      if (response.status >= 200 && response.status < 300) {
+        setIsConnected(true);
+        setTryCount(0); // Reset try count on successful connection
+      } else {
+        console.error('Server connection failed with status:', response.status);
+        setIsConnected(false);
+        setTryCount((prev) => prev + 1); // Increment try count
+      }
+    } catch (error) {
+      console.error('Error connecting to server:', error);
+      setIsConnected(false); // Connection failed due to an error
+      setTryCount((prev) => prev + 1); // Increment try count
+    }
+  }, []);
+
+  // Heartbeat logic for checking connection periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkServerConnection();
+    }, 5000); // Check every 3 seconds
+
+    if (isConnected) {
+      console.log('Server is connected. Stopping heartbeat checks.');
+      setTryCount(0); // Reset try count on successful connection
+      clearInterval(interval); // Clear the interval here
+    } else if (tryCount >= 12) {
+      // Example max try count
+      console.log(
+        'Max connection attempts reached. Stopping heartbeat checks.',
+      );
+      clearInterval(interval); // Clear the interval if max tries are reached
+    }
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
+  }, [checkServerConnection, isConnected, tryCount]);
+
   // Token status check
   const checkAuthStatus = useCallback(async (): Promise<AuthStatusResponse> => {
     try {
       setLoading(true);
       const deviceIdentifier = await getDeviceIdentifier();
       return await checkTokenStatus(deviceIdentifier);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        // Handle 404 error specifically
+        logError('Token status check failed with 404', error);
+        return { status: 'Not Found', message: 'Resource not found' }; // Customize the response as needed
+      }
       logError('Error during token status check', error);
       return { status: 'LoginRequired', message: 'Authentication failed' };
     } finally {
@@ -231,6 +281,8 @@ const useAuth = () => {
     checkAuthStatus,
     loginWithEmail,
     loginWithGoogle,
+    isConnected,
+    tryCount,
   };
 };
 
