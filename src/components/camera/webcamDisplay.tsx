@@ -10,15 +10,14 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   drawingDot,
   showBlendShapes,
 }) => {
-  const { webcamRef, showCanvasRef, startVideoStream, stopVideoStream } =
-    useVideoStream({
-      deviceId,
-      width,
-      borderRadius,
-      drawingDot,
-      showBlendShapes,
-      showLandmarks: false,
-    });
+  const { webcamRef, startVideoStream, stopVideoStream } = useVideoStream({
+    deviceId,
+    width,
+    borderRadius,
+    drawingDot,
+    showBlendShapes,
+    showLandmarks: false,
+  });
 
   useCaptureImage(webcamRef);
 

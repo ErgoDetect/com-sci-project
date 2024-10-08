@@ -17,7 +17,6 @@ const useVideoStream = ({
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
   const webcamRef = useRef<HTMLVideoElement>(null);
-  const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const { setLandMarkData } = useResData();
@@ -33,6 +32,9 @@ const useVideoStream = ({
     }
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
+    }
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
     }
   }, []);
 
@@ -95,25 +97,15 @@ const useVideoStream = ({
           const { videoWidth } = webcamRef.current!;
           const { videoHeight } = webcamRef.current!;
 
-          if (showCanvasRef.current) {
-            showCanvasRef.current.width = videoWidth;
-            showCanvasRef.current.height = videoHeight;
-          }
-
           if (!faceLandmarkerRef.current) {
             faceLandmarkerRef.current = await initializeFaceLandmarker();
           }
           if (!poseLandmarkerRef.current) {
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
-          if (showCanvasRef.current) {
-            const context = showCanvasRef.current.getContext('2d');
-            if (context) {
-              drawingUtilsRef.current = new DrawingUtils(context);
-            } else {
-              console.error('Unable to get 2D context for the canvas.');
-            }
-          }
+
+          // Start rendering frames once metadata is loaded
+          animationFrameIdRef.current = requestAnimationFrame(renderFrame);
         };
       }
     } catch (error) {
@@ -122,66 +114,38 @@ const useVideoStream = ({
   }, [deviceId, stopVideoStream]);
 
   const renderFrame = useCallback(async () => {
-    const showCanvas = showCanvasRef.current;
     const webcam = webcamRef.current;
-
     if (
-      showCanvas &&
       webcam &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
       (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
-      const context = showCanvas.getContext('2d');
-      if (context) {
-        context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
+      const timestamp = performance.now();
 
-        const timestamp = performance.now();
+      const [faceResults, poseResults] = await Promise.all([
+        faceLandmarkerRef.current
+          ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+        poseLandmarkerRef.current
+          ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+      ]);
 
-        const [faceResults, poseResults] = await Promise.all([
-          faceLandmarkerRef.current
-            ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
-            : Promise.resolve(null),
-          poseLandmarkerRef.current
-            ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
-            : Promise.resolve(null),
-        ]);
-
-        const results: LandmarksResult = { faceResults, poseResults };
-        setLandMarkData(results);
-
-        if (showLandmarks && drawingUtilsRef.current) {
-          if (faceResults) {
-            drawFaceLandmarker(faceResults, context, drawingUtilsRef.current);
-          }
-          if (poseResults) {
-            drawPoseLandmarker(poseResults, context, drawingUtilsRef.current);
-          }
-        }
-
-        if (showBlendShapes) {
-          const blendShapesElement =
-            document.getElementById('video-blend-shapes');
-          if (blendShapesElement) {
-            blendShapesElement.innerHTML = ''; // Clear previous content
-            // Insert new blend shapes rendering logic here
-          }
-        }
-      }
+      const results: LandmarksResult = { faceResults, poseResults };
+      setLandMarkData(results);
     }
+
+    // Schedule the next frame
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-  }, [showBlendShapes, showLandmarks, setLandMarkData]);
+  }, [setLandMarkData]);
 
   useEffect(() => {
-    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
     return () => {
-      if (animationFrameIdRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
       stopVideoStream();
     };
-  }, [renderFrame, stopVideoStream]);
+  }, [stopVideoStream]);
 
-  return { webcamRef, showCanvasRef, startVideoStream, stopVideoStream };
+  return { webcamRef, startVideoStream, stopVideoStream };
 };
 
 export default useVideoStream;
