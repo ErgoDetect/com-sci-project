@@ -17,7 +17,6 @@ const useVideoStream = ({
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
   const webcamRef = useRef<HTMLVideoElement>(null);
-  const showCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const { setLandMarkData } = useResData();
@@ -26,6 +25,8 @@ const useVideoStream = ({
   const poseLandmarkerRef = useRef<any>(null);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
 
+  const latestLandmarksResultRef = useRef<LandmarksResult | null>(null); // <-- Store the latest landmarks result
+
   const stopVideoStream = useCallback(() => {
     if (videoStreamRef.current) {
       videoStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -33,6 +34,9 @@ const useVideoStream = ({
     }
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
+    }
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
     }
   }, []);
 
@@ -92,28 +96,15 @@ const useVideoStream = ({
         webcamRef.current.onloadedmetadata = async () => {
           await webcamRef.current?.play();
 
-          const { videoWidth } = webcamRef.current!;
-          const { videoHeight } = webcamRef.current!;
-
-          if (showCanvasRef.current) {
-            showCanvasRef.current.width = videoWidth;
-            showCanvasRef.current.height = videoHeight;
-          }
-
           if (!faceLandmarkerRef.current) {
             faceLandmarkerRef.current = await initializeFaceLandmarker();
           }
           if (!poseLandmarkerRef.current) {
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
-          if (showCanvasRef.current) {
-            const context = showCanvasRef.current.getContext('2d');
-            if (context) {
-              drawingUtilsRef.current = new DrawingUtils(context);
-            } else {
-              console.error('Unable to get 2D context for the canvas.');
-            }
-          }
+
+          // Start rendering frames once metadata is loaded
+          animationFrameIdRef.current = requestAnimationFrame(renderFrame);
         };
       }
     } catch (error) {
@@ -122,66 +113,48 @@ const useVideoStream = ({
   }, [deviceId, stopVideoStream]);
 
   const renderFrame = useCallback(async () => {
-    const showCanvas = showCanvasRef.current;
     const webcam = webcamRef.current;
-
     if (
-      showCanvas &&
       webcam &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
       (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
-      const context = showCanvas.getContext('2d');
-      if (context) {
-        context.drawImage(webcam, 0, 0, showCanvas.width, showCanvas.height);
+      const timestamp = performance.now();
 
-        const timestamp = performance.now();
+      const [faceResults, poseResults] = await Promise.all([
+        faceLandmarkerRef.current
+          ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+        poseLandmarkerRef.current
+          ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+      ]);
 
-        const [faceResults, poseResults] = await Promise.all([
-          faceLandmarkerRef.current
-            ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
-            : Promise.resolve(null),
-          poseLandmarkerRef.current
-            ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
-            : Promise.resolve(null),
-        ]);
+      const newResults: LandmarksResult = { faceResults, poseResults };
 
-        const results: LandmarksResult = { faceResults, poseResults };
-        setLandMarkData(results);
+      // Store the results in a ref, not in state to avoid re-renders
+      latestLandmarksResultRef.current = newResults;
 
-        if (showLandmarks && drawingUtilsRef.current) {
-          if (faceResults) {
-            drawFaceLandmarker(faceResults, context, drawingUtilsRef.current);
-          }
-          if (poseResults) {
-            drawPoseLandmarker(poseResults, context, drawingUtilsRef.current);
-          }
-        }
-
-        if (showBlendShapes) {
-          const blendShapesElement =
-            document.getElementById('video-blend-shapes');
-          if (blendShapesElement) {
-            blendShapesElement.innerHTML = ''; // Clear previous content
-            // Insert new blend shapes rendering logic here
-          }
-        }
+      // Only update the state every N frames (throttling updates)
+      if (
+        animationFrameIdRef.current &&
+        animationFrameIdRef.current % 5 === 0
+      ) {
+        setLandMarkData(newResults);
       }
     }
+
+    // Schedule the next frame
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-  }, [showBlendShapes, showLandmarks, setLandMarkData]);
+  }, [setLandMarkData]);
 
   useEffect(() => {
-    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
     return () => {
-      if (animationFrameIdRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
       stopVideoStream();
     };
-  }, [renderFrame, stopVideoStream]);
+  }, [stopVideoStream]);
 
-  return { webcamRef, showCanvasRef, startVideoStream, stopVideoStream };
+  return { webcamRef, startVideoStream, stopVideoStream };
 };
 
 export default useVideoStream;

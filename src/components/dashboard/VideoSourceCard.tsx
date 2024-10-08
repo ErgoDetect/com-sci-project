@@ -134,6 +134,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   useEffect(() => {
     if (streaming) {
+      //Don't forget to turn this on for recording
       handleStartRecording();
     } else {
       handleStopRecording();
@@ -142,7 +143,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
-  }, [handleStartRecording, handleStopRecording, streaming, videoSrc]);
+  }, [streaming, videoSrc]);
 
   useSendLandmarkData();
 
