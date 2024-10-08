@@ -25,6 +25,8 @@ const useVideoStream = ({
   const poseLandmarkerRef = useRef<any>(null);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
 
+  const latestLandmarksResultRef = useRef<LandmarksResult | null>(null); // <-- Store the latest landmarks result
+
   const stopVideoStream = useCallback(() => {
     if (videoStreamRef.current) {
       videoStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -94,9 +96,6 @@ const useVideoStream = ({
         webcamRef.current.onloadedmetadata = async () => {
           await webcamRef.current?.play();
 
-          const { videoWidth } = webcamRef.current!;
-          const { videoHeight } = webcamRef.current!;
-
           if (!faceLandmarkerRef.current) {
             faceLandmarkerRef.current = await initializeFaceLandmarker();
           }
@@ -131,8 +130,18 @@ const useVideoStream = ({
           : Promise.resolve(null),
       ]);
 
-      const results: LandmarksResult = { faceResults, poseResults };
-      setLandMarkData(results);
+      const newResults: LandmarksResult = { faceResults, poseResults };
+
+      // Store the results in a ref, not in state to avoid re-renders
+      latestLandmarksResultRef.current = newResults;
+
+      // Only update the state every N frames (throttling updates)
+      if (
+        animationFrameIdRef.current &&
+        animationFrameIdRef.current % 5 === 0
+      ) {
+        setLandMarkData(newResults);
+      }
     }
 
     // Schedule the next frame
