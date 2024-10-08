@@ -27,6 +27,7 @@ const styles: { [key: string]: React.CSSProperties } = {
 
 const Signup: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const onFinish = async (values: SignUpFormValues) => {
     setLoading(true);
@@ -39,6 +40,7 @@ const Signup: React.FC = () => {
 
       if (response.status === 201) {
         message.success('Signup successful! Please verify your email.');
+        navigate('/wait-verify');
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {

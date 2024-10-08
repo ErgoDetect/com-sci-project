@@ -1,9 +1,10 @@
-import { BrowserWindow, app, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, ipcMain, shell, session } from 'electron'; // Import session from electron
 import * as path from 'path';
 import { resolveHtmlPath } from '../main/util';
 import installExtensions from './extensions';
 import MenuBuilder from '../main/menu';
 import getMacAddress from './getMacAddress';
+import logger from './logger';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -54,6 +55,7 @@ const setupWindowEvents = (window: BrowserWindow): void => {
       window.minimize();
     } else {
       window.show();
+      window.webContents.openDevTools();
     }
 
     if (
@@ -99,7 +101,9 @@ export const createMainWindow = async (): Promise<BrowserWindow> => {
   setupWindowEvents(mainWindow);
   handleAuthUrlOpening();
 
-  await mainWindow.loadURL(resolveHtmlPath('index.html'));
+  const url = resolveHtmlPath('index.html');
+  await mainWindow.loadURL(url);
+  logger.info(url);
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();

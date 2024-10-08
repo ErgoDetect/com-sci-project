@@ -1,10 +1,4 @@
-import {
-  BrowserWindow,
-  contextBridge,
-  ipcRenderer,
-  IpcRendererEvent,
-} from 'electron';
-import getMacAddress from '../main-util/getMacAddress';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // Define your channels
 export type Channels =
@@ -18,9 +12,9 @@ export type Channels =
   | 'read-file'
   | 'file-exists'
   | 'open-auth-url'
-  | 'save-video' // Add 'save-video' channel
+  | 'save-video'
   | 'get-mac-address'
-  | 'deep-link';
+  | 'deep-link'; // Add 'deep-link' channel for handling deep links
 
 const electronHandler = {
   ipcRenderer: {
@@ -50,11 +44,14 @@ const electronHandler = {
     getMacAddress() {
       return ipcRenderer.invoke('get-mac-address');
     },
-    // onDeepLink: (callback: (route: string) => void) => {
-    //   ipcRenderer.on('deep-link', (_event: IpcRendererEvent, route: string) => {
-    //     callback(route);
-    //   });
-    // },
+    onProtocolUrl: (callback: (url: string) => void) => {
+      ipcRenderer.on('deep-link', (event, url) => {
+        callback(url);
+      });
+    },
+    removeAllListeners(channel: Channels) {
+      ipcRenderer.removeAllListeners(channel);
+    },
   },
   fs: {
     getUserDataPath(): Promise<string> {
@@ -84,6 +81,7 @@ const electronHandler = {
   },
 };
 
+// Expose the electron API to the renderer process
 contextBridge.exposeInMainWorld('electron', electronHandler);
 
 export type ElectronHandler = typeof electronHandler;
