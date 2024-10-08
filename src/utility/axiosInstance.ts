@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
-  withCredentials: true, // Ensure cookies are sent with requests
+  withCredentials: true,
 });
 
 export default axiosInstance;

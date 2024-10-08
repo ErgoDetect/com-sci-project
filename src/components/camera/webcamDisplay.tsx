@@ -51,26 +51,26 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     [borderRadius],
   );
 
-  const canvasStyles = useMemo<React.CSSProperties>(
-    () => ({
-      width: '100%',
-      height: 'auto',
-      borderRadius,
-      transform: 'rotateY(180deg)',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-    }),
-    [borderRadius],
-  );
+  // const canvasStyles = useMemo<React.CSSProperties>(
+  //   () => ({
+  //     width: '100%',
+  //     height: 'auto',
+  //     borderRadius,
+  //     transform: 'rotateY(180deg)',
+  //     position: 'absolute',
+  //     top: 0,
+  //     left: 0,
+  //   }),
+  //   [borderRadius],
+  // );
 
   return (
     <div style={containerStyles}>
       <video ref={webcamRef} style={videoStyles} />
-      <canvas ref={showCanvasRef} style={canvasStyles} />
+      {/* <canvas ref={showCanvasRef} style={canvasStyles} />
       {showBlendShapes && (
         <div style={{ height: '2px' }} id="video-blend-shapes" />
-      )}
+      )} */}
     </div>
   );
 };

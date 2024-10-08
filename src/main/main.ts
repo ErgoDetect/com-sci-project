@@ -135,11 +135,9 @@ const setupAppEvents = (): void => {
   });
 
   app.on('open-url', (event, url) => {
-    event.preventDefault();
-    const urlPath = new URL(url).pathname;
-
-    if (urlPath === '/login') {
-      mainWindow?.webContents.send('web-redirect', '/login');
+    // dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`);
+    if (mainWindow) {
+      mainWindow.webContents.send('deep-link', url);
     }
   });
 };
@@ -176,61 +174,18 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', (event, commandLine) => {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
     const deepLinkUrl = commandLine.pop();
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${deepLinkUrl}`);
+    // dialog.showErrorBox('Welcome Back', `You arrived from: ${deepLinkUrl}`);
+    if (deepLinkUrl) {
+      mainWindow?.webContents.send('deep-link', deepLinkUrl);
+    }
   });
 }
-
-// const handleDeepLinks = (): void => {
-//   // macOS open-url event
-//   app.on('open-url', (event, url) => {
-//     event.preventDefault();
-//     const urlPath = new URL(url).pathname;
-
-//     // Log the URL path and the event
-//     log.info('Received open-url event:', url);
-
-//     if (mainWindow) {
-//       if (urlPath === '/login') {
-//         log.info('Navigating to login page via deep link');
-//         mainWindow.webContents.send('deep-link', '/login');
-//       } else {
-//         log.warn('Unrecognized deep link path:', urlPath);
-//       }
-//     } else {
-//       log.error('Main window is not available to handle deep link');
-//     }
-//   });
-
-//   // Handle deep links from command line for Windows/Linux
-//   app.on('second-instance', (event, commandLine) => {
-//     log.info(
-//       'Received second-instance event with command line arguments:',
-//       commandLine,
-//     );
-
-//     if (mainWindow) {
-//       const deepLinkUrl = commandLine.find((arg) =>
-//         arg.startsWith('ergodetect://'),
-//       );
-
-//       if (deepLinkUrl) {
-//         const urlPath = new URL(deepLinkUrl).pathname;
-//         log.info('Navigating to deep link path:', urlPath);
-//         mainWindow.webContents.send('deep-link', urlPath);
-//       } else {
-//         log.warn('No valid deep link found in command line arguments');
-//       }
-//     } else {
-//       log.error('Main window is not available to handle second-instance event');
-//     }
-//   });
-// };
 
 // Main application startup logic
 app.whenReady().then(async () => {
@@ -238,7 +193,6 @@ app.whenReady().then(async () => {
   ensureSaveFolderExists();
   handleFileOperations();
   handleNotifications();
-  // handleDeepLinks();
 
   mainWindow = await createMainWindow();
   if (mainWindow) {

@@ -17,6 +17,7 @@ import Login from '../pages/Login';
 import Signup from '../pages/SignUp';
 import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
+import WaitingPage from '../pages/WaitVerifyPage';
 import useAuth from '../hooks/useAuth';
 
 const { Header, Content, Footer } = Layout;
@@ -32,12 +33,48 @@ const App: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
+    // Ensure that the electron API is available
+    if (
+      window.electron &&
+      window.electron.ipcRenderer &&
+      window.electron.ipcRenderer.onProtocolUrl
+    ) {
+      const handleProtocolUrl = (url: string) => {
+        console.log('Received protocol URL:', url);
+        if (url.startsWith('ergodetect://login')) {
+          navigate('/login');
+        }
+        // Handle other protocol URLs if needed
+      };
+
+      // Register the listener
+      window.electron.ipcRenderer.onProtocolUrl(handleProtocolUrl);
+
+      // Cleanup: remove the listener on component unmount to prevent memory leaks
+      return () => {
+        if (window.electron && window.electron.ipcRenderer.removeAllListeners) {
+          window.electron.ipcRenderer.removeAllListeners('deep-link');
+          console.log('Protocol URL listener removed');
+        }
+      };
+    }
+    console.error('electronAPI.onProtocolUrl is not available');
+
+    // Return undefined explicitly when no cleanup is needed
+    return undefined;
+  }, [navigate]);
+
+  // Handle connection retries
+  useEffect(() => {
     if (tryCount >= 12) {
       setIsModalVisible(true);
     }
   }, [tryCount]);
 
+  // Handle Authentication
   useEffect(() => {
+    console.log('Current full URL:', window.location.href); // This will log the full URL with hash
+    console.log('Current location pathname:', location.pathname);
     const checkAuthentication = async () => {
       const authStatus = await checkAuthStatus();
       if (authStatus.status === 'LoginRequired') {
@@ -46,7 +83,11 @@ const App: React.FC = () => {
       setAuthChecked(true); // Mark auth check as complete
     };
 
-    if (location.pathname !== '/login' && location.pathname !== '/signup') {
+    if (
+      location.pathname !== '/login' &&
+      location.pathname !== '/signup' &&
+      location.pathname !== '/wait-verify'
+    ) {
       checkAuthentication();
     } else {
       setAuthChecked(true); // For login/signup pages, no need to check auth
@@ -77,6 +118,8 @@ const App: React.FC = () => {
     content = <Login />;
   } else if (location.pathname === '/signup') {
     content = <Signup />;
+  } else if (location.pathname === '/wait-verify') {
+    content = <WaitingPage />;
   } else {
     content = (
       <Layout
@@ -129,9 +172,11 @@ const App: React.FC = () => {
       {/* Modal for connection error */}
       <Modal
         title="Connection Error"
-        visible={isModalVisible}
+        open={isModalVisible}
         onOk={() => setIsModalVisible(false)}
         onCancel={() => setIsModalVisible(false)}
+        okText="Retry"
+        cancelText="Cancel"
       >
         <p>Unable to connect to the server. Please try again later.</p>
       </Modal>

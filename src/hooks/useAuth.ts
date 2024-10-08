@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { message } from 'antd';
+import { jwtDecode } from 'jwt-decode';
 import { useResData } from '../context'; // Assuming this handles app-level state
 import axiosInstance from '../utility/axiosInstance'; // Your axios instance
 import { AuthStatusResponse } from '../interface/propsType';
@@ -140,11 +141,14 @@ const useAuth = () => {
   const [tryCount, setTryCount] = useState(0); // State to track connection attempts
   const navigate = useNavigate();
   const { setLoginResponse } = useResData(); // Assuming this handles global login state
+  const location = useLocation(); // Get the current location
 
   // Centralized function to handle successful login
   const handleSuccessfulLogin = useCallback(() => {
     navigate('/'); // Redirect to dashboard or home
-  }, [navigate]);
+    console.log('Current full URL:', window.location.href); // This will log the full URL with hash
+    console.log('Current location pathname:', location.pathname);
+  }, [location.pathname, navigate]);
 
   // Check server connection
   const checkServerConnection = useCallback(async () => {
@@ -171,7 +175,7 @@ const useAuth = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       checkServerConnection();
-    }, 5000); // Check every 3 seconds
+    }, 5000); // Check every 5 seconds
 
     if (isConnected) {
       console.log('Server is connected. Stopping heartbeat checks.');
