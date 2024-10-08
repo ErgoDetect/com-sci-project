@@ -134,9 +134,10 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   useEffect(() => {
     if (streaming) {
-      handleStartRecording();
+      //Don't forget to turn this on for recording
+      // handleStartRecording();
     } else {
-      handleStopRecording();
+      // handleStopRecording();
     }
 
     return () => {
