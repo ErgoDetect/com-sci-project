@@ -58,17 +58,17 @@ const App: React.FC = () => {
   }, [tryCount]);
 
   useEffect(() => {
-    const checkAuthentication = async () => {
+    const authenticate = async () => {
       const response = await checkAuthStatus();
-
-      if (location.pathname === '/login') {
-        if (response.status === 'Authenticated') {
-          navigate('/');
-        }
+      if (
+        response.status === 'Authenticated' &&
+        location.pathname === '/login'
+      ) {
+        navigate('/');
       }
     };
 
-    checkAuthentication();
+    authenticate();
   }, [checkAuthStatus, location.pathname, navigate]);
 
   const closeSettings = () => setRenderSettings(false);
