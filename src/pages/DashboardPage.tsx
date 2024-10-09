@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { message } from 'antd';
 import useDevices from '../hooks/useDevices';
 import { Container, FlexRow } from '../styles/styles';
@@ -8,27 +8,48 @@ import SessionSummaryCard from '../components/SessionSummaryCard';
 import DraggableInfoBox from '../components/dashboard/DraggableInfoBox';
 import { useResData } from '../context';
 
-const Dashboard = () => {
+// Define TypeScript interfaces for better type safety
+interface Metrics {
+  goodPostureTime: number;
+  badPostureAlerts: number;
+  blinkRate: number;
+  proximityAlerts: number;
+}
+
+interface DragPosition {
+  x: number;
+  y: number;
+}
+
+const Dashboard: React.FC = () => {
   const { theme, showDetailedData, streaming, setStreaming } = useResData();
   const { deviceId } = useDevices();
 
-  const [videoState, setVideoState] = useState({
-    useVideoFile: false,
-    videoFile: null as File | null,
-    isPlaying: false,
-  });
+  // Separate state variables for better performance
+  const [useVideoFile, setUseVideoFile] = useState<boolean>(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = useState<Metrics>({
     goodPostureTime: 51,
     badPostureAlerts: 2,
     blinkRate: 22,
     proximityAlerts: 1,
   });
 
-  const [dragPosition, setDragPosition] = useState({ x: 16, y: 16 });
+  const [dragPosition, setDragPosition] = useState<DragPosition>({
+    x: 16,
+    y: 16,
+  });
 
+  // Reference to keep track of frame count without causing re-renders
   const frameCountRef = useRef<number>(0);
 
+  /**
+   * Toggles the streaming state.
+   * - Resets frame count when stopping.
+   * - Shows appropriate message based on streaming state.
+   */
   const toggleStreaming = useCallback(() => {
     if (streaming) {
       frameCountRef.current = 0;
@@ -40,69 +61,106 @@ const Dashboard = () => {
     }
   }, [streaming, setStreaming]);
 
-  const handlePlayPause = () => {
-    setVideoState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  };
+  /**
+   * Handles the play/pause functionality of the video.
+   */
+  const handlePlayPause = useCallback(() => {
+    setIsPlaying((prev) => !prev);
+  }, []);
 
-  const updateMetrics = (newMetrics: Partial<typeof metrics>) => {
-    setMetrics((prev) => ({ ...prev, ...newMetrics }));
-  };
+  /**
+   * Handles updates to the useVideoFile state.
+   * @param value - New value for useVideoFile.
+   */
+  const handleSetUseVideoFile = useCallback((value: boolean) => {
+    setUseVideoFile(value);
+  }, []);
+
+  /**
+   * Handles updates to the videoFile state.
+   * @param file - New video file.
+   */
+  const handleSetVideoFile = useCallback((file: File | null) => {
+    setVideoFile(file);
+  }, []);
+
+  /**
+   * Handles the start of recording.
+   */
+  const onRecordingStart = useCallback(() => {
+    message.success('Recording started automatically');
+  }, []);
+
+  /**
+   * Handles the stop of recording.
+   */
+  const onRecordingStop = useCallback(() => {
+    message.success('Recording stopped');
+  }, []);
+
+  /**
+   * Memoizes the session duration based on streaming state.
+   */
+  const sessionDuration = useMemo(
+    () => (streaming ? '10:23' : '00:00'),
+    [streaming],
+  );
+
+  /**
+   * Memoizes the metrics object to prevent unnecessary re-renders.
+   */
+  const memoizedMetrics = useMemo(() => metrics, [metrics]);
 
   return (
     <Container>
       <FlexRow>
         <VideoSourceCard
-          useVideoFile={videoState.useVideoFile}
-          setUseVideoFile={(value: any) =>
-            setVideoState((prev) => ({ ...prev, useVideoFile: value }))
-          }
-          videoFile={videoState.videoFile}
-          setVideoFile={(file: any) =>
-            setVideoState((prev) => ({ ...prev, videoFile: file }))
-          }
-          isPlaying={videoState.isPlaying}
+          useVideoFile={useVideoFile}
+          setUseVideoFile={handleSetUseVideoFile}
+          videoFile={videoFile}
+          setVideoFile={handleSetVideoFile}
+          isPlaying={isPlaying}
           handlePlayPause={handlePlayPause}
           deviceId={deviceId}
           theme={theme}
           streaming={streaming}
-          onRecordingStart={() =>
-            message.success('Recording started automatically')
-          }
-          onRecordingStop={() => message.success('Recording stopped')}
+          onRecordingStart={onRecordingStart}
+          onRecordingStop={onRecordingStop}
         />
-        {!videoState.useVideoFile && (
+        {!useVideoFile && (
           <SessionMetricsCard
             sessionActive={streaming}
             sessionDuration=""
             toggleStreaming={toggleStreaming}
-            blinkRate={metrics.blinkRate}
-            goodPostureTime={metrics.goodPostureTime}
+            blinkRate={memoizedMetrics.blinkRate}
+            goodPostureTime={memoizedMetrics.goodPostureTime}
           />
         )}
       </FlexRow>
 
       {showDetailedData && (
         <DraggableInfoBox
-          blinkRate={metrics.blinkRate}
-          sessionDuration={streaming ? '10:23' : '00:00'}
-          proximityAlerts={metrics.proximityAlerts}
-          badPostureAlerts={metrics.badPostureAlerts}
-          goodPostureTime={metrics.goodPostureTime}
+          blinkRate={memoizedMetrics.blinkRate}
+          sessionDuration={sessionDuration}
+          proximityAlerts={memoizedMetrics.proximityAlerts}
+          badPostureAlerts={memoizedMetrics.badPostureAlerts}
+          goodPostureTime={memoizedMetrics.goodPostureTime}
           position={dragPosition}
           setPosition={setDragPosition}
         />
       )}
 
-      {!videoState.useVideoFile && (
+      {!useVideoFile && (
         <SessionSummaryCard
           sessionActive={streaming}
-          goodPostureTime={metrics.goodPostureTime}
-          badPostureAlerts={metrics.badPostureAlerts}
-          proximityAlerts={metrics.proximityAlerts}
+          goodPostureTime={memoizedMetrics.goodPostureTime}
+          badPostureAlerts={memoizedMetrics.badPostureAlerts}
+          proximityAlerts={memoizedMetrics.proximityAlerts}
         />
       )}
     </Container>
   );
 };
 
-export default Dashboard;
+// Wrap the component with React.memo to prevent unnecessary re-renders
+export default React.memo(Dashboard);

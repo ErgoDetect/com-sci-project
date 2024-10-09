@@ -5,11 +5,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Switch, Upload, message } from 'antd';
+import { Switch, Upload, message, Button } from 'antd';
 import {
   InboxOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
+  StopOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import {
   VideoCard,
@@ -41,6 +43,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   );
   const [recordingStarted, setRecordingStarted] = useState(false);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
@@ -49,7 +52,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const handleFileUpload = useCallback(
     (file: File): boolean => {
       setVideoFile(file);
-      return false;
+      return false; // Prevent auto upload
     },
     [setVideoFile],
   );
@@ -90,8 +93,14 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   const startRecording = useCallback(
     (stream: MediaStream) => {
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      // Use a more efficient MIME type
+      const options: MediaRecorderOptions = {
+        mimeType: 'video/webm; codecs=vp8',
+        // Adjust timeslice to control data availability frequency
+      };
+      const recorder = new MediaRecorder(stream, options);
       setMediaRecorder(recorder);
+      streamRef.current = stream;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -99,51 +108,61 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         }
       };
 
-      recorder.onstop = saveRecordedVideo;
-      recorder.start();
+      recorder.onstop = () => {
+        saveRecordedVideo();
+        // Stop all media tracks to free resources
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      };
+
+      recorder.start(1000); // Collect data in 1-second chunks
       setRecordingStarted(true);
+      onRecordingStart?.();
     },
-    [saveRecordedVideo],
+    [saveRecordedVideo, onRecordingStart],
   );
 
   const handleStartRecording = useCallback(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      return navigator.mediaDevices
-        .getUserMedia({ video: true })
+      navigator.mediaDevices
+        .getUserMedia({
+          video: { width: 1280, height: 720, frameRate: { max: 30 } }, // Limit resolution and frame rate
+          audio: false, // Disable audio if not needed
+        })
         .then((stream) => {
           startRecording(stream);
-          return stream; // Explicit return to comply with ESLint
+          return undefined;
         })
+
         .catch((error) => {
           console.error('Error accessing media devices.', error);
           message.error('Error accessing media devices.');
-          throw error; // Re-throw to maintain promise chain and comply with ESLint
         });
+    } else {
+      message.error('Media devices not supported.');
     }
-
-    message.error('Media devices not supported.');
-    return Promise.reject(new Error('Media devices not supported.')); // Explicit rejection
   }, [startRecording]);
 
   const handleStopRecording = useCallback(() => {
-    if (mediaRecorder) {
+    if (mediaRecorder && recordingStarted) {
       mediaRecorder.stop();
       setRecordingStarted(false);
+      onRecordingStop?.();
     }
-  }, [mediaRecorder]);
+  }, [mediaRecorder, recordingStarted, onRecordingStop]);
 
   useEffect(() => {
-    if (streaming) {
-      //Don't forget to turn this on for recording
-      handleStartRecording();
-    } else {
-      handleStopRecording();
-    }
-
+    // Cleanup on component unmount
     return () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
-  }, [streaming, videoSrc]);
+  }, [mediaRecorder, videoSrc]);
 
   useSendLandmarkData();
 
@@ -174,6 +193,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             src={videoSrc}
             className={`video-element ${theme === 'dark' ? 'dark' : ''}`}
             controls
+            preload="metadata"
           />
           <PlayPauseButton
             icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
@@ -192,6 +212,26 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         borderRadius={12}
         showBlendShapes={false}
       />
+      <div style={{ marginTop: 16 }}>
+        {!recordingStarted ? (
+          <Button
+            type="primary"
+            icon={<StarOutlined />}
+            onClick={handleStartRecording}
+          >
+            Start Recording
+          </Button>
+        ) : (
+          <Button
+            type="default"
+            color="danger"
+            icon={<StopOutlined />}
+            onClick={handleStopRecording}
+          >
+            Stop Recording
+          </Button>
+        )}
+      </div>
     </div>
   );
 
