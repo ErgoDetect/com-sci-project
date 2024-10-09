@@ -25,42 +25,28 @@ const { Header, Content, Footer } = Layout;
 const App: React.FC = () => {
   const [renderSettings, setRenderSettings] = useState(false);
   const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // State to manage the visibility of the modal
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
-    // Ensure that the electron API is available
-    if (
-      window.electron &&
-      window.electron.ipcRenderer &&
-      window.electron.ipcRenderer.onProtocolUrl
-    ) {
+    if (window.electron?.ipcRenderer?.onProtocolUrl) {
       const handleProtocolUrl = (url: string) => {
         console.log('Received protocol URL:', url);
         if (url.startsWith('ergodetect://login')) {
           navigate('/login');
         }
-        // Handle other protocol URLs if needed
       };
 
-      // Register the listener
       window.electron.ipcRenderer.onProtocolUrl(handleProtocolUrl);
 
-      // Cleanup: remove the listener on component unmount to prevent memory leaks
+      // Cleanup listener on unmount
       return () => {
-        if (window.electron && window.electron.ipcRenderer.removeAllListeners) {
-          window.electron.ipcRenderer.removeAllListeners('deep-link');
-          console.log('Protocol URL listener removed');
-        }
+        window.electron.ipcRenderer?.removeAllListeners('deep-link');
+        console.log('Protocol URL listener removed');
       };
     }
-    console.error('electronAPI.onProtocolUrl is not available');
 
-    // Return undefined explicitly when no cleanup is needed
     return undefined;
   }, [navigate]);
 
@@ -71,35 +57,25 @@ const App: React.FC = () => {
     }
   }, [tryCount]);
 
-  // Handle Authentication
   useEffect(() => {
-    console.log('Current full URL:', window.location.href); // This will log the full URL with hash
-    console.log('Current location pathname:', location.pathname);
     const checkAuthentication = async () => {
-      const authStatus = await checkAuthStatus();
-      if (authStatus.status === 'LoginRequired') {
-        navigate('/login'); // Redirect to login if authentication fails
+      const response = await checkAuthStatus();
+
+      if (location.pathname === '/login') {
+        if (response.status === 'Authenticated') {
+          navigate('/');
+        }
       }
-      setAuthChecked(true); // Mark auth check as complete
     };
 
-    if (
-      location.pathname !== '/login' &&
-      location.pathname !== '/signup' &&
-      location.pathname !== '/wait-verify'
-    ) {
-      checkAuthentication();
-    } else {
-      setAuthChecked(true); // For login/signup pages, no need to check auth
-    }
-  }, [checkAuthStatus, navigate, location.pathname]);
+    checkAuthentication();
+  }, [checkAuthStatus, location.pathname, navigate]);
 
-  // Function to close Settings and return to normal Layout
   const closeSettings = () => setRenderSettings(false);
 
   // Conditionally render components
   let content;
-  if (loading || !authChecked || !isConnected) {
+  if (loading || !isConnected) {
     content = (
       <div
         style={{

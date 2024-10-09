@@ -20,6 +20,7 @@ import {
 import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
 import useSendLandmarkData from '../../hooks/useSendLandMarkData';
+import { useResData } from '../../context';
 
 const { Dragger } = Upload;
 
@@ -36,16 +37,19 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   onRecordingStart,
   onRecordingStop,
 }) => {
+  const { videoStreamRef } = useResData();
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null,
   );
   const [recordingStarted, setRecordingStarted] = useState(false);
-  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordedChunksRef = useRef<Blob[]>([]); // Stores recorded video chunks
+
   const videoSrc = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : ''),
     [videoFile],
   );
 
+  // Handle file upload
   const handleFileUpload = useCallback(
     (file: File): boolean => {
       setVideoFile(file);
@@ -54,6 +58,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     [setVideoFile],
   );
 
+  // Upload status change
   const handleUploadChange = useCallback((info: any): void => {
     const { status } = info.file;
     if (status === 'done') {
@@ -63,6 +68,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     }
   }, []);
 
+  // Handle file drop
   const handleFileDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>): void => {
       console.log('Dropped files', e.dataTransfer.files);
@@ -70,9 +76,11 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     [],
   );
 
+  // Save recorded video and clean up memory
   const saveRecordedVideo = useCallback(async () => {
     const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-    recordedChunksRef.current = [];
+    recordedChunksRef.current = []; // Clear recorded chunks to free memory
+
     const arrayBuffer = await blob.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
@@ -80,73 +88,84 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       const result = await window.electron.video.saveVideo(buffer);
       if (result.success) {
         message.success(`Video saved to ${result.filePath}`);
+        await window.electron.ipcRenderer.removeAllListeners('save-video');
       } else {
         message.error(`Failed to save video: ${result.error}`);
       }
     } catch (error) {
       message.error(`Error occurred: ${error}`);
     }
-  }, []);
 
+    // Clean up Blob to free memory
+    URL.revokeObjectURL(videoSrc); // Clean the object URL
+  }, [videoSrc]);
+
+  // Start recording video stream
   const startRecording = useCallback(
     (stream: MediaStream) => {
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      setMediaRecorder(recorder);
+      if (!mediaRecorder) {
+        const recorder = new MediaRecorder(stream);
+        setMediaRecorder(recorder);
 
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data); // Accumulate chunks
+          }
+        };
 
-      recorder.onstop = saveRecordedVideo;
-      recorder.start();
-      setRecordingStarted(true);
+        recorder.onstop = async () => {
+          await saveRecordedVideo(); // Save video when recording stops
+        };
+
+        recorder.start();
+        setRecordingStarted(true);
+      }
     },
-    [saveRecordedVideo],
+    [mediaRecorder, saveRecordedVideo],
   );
 
+  // Start recording process
   const handleStartRecording = useCallback(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      return navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then((stream) => {
-          startRecording(stream);
-          return stream; // Explicit return to comply with ESLint
-        })
-        .catch((error) => {
-          console.error('Error accessing media devices.', error);
-          message.error('Error accessing media devices.');
-          throw error; // Re-throw to maintain promise chain and comply with ESLint
-        });
+    if (videoStreamRef.current && !recordingStarted) {
+      startRecording(videoStreamRef.current);
+    } else if (!videoStreamRef.current) {
+      message.error('No video stream available.');
     }
+  }, [startRecording, videoStreamRef, recordingStarted]);
 
-    message.error('Media devices not supported.');
-    return Promise.reject(new Error('Media devices not supported.')); // Explicit rejection
-  }, [startRecording]);
-
+  // Stop recording and clear memory
   const handleStopRecording = useCallback(() => {
     if (mediaRecorder) {
       mediaRecorder.stop();
       setRecordingStarted(false);
+
+      // Free up memory by clearing recorded chunks
+      recordedChunksRef.current = [];
+      setMediaRecorder(null); // Reset mediaRecorder
     }
   }, [mediaRecorder]);
 
   useEffect(() => {
-    if (streaming) {
-      //Don't forget to turn this on for recording
+    if (streaming && !recordingStarted) {
       handleStartRecording();
-    } else {
+    } else if (!streaming && recordingStarted) {
       handleStopRecording();
     }
 
     return () => {
-      if (videoSrc) URL.revokeObjectURL(videoSrc);
+      if (videoSrc) URL.revokeObjectURL(videoSrc); // Clean object URL when component unmounts
     };
-  }, [streaming, videoSrc]);
+  }, [
+    handleStartRecording,
+    handleStopRecording,
+    streaming,
+    videoSrc,
+    recordingStarted,
+  ]);
 
-  useSendLandmarkData();
+  useSendLandmarkData(); // Custom hook for sending landmark data
 
+  // Render video uploader component
   const renderVideoUploader = () => (
     <VideoContainer>
       <Dragger
@@ -184,6 +203,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     </VideoContainer>
   );
 
+  // Render webcam display component
   const renderWebcamDisplay = () => (
     <div>
       <WebcamDisplay

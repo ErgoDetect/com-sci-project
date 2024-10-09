@@ -16,8 +16,7 @@ const useVideoStream = ({
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
-  const webcamRef = useRef<HTMLVideoElement>(null);
-  const videoStreamRef = useRef<MediaStream | null>(null);
+  const { webcamRef, videoStreamRef } = useResData();
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const { setLandMarkData } = useResData();
 
@@ -38,7 +37,43 @@ const useVideoStream = ({
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
     }
-  }, []);
+  }, [videoStreamRef, webcamRef]);
+
+  const renderFrame = useCallback(async () => {
+    const webcam = webcamRef.current;
+    if (
+      webcam &&
+      webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      (faceLandmarkerRef.current || poseLandmarkerRef.current)
+    ) {
+      const timestamp = performance.now();
+
+      const [faceResults, poseResults] = await Promise.all([
+        faceLandmarkerRef.current
+          ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+        poseLandmarkerRef.current
+          ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
+          : Promise.resolve(null),
+      ]);
+
+      const newResults: LandmarksResult = { faceResults, poseResults };
+
+      // Store the results in a ref, not in state to avoid re-renders
+      latestLandmarksResultRef.current = newResults;
+
+      // Only update the state every N frames (throttling updates)
+      if (
+        animationFrameIdRef.current &&
+        animationFrameIdRef.current % 5 === 0
+      ) {
+        setLandMarkData(newResults);
+      }
+    }
+
+    // Schedule the next frame
+    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+  }, [setLandMarkData, webcamRef]);
 
   const startVideoStream = useCallback(async () => {
     if (!deviceId) {
@@ -110,43 +145,7 @@ const useVideoStream = ({
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
-  }, [deviceId, stopVideoStream]);
-
-  const renderFrame = useCallback(async () => {
-    const webcam = webcamRef.current;
-    if (
-      webcam &&
-      webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      (faceLandmarkerRef.current || poseLandmarkerRef.current)
-    ) {
-      const timestamp = performance.now();
-
-      const [faceResults, poseResults] = await Promise.all([
-        faceLandmarkerRef.current
-          ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
-          : Promise.resolve(null),
-        poseLandmarkerRef.current
-          ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
-          : Promise.resolve(null),
-      ]);
-
-      const newResults: LandmarksResult = { faceResults, poseResults };
-
-      // Store the results in a ref, not in state to avoid re-renders
-      latestLandmarksResultRef.current = newResults;
-
-      // Only update the state every N frames (throttling updates)
-      if (
-        animationFrameIdRef.current &&
-        animationFrameIdRef.current % 5 === 0
-      ) {
-        setLandMarkData(newResults);
-      }
-    }
-
-    // Schedule the next frame
-    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-  }, [setLandMarkData]);
+  }, [deviceId, renderFrame, stopVideoStream, videoStreamRef, webcamRef]);
 
   useEffect(() => {
     return () => {

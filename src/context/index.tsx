@@ -4,6 +4,7 @@ import React, {
   useState,
   ReactNode,
   useMemo,
+  useRef,
 } from 'react';
 import {
   CombineResult,
@@ -42,6 +43,9 @@ interface ResContextProps {
   setTheme: (theme: Theme) => void;
   showDetailedData: boolean;
   setShowDetailedData: React.Dispatch<React.SetStateAction<boolean>>;
+
+  webcamRef: React.RefObject<HTMLVideoElement>;
+  videoStreamRef: React.MutableRefObject<MediaStream | null>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -77,6 +81,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     return undefined;
   }, [resData]);
 
+  const webcamRef = useRef<HTMLVideoElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+
   const contextValue = useMemo(
     () => ({
       resData,
@@ -101,6 +108,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setIsLogin,
       showDetailedData,
       setShowDetailedData,
+      webcamRef,
+      videoStreamRef,
     }),
     [
       resData,
