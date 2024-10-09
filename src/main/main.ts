@@ -144,23 +144,52 @@ const setupAppEvents = (): void => {
 
 // Set up IPC handlers
 const setupIPCHandlers = (): void => {
-  ipcMain.handle('save-video', async (event, buffer: Buffer) => {
+  ipcMain.handle('save-video', async (event, buffer) => {
     try {
       const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      await fs.promises.mkdir(saveFolderPath, { recursive: true });
+
       const videoFileName = `recorded_video_${Date.now()}.webm`;
       const filePath = path.join(saveFolderPath, videoFileName);
-      fs.writeFileSync(filePath, buffer);
-      return { success: true, filePath };
+
+      // Create a write stream to save the buffer in chunks
+      const writeStream = fs.createWriteStream(filePath);
+
+      // Stream the buffer directly to the file
+      writeStream.write(buffer);
+      writeStream.end();
+
+      return new Promise((resolve, reject) => {
+        writeStream.on('finish', () => {
+          logger.info(`Video saved successfully to ${filePath}`);
+          resolve({ success: true, filePath });
+        });
+        writeStream.on('finish', () => {
+          logger.info(`Video saved successfully to ${filePath}`);
+          resolve({ success: true, filePath });
+        });
+
+        writeStream.on('error', (error) => {
+          logger.error('Error saving video:', error);
+          reject({
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Unexpected error occurred',
+          });
+        });
+      });
     } catch (error) {
-      logger.error('Error saving video:', error);
+      logger.error('Error in save-video handler:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unexpected error',
+        error:
+          error instanceof Error ? error.message : 'Unexpected error occurred',
       };
     }
   });
 };
-
 // Start power save blocker
 const startPowerSaveBlocker = (): void => {
   if (powerSaveBlockerId === null) {

@@ -16,8 +16,7 @@ const useVideoStream = ({
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
-  const webcamRef = useRef<HTMLVideoElement>(null);
-  const videoStreamRef = useRef<MediaStream | null>(null);
+  const { webcamRef, videoStreamRef } = useResData();
   const animationFrameIdRef = useRef<number | undefined>(undefined);
   const { setLandMarkData } = useResData();
 
@@ -38,7 +37,7 @@ const useVideoStream = ({
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
     }
-  }, []);
+  }, [videoStreamRef, webcamRef]);
 
   const renderFrame = useCallback(async () => {
     const webcam = webcamRef.current;
@@ -74,7 +73,7 @@ const useVideoStream = ({
 
     // Schedule the next frame
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-  }, [setLandMarkData]);
+  }, [setLandMarkData, webcamRef]);
 
   const startVideoStream = useCallback(async () => {
     if (!deviceId) {
@@ -146,7 +145,7 @@ const useVideoStream = ({
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
-  }, [deviceId, renderFrame, stopVideoStream]);
+  }, [deviceId, renderFrame, stopVideoStream, videoStreamRef, webcamRef]);
 
   useEffect(() => {
     return () => {
