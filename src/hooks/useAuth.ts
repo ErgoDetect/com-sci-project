@@ -181,7 +181,7 @@ const useAuth = () => {
       let checksTokenStatus = await checkTokenStatus(deviceIdentifier);
 
       if (checksTokenStatus.status === 'Authenticated') {
-        return { status: 'Authenticated' };
+        return { status: 'Authenticated' }; // User is authenticated, no need to proceed further
       }
 
       if (checksTokenStatus.status === 'Refresh') {
@@ -216,7 +216,10 @@ const useAuth = () => {
 
         if (response.status === 200) {
           message.success('Login successful');
-          await checkAuthStatus();
+          const res = await checkAuthStatus();
+          if (res.status === 'Authenticated') {
+            navigate('/');
+          }
         }
       } catch (error) {
         handleServerError(error);
@@ -225,7 +228,7 @@ const useAuth = () => {
         setLoading(false);
       }
     },
-    [checkAuthStatus],
+    [checkAuthStatus, navigate],
   );
 
   // Google login handler
@@ -238,14 +241,17 @@ const useAuth = () => {
 
       await handleSSE(setLoginResponse);
       await fetchGoogleToken();
-      await checkAuthStatus();
+      const response = await checkAuthStatus();
+      if (response.status === 'Authenticated') {
+        navigate('/');
+      }
     } catch (error) {
       logError('Google login error', error);
       message.error('Google login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [checkAuthStatus, setLoginResponse]);
+  }, [checkAuthStatus, navigate, setLoginResponse]);
 
   return {
     loading,
