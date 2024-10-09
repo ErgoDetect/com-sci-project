@@ -59,14 +59,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      await checkAuthStatus();
+      const response = await checkAuthStatus();
+
+      if (location.pathname === '/login') {
+        if (response.status === 'Authenticated') {
+          navigate('/');
+        }
+      }
     };
-    // Avoid auth check on specific routes
-    if (!['/signup', '/wait-verify'].includes(location.pathname)) {
-      checkAuthentication();
-    }
-  }, [checkAuthStatus, location.pathname]);
-  // Function to close Settings and return to normal Layout
+
+    checkAuthentication();
+  }, [checkAuthStatus, location.pathname, navigate]);
+
   const closeSettings = () => setRenderSettings(false);
 
   // Conditionally render components

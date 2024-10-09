@@ -139,9 +139,6 @@ const useAuth = () => {
   const { setLoginResponse } = useResData();
 
   // Handle successful login
-  const handleSuccessfulLogin = useCallback(() => {
-    navigate('/'); // Redirect to home/dashboard
-  }, [navigate]);
 
   // Check server connection
   const checkServerConnection = useCallback(async () => {
@@ -163,9 +160,17 @@ const useAuth = () => {
   }, []);
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | undefined;
+
     if (!isConnected && tryCount < 12) {
-      checkServerConnection();
+      intervalId = setInterval(() => checkServerConnection(), 5000);
     }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [isConnected, checkServerConnection, tryCount]);
 
   // Token status check
@@ -176,17 +181,14 @@ const useAuth = () => {
       let checksTokenStatus = await checkTokenStatus(deviceIdentifier);
 
       if (checksTokenStatus.status === 'Authenticated') {
-        handleSuccessfulLogin();
         return { status: 'Authenticated' };
       }
 
       if (checksTokenStatus.status === 'Refresh') {
         await refreshAccessToken();
         checksTokenStatus = await checkTokenStatus(deviceIdentifier);
-
         if (checksTokenStatus.status === 'Authenticated') {
-          handleSuccessfulLogin();
-          return { status: 'Authenticated' };
+          navigate('/');
         }
       }
 
@@ -198,7 +200,7 @@ const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, [handleSuccessfulLogin, navigate]);
+  }, [navigate]);
 
   // Email login handler
   const loginWithEmail = useCallback(
