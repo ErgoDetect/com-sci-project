@@ -6,11 +6,12 @@ import {
   useNavigate,
   useLocation,
 } from 'react-router-dom';
-import { Layout, Menu, Modal, Spin } from 'antd';
+import { Layout, Menu, Modal, Space, Spin } from 'antd';
 import {
   DashboardOutlined,
   SettingOutlined,
   FileTextOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import DashboardPage from '../pages/DashboardPage';
 import Login from '../pages/Login';
@@ -19,6 +20,7 @@ import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
 import WaitingPage from '../pages/WaitVerifyPage';
 import useAuth from '../hooks/useAuth';
+import Avatar from '../components/account/Avatar';
 
 const { Header, Content, Footer } = Layout;
 
@@ -60,6 +62,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const authenticate = async () => {
       const response = await checkAuthStatus();
+
+      // If user is authenticated and on the login page, navigate to home page
       if (
         response.status === 'Authenticated' &&
         location.pathname === '/login'
@@ -68,7 +72,13 @@ const App: React.FC = () => {
       }
     };
 
-    authenticate();
+    // Only run authenticate if not on the /signup page
+    if (
+      location.pathname !== '/wait-verify' &&
+      location.pathname !== '/signup'
+    ) {
+      authenticate();
+    }
   }, [checkAuthStatus, location.pathname, navigate]);
 
   const closeSettings = () => setRenderSettings(false);
@@ -102,23 +112,48 @@ const App: React.FC = () => {
         style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Ant Design Header */}
-        <Header>
-          <div className="logo" />
-          <Menu theme="dark" mode="horizontal">
-            <Menu.Item key="/" icon={<DashboardOutlined />}>
-              <Link to="/">Dashboard</Link>
-            </Menu.Item>
-            <Menu.Item key="/summary" icon={<FileTextOutlined />}>
-              <Link to="/summary">Summary</Link>
-            </Menu.Item>
-            <Menu.Item
-              key="/setting"
-              icon={<SettingOutlined />}
-              onClick={() => setRenderSettings(true)}
-            >
-              Settings
-            </Menu.Item>
-          </Menu>
+        <Header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {/* Left side: Logo and Menu */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'start',
+            }}
+          >
+            <div className="logo" />
+            <Menu theme="dark" mode="horizontal">
+              <Menu.Item key="/" icon={<DashboardOutlined />}>
+                <Link to="/">Dashboard</Link>
+              </Menu.Item>
+              <Menu.Item key="/summary" icon={<FileTextOutlined />}>
+                <Link to="/summary">Summary</Link>
+              </Menu.Item>
+              <Menu.Item
+                key="/setting"
+                icon={<SettingOutlined />}
+                onClick={() => setRenderSettings(true)}
+              >
+                Settings
+              </Menu.Item>
+            </Menu>
+          </div>
+
+          {/* Right side: Avatar */}
+          <div
+            style={{
+              marginLeft: 'auto', // This will push the avatar to the right
+            }}
+          >
+            <Space>
+              <Avatar />
+            </Space>
+          </div>
         </Header>
 
         {/* Main Content */}

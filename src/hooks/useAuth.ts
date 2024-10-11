@@ -258,6 +258,7 @@ const useAuth = () => {
     checkAuthStatus,
     loginWithEmail,
     loginWithGoogle,
+    getDeviceIdentifier,
     isConnected,
     tryCount,
   };
