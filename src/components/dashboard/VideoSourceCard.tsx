@@ -21,6 +21,8 @@ import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
 import useSendLandmarkData from '../../hooks/useSendLandMarkData';
 import { useResData } from '../../context';
+// import { fixWebmDuration } from '@fix-webm-duration/fix';
+import fixWebmDuration from 'webm-duration-fix';
 
 const { Dragger } = Upload;
 
@@ -78,7 +80,11 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   // Save recorded video and clean up memory
   const saveRecordedVideo = useCallback(async () => {
-    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+    // const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+    const blob = await fixWebmDuration(
+      new Blob(recordedChunksRef.current, { type: 'video/webm' }),
+    );
+
     recordedChunksRef.current = []; // Clear recorded chunks to free memory
 
     const arrayBuffer = await blob.arrayBuffer();
