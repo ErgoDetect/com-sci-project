@@ -6,10 +6,12 @@ import { Dropdown, Space, Avatar } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utility/axiosInstance';
 import useAuth from '../../hooks/useAuth';
+import { useResData } from '../../context';
+import '../../styles/styles.css';
 
 const AccountButton: React.FC = () => {
-  // Calling `useAuth()` within the component
   const { getDeviceIdentifier } = useAuth();
+  const { setRenderSettings } = useResData();
   const navigate = useNavigate();
 
   // Menu items with logout handling
@@ -19,8 +21,8 @@ const AccountButton: React.FC = () => {
       key: '0',
     },
     {
-      label: <a href="/settings">Settings</a>,
-      key: '1',
+      label: <span onClick={() => setRenderSettings(true)}>Settings</span>,
+      key: '/setting',
     },
     {
       type: 'divider',
@@ -54,11 +56,24 @@ const AccountButton: React.FC = () => {
   ];
 
   return (
-    <Dropdown menu={{ items }} trigger={['click']}>
+    <Dropdown
+      menu={{ items }}
+      trigger={['click']}
+      overlayStyle={{
+        minWidth: '200px',
+        marginRight: '16px',
+      }}
+      overlayClassName="custom-dropdown-menu"
+    >
       <a onClick={(e) => e.preventDefault()}>
-        <Space>
-          <Avatar icon={<UserOutlined />} />
-        </Space>
+        <div style={{ marginRight: '10px' }}>
+          <Avatar
+            icon={<UserOutlined />}
+            size="large"
+            shape="circle"
+            style={{ backgroundColor: '#87d068' }}
+          />
+        </div>
       </a>
     </Dropdown>
   );

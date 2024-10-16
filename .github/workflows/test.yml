@@ -8,27 +8,41 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest] # Exclude ubuntu-latest
+        os: [macos-latest, windows-latest] # Excluded ubuntu-latest as per your configuration
 
     steps:
-      - name: Check out Git repository
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js and Yarn
+      - name: Set up Node.js and cache dependencies
         uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: 'yarn'
+          cache-dependency-path: yarn.lock # Improves cache accuracy
 
       - name: Install dependencies
-        run: |
-          yarn install --frozen-lockfile --network-timeout 1000000  # Increased timeout to prevent network timeout issues
+        run: yarn install --frozen-lockfile --prefer-offline # Speeds up installation by using local cache
 
-      - name: Run build, lint, and tests
+      - name: Cache Build Artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/
+          key: ${{ runner.os }}-build-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Run package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          yarn package
-          yarn lint
-          yarn tsc
-          yarn test
+        run: yarn package
+
+      - name: Run lint
+        run: yarn lint
+
+      - name: Run TypeScript compiler
+        run: yarn tsc
+
+      - name: Run tests
+        run: yarn test --maxWorkers=4 # Runs tests in parallel
