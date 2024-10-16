@@ -1,14 +1,8 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { DrawingUtils } from '@mediapipe/tasks-vision';
 import { useResData } from '../context';
-import {
-  initializeFaceLandmarker,
-  drawFaceLandmarker,
-} from '../model/faceLandmark';
-import {
-  initializePoseLandmarker,
-  drawPoseLandmarker,
-} from '../model/bodyLandmark';
+import { initializeFaceLandmarker } from '../model/faceLandmark';
+import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 
 const useVideoStream = ({
@@ -16,29 +10,25 @@ const useVideoStream = ({
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
-  const { webcamRef, videoStreamRef } = useResData();
+  const { webcamRef, videoStreamRef, setLandMarkData } = useResData();
   const animationFrameIdRef = useRef<number | undefined>(undefined);
-  const { setLandMarkData } = useResData();
-
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
-  const drawingUtilsRef = useRef<DrawingUtils | null>(null);
+  const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
 
-  const latestLandmarksResultRef = useRef<LandmarksResult | null>(null); // <-- Store the latest landmarks result
-
+  // Stop the video stream and cancel animation frame
   const stopVideoStream = useCallback(() => {
-    if (videoStreamRef.current) {
-      videoStreamRef.current.getTracks().forEach((track) => track.stop());
-      videoStreamRef.current = null;
-    }
+    videoStreamRef.current?.getTracks().forEach((track) => track.stop());
+    videoStreamRef.current = null;
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
     }
-    if (animationFrameIdRef.current) {
+    if (animationFrameIdRef.current !== undefined) {
       cancelAnimationFrame(animationFrameIdRef.current);
     }
   }, [videoStreamRef, webcamRef]);
 
+  // Render frames and detect landmarks
   const renderFrame = useCallback(async () => {
     const webcam = webcamRef.current;
     if (
@@ -49,32 +39,25 @@ const useVideoStream = ({
       const timestamp = performance.now();
 
       const [faceResults, poseResults] = await Promise.all([
-        faceLandmarkerRef.current
-          ? faceLandmarkerRef.current.detectForVideo(webcam, timestamp)
-          : Promise.resolve(null),
-        poseLandmarkerRef.current
-          ? poseLandmarkerRef.current.detectForVideo(webcam, timestamp)
-          : Promise.resolve(null),
+        faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
+        poseLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
       ]);
 
-      const newResults: LandmarksResult = { faceResults, poseResults };
+      latestLandmarksResultRef.current = { faceResults, poseResults };
 
-      // Store the results in a ref, not in state to avoid re-renders
-      latestLandmarksResultRef.current = newResults;
-
-      // Only update the state every N frames (throttling updates)
+      // Throttle state updates to every 5th frame to reduce re-renders
       if (
         animationFrameIdRef.current &&
         animationFrameIdRef.current % 5 === 0
       ) {
-        setLandMarkData(newResults);
+        setLandMarkData(latestLandmarksResultRef.current);
       }
     }
 
-    // Schedule the next frame
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
   }, [setLandMarkData, webcamRef]);
 
+  // Start video stream with fallback constraints
   const startVideoStream = useCallback(async () => {
     if (!deviceId) {
       console.error('No camera device.');
@@ -101,20 +84,15 @@ const useVideoStream = ({
       audio: false,
     };
 
-    try {
-      stopVideoStream();
+    stopVideoStream(); // Ensure any active stream is stopped
 
-      let videoStream: MediaStream | null = null;
-      try {
-        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (error) {
-        console.warn(
-          'High-res camera access failed, attempting fallback.',
-          error,
-        );
-        videoStream =
-          await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-      }
+    try {
+      const videoStream = await navigator.mediaDevices
+        .getUserMedia(constraints)
+        .catch(() => {
+          console.warn('High-res camera access failed, attempting fallback.');
+          return navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        });
 
       if (!videoStream) {
         console.error(
@@ -124,21 +102,15 @@ const useVideoStream = ({
       }
 
       videoStreamRef.current = videoStream;
-
       if (webcamRef.current) {
         webcamRef.current.srcObject = videoStream;
-
         webcamRef.current.onloadedmetadata = async () => {
           await webcamRef.current?.play();
 
-          if (!faceLandmarkerRef.current) {
-            faceLandmarkerRef.current = await initializeFaceLandmarker();
-          }
-          if (!poseLandmarkerRef.current) {
-            poseLandmarkerRef.current = await initializePoseLandmarker();
-          }
+          // Initialize face and pose landmarkers if not already initialized
+          faceLandmarkerRef.current ||= await initializeFaceLandmarker();
+          poseLandmarkerRef.current ||= await initializePoseLandmarker();
 
-          // Start rendering frames once metadata is loaded
           animationFrameIdRef.current = requestAnimationFrame(renderFrame);
         };
       }
@@ -147,11 +119,8 @@ const useVideoStream = ({
     }
   }, [deviceId, renderFrame, stopVideoStream, videoStreamRef, webcamRef]);
 
-  useEffect(() => {
-    return () => {
-      stopVideoStream();
-    };
-  }, [stopVideoStream]);
+  // Stop the video stream when the component unmounts
+  useEffect(() => stopVideoStream, [stopVideoStream]);
 
   return { webcamRef, startVideoStream, stopVideoStream };
 };

@@ -10,6 +10,7 @@ import {
   InputNumber,
   Tooltip,
   Typography,
+  MenuProps,
 } from 'antd';
 import {
   SettingOutlined,
@@ -144,7 +145,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
     [detailedData, handleDetailedDataChange, theme],
   );
 
-  const menuItems = useMemo(
+  const menuItems: MenuProps['items'] = useMemo(
     () => [
       {
         key: 'camera',

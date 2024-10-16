@@ -150,7 +150,7 @@ export interface VideoSourceCardProps {
   useVideoFile: boolean;
   setUseVideoFile: (value: boolean) => void;
   videoFile: File | null;
-  setVideoFile: (file: File) => void;
+  setVideoFile: (file: File | null) => void;
   isPlaying: boolean;
   handlePlayPause: () => void;
   deviceId: string | undefined;

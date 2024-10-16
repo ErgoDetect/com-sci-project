@@ -46,34 +46,52 @@ const getDeviceIdentifier = async (): Promise<string> => {
   return deviceIdentifier;
 };
 
-// Google SSE Login handler
-const handleSSE = async (
-  setLoginResponse: React.Dispatch<React.SetStateAction<boolean>>,
-) => {
-  return new Promise<void>((resolve, reject) => {
-    const eventSource = new EventSource(GOOGLE_SSE_URL);
+const fetchGoogleToken = async (deviceIdentifier: string) => {
+  try {
+    await axiosInstance.get(GOOGLE_SET_COOKIES_URL, {
+      headers: { 'Device-Identifier': deviceIdentifier },
+    });
+  } catch (error) {
+    logError('Error fetching token and setting cookies', error);
+    throw error;
+  }
+};
 
-    eventSource.onmessage = (event) => {
+// Google SSE Login handler
+const handleSSE = async (deviceIdentifier: string) => {
+  return new Promise<void>((resolve, reject) => {
+    const eventSource = new EventSource(
+      `${GOOGLE_SSE_URL}?device_identifier=${deviceIdentifier}`,
+    );
+
+    // Handle messages from the server
+    eventSource.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('SSE data received:', data); // Log SSE data
+
         if (data?.success) {
-          setLoginResponse(data.success);
-          resolve();
+          resolve(); // Resolve the promise after success
+          eventSource.close(); // Close the SSE connection after success
         } else {
-          reject(new Error('Login failed via SSE'));
+          console.log('SSE failed:', data); // Log failure if success is false
+          // Close on failure
+          reject(new Error('Login failed via SSE')); // Reject the promise
+          eventSource.close();
         }
       } catch (error) {
-        logError('Error parsing SSE message', error);
-        reject(error);
-      } finally {
+        logError('Error parsing SSE message', error); // Log the parsing error
+        reject(error); // Reject the promise
         eventSource.close();
       }
     };
 
+    // Handle errors with the EventSource connection
     eventSource.onerror = (error) => {
-      logError('SSE connection error', error);
-      eventSource.close();
-      reject(error);
+      logError('SSE connection error', error); // Log the error
+      console.log(`SSE error details: readyState=${eventSource.readyState}`); // Add more error details
+      eventSource.close(); // Close the SSE connection on error
+      reject(error); // Reject the promise with the error
     };
   });
 };
@@ -92,14 +110,6 @@ const fetchGoogleAuthUrl = async (deviceIdentifier: string) => {
 };
 
 // Fetch Google token and set cookies
-const fetchGoogleToken = async () => {
-  try {
-    await axiosInstance.get(GOOGLE_SET_COOKIES_URL);
-  } catch (error) {
-    logError('Error fetching token and setting cookies', error);
-    throw error;
-  }
-};
 
 // Refresh access token
 const refreshAccessToken = async () => {
@@ -136,7 +146,6 @@ const useAuth = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [tryCount, setTryCount] = useState(0);
   const navigate = useNavigate();
-  const { setLoginResponse } = useResData();
 
   // Handle successful login
 
@@ -180,25 +189,30 @@ const useAuth = () => {
       const deviceIdentifier = await getDeviceIdentifier();
       let checksTokenStatus = await checkTokenStatus(deviceIdentifier);
 
+      // Case 1: User is already authenticated
       if (checksTokenStatus.status === 'Authenticated') {
-        return { status: 'Authenticated' }; // User is authenticated, no need to proceed further
+        return { status: 'Authenticated' }; // User is authenticated, return success
       }
 
+      // Case 2: Token needs refreshing
       if (checksTokenStatus.status === 'Refresh') {
-        await refreshAccessToken();
-        checksTokenStatus = await checkTokenStatus(deviceIdentifier);
+        await refreshAccessToken(); // Attempt to refresh token
+        checksTokenStatus = await checkTokenStatus(deviceIdentifier); // Re-check status
+
         if (checksTokenStatus.status === 'Authenticated') {
-          navigate('/');
+          navigate('/'); // Navigate to home if re-authenticated
+          return { status: 'Authenticated' }; // Return success
         }
       }
 
-      navigate('/login');
+      // Case 3: User needs to log in
+      navigate('/login'); // Only navigate once
       return { status: 'LoginRequired', message: 'Authentication required' };
     } catch (error: any) {
-      logError('Error during authentication check', error);
+      logError('Error during authentication check', error); // Log any errors
       return { status: 'LoginRequired', message: 'Authentication failed' };
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading spinner
     }
   }, [navigate]);
 
@@ -230,19 +244,26 @@ const useAuth = () => {
     },
     [checkAuthStatus, navigate],
   );
-
   // Google login handler
   const loginWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
       const deviceIdentifier = await getDeviceIdentifier();
+      console.log('Device Identifier:', deviceIdentifier); // Log device identifier
+
+      // Step 1: Get the Google Auth URL and open it in the browser
       const authUrl = await fetchGoogleAuthUrl(deviceIdentifier);
+      console.log('Auth URL received:', authUrl); // Log the auth URL
       await window.electron.ipcRenderer.openUrl(authUrl);
 
-      await handleSSE(setLoginResponse);
-      await fetchGoogleToken();
+      // Step 2: Wait for SSE to resolve success and fetch token
+      await handleSSE(deviceIdentifier);
+
+      await fetchGoogleToken(deviceIdentifier); // Fetch the token
+
       const response = await checkAuthStatus();
       if (response.status === 'Authenticated') {
+        console.log('User authenticated, navigating to home...');
         navigate('/');
       }
     } catch (error) {
@@ -251,7 +272,7 @@ const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, [checkAuthStatus, navigate, setLoginResponse]);
+  }, [checkAuthStatus, navigate]);
 
   return {
     loading,

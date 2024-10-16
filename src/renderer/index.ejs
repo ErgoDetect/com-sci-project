@@ -11,7 +11,7 @@
         connect-src 'self' http://192.168.1.56:8000 ws://192.168.1.56:8000 http://localhost:8000 ws://localhost:8000 https://cdn.jsdelivr.net https://storage.googleapis.com https://accounts.google.com/gsi/ https://www.googleapis.com/oauth2/v1/userinfo;
         frame-src 'self' https://accounts.google.com/gsi/;
         img-src 'self' https://lh3.googleusercontent.com;
-        media-src http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4
+        media-src 'self' blob: http://localhost:8000 http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4;
       "
     />
   </head>
