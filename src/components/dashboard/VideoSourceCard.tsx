@@ -117,7 +117,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       // console.log(timeCounterRef);
 
       // Continue processing frames
-      setTimeout(processFrame, 100); // Call processFrame every 100 ms
+      setTimeout(processFrame, 0); // Call processFrame every 100 ms
     };
 
     // Start processing frames after an initial delay
