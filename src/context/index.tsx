@@ -46,6 +46,9 @@ interface ResContextProps {
 
   webcamRef: React.RefObject<HTMLVideoElement>;
   videoStreamRef: React.MutableRefObject<MediaStream | null>;
+
+  renderSettings: boolean;
+  setRenderSettings: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -84,6 +87,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const webcamRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
 
+  const [renderSettings, setRenderSettings] = useState(false);
+
   const contextValue = useMemo(
     () => ({
       resData,
@@ -110,6 +115,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setShowDetailedData,
       webcamRef,
       videoStreamRef,
+      renderSettings,
+      setRenderSettings,
     }),
     [
       resData,
@@ -123,6 +130,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       loginResponse,
       isLogin,
       showDetailedData,
+      renderSettings,
     ],
   );
 

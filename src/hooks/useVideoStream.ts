@@ -1,5 +1,4 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { DrawingUtils } from '@mediapipe/tasks-vision';
 import { useResData } from '../context';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
