@@ -12,6 +12,7 @@ import {
   SettingOutlined,
   FileTextOutlined,
   UserOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import DashboardPage from '../pages/DashboardPage';
 import Login from '../pages/Login';
@@ -95,7 +96,9 @@ const App: React.FC = () => {
           height: '100vh',
         }}
       >
-        <Spin size="large" />
+        <Spin
+          indicator={<LoadingOutlined style={{ fontSize: '10rem' }} spin />}
+        />
       </div>
     );
   } else if (renderSettings) {
