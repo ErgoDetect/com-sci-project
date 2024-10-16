@@ -259,7 +259,7 @@ const useAuth = () => {
       // Step 2: Wait for SSE to resolve success and fetch token
       await handleSSE(deviceIdentifier);
 
-      await fetchGoogleToken(deviceIdentifier);
+      await fetchGoogleToken(deviceIdentifier); // Fetch the token
 
       const response = await checkAuthStatus();
       if (response.status === 'Authenticated') {

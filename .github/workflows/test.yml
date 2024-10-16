@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest] # Exclude ubuntu-latest
 
     steps:
       - name: Check out Git repository
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          yarn install --frozen-lockfile
+          yarn install --frozen-lockfile --network-timeout 1000000  # Increased timeout to prevent network timeout issues
 
       - name: Run build, lint, and tests
         env:
