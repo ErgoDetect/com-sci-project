@@ -34,7 +34,8 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
-  const [playbackRate] = useState(4.0); // Default playback rate
+  // const [playbackRate] = useState(4.0); // Default playback rate
+  const timeCounterRef = useRef(0);
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
@@ -69,24 +70,21 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     setIsProcessing(true);
     await initializeLandmarkers();
 
-    videoElement.playbackRate = playbackRate;
     videoElement.muted = true;
-    videoElement.playsInline = true;
-
-    await videoElement.play();
+    videoElement.playsInline = false;
 
     const totalDuration = videoElement.duration;
 
     const processFrame = async () => {
-      if (videoElement.ended) {
+      if (timeCounterRef.current >= totalDuration) {
         setIsProcessing(false);
         setStreaming(false);
-        cancelAnimationFrame(animationFrameIdRef.current!);
+        message.success('Video processing completed.');
         return;
       }
 
       if (videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        const timestamp = videoElement.currentTime * 1000; // in milliseconds
+        const timestamp = timeCounterRef.current * 1000; // Convert to milliseconds
 
         try {
           const [faceResults, poseResults] = await Promise.all([
@@ -105,38 +103,30 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
           setStreaming(true);
 
           // Update progress
-          const elapsedTime = videoElement.currentTime;
-          setProcessingProgress((elapsedTime / totalDuration) * 100);
+          setProcessingProgress((timeCounterRef.current / totalDuration) * 100);
         } catch (error) {
           console.error('Error processing frame:', error);
           message.error('An error occurred during video processing.');
         }
       }
 
-      // Process the next frame
-      animationFrameIdRef.current = requestAnimationFrame(processFrame);
+      // Update video time and increment timeCounterRef
+      videoElement.currentTime = timeCounterRef.current;
+      timeCounterRef.current =
+        Math.round((timeCounterRef.current + 0.1) * 100) / 100; // Increment by 0.1 seconds (adjust as needed)
+      // console.log(timeCounterRef);
+
+      // Continue processing frames
+      setTimeout(processFrame, 100); // Call processFrame every 100 ms
     };
 
-    // Start processing frames
-    animationFrameIdRef.current = requestAnimationFrame(processFrame);
-
-    // Handle video end
-    videoElement.onended = () => {
-      setIsProcessing(false);
-      setStreaming(false);
-      cancelAnimationFrame(animationFrameIdRef.current!);
-      message.success('Video processing completed.');
-    };
-
-    // Handle video errors
-    videoElement.onerror = () => {
-      setIsProcessing(false);
-      setStreaming(false);
-      cancelAnimationFrame(animationFrameIdRef.current!);
-      console.error('Error loading video file');
-      message.error('Error loading video file.');
-    };
-  }, [initializeLandmarkers, playbackRate, setLandMarkData, setStreaming]);
+    // Start processing frames after an initial delay
+    const initialDelay = 500; // Delay in milliseconds
+    setTimeout(() => {
+      timeCounterRef.current = 0; // Reset time counter
+      processFrame(); // Start manual processing loop
+    }, initialDelay);
+  }, [initializeLandmarkers, setLandMarkData, setStreaming]);
 
   // Handle file upload
   const handleFileUpload = useCallback(
