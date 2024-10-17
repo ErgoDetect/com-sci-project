@@ -46,11 +46,9 @@ const getDeviceIdentifier = async (): Promise<string> => {
   return deviceIdentifier;
 };
 
-const fetchGoogleToken = async (deviceIdentifier: string) => {
+const fetchGoogleToken = async () => {
   try {
-    await axiosInstance.get(GOOGLE_SET_COOKIES_URL, {
-      headers: { 'Device-Identifier': deviceIdentifier },
-    });
+    await axiosInstance.get(GOOGLE_SET_COOKIES_URL);
   } catch (error) {
     logError('Error fetching token and setting cookies', error);
     throw error;
@@ -97,11 +95,9 @@ const handleSSE = async (deviceIdentifier: string) => {
 };
 
 // Fetch Google auth URL
-const fetchGoogleAuthUrl = async (deviceIdentifier: string) => {
+const fetchGoogleAuthUrl = async () => {
   try {
-    const { data } = await axiosInstance.get(GOOGLE_LOGIN_URL, {
-      headers: { 'Device-Identifier': deviceIdentifier },
-    });
+    const { data } = await axiosInstance.get(GOOGLE_LOGIN_URL);
     return data.url;
   } catch (error) {
     logError('Error fetching Google Auth URL', error);
@@ -109,12 +105,10 @@ const fetchGoogleAuthUrl = async (deviceIdentifier: string) => {
   }
 };
 
-// Fetch Google token and set cookies
-
 // Refresh access token
 const refreshAccessToken = async () => {
   try {
-    await axiosInstance.post(REFRESH_TOKEN_URL, {}, { withCredentials: true });
+    await axiosInstance.post(REFRESH_TOKEN_URL);
   } catch (error) {
     logError('Error refreshing access token', error);
     throw error;
@@ -122,17 +116,10 @@ const refreshAccessToken = async () => {
 };
 
 // Check token status
-const checkTokenStatus = async (
-  deviceIdentifier: string,
-): Promise<AuthStatusResponse> => {
+const checkTokenStatus = async (): Promise<AuthStatusResponse> => {
   try {
-    const { data } = await axiosInstance.get<AuthStatusResponse>(
-      AUTH_STATUS_URL,
-      {
-        withCredentials: true,
-        headers: { 'Device-Identifier': deviceIdentifier },
-      },
-    );
+    const { data } =
+      await axiosInstance.get<AuthStatusResponse>(AUTH_STATUS_URL);
     return data;
   } catch (error) {
     logError('Error checking token status', error);
@@ -186,8 +173,7 @@ const useAuth = () => {
   const checkAuthStatus = useCallback(async (): Promise<AuthStatusResponse> => {
     setLoading(true);
     try {
-      const deviceIdentifier = await getDeviceIdentifier();
-      let checksTokenStatus = await checkTokenStatus(deviceIdentifier);
+      let checksTokenStatus = await checkTokenStatus();
 
       // Case 1: User is already authenticated
       if (checksTokenStatus.status === 'Authenticated') {
@@ -197,7 +183,7 @@ const useAuth = () => {
       // Case 2: Token needs refreshing
       if (checksTokenStatus.status === 'Refresh') {
         await refreshAccessToken(); // Attempt to refresh token
-        checksTokenStatus = await checkTokenStatus(deviceIdentifier); // Re-check status
+        checksTokenStatus = await checkTokenStatus(); // Re-check status
 
         if (checksTokenStatus.status === 'Authenticated') {
           navigate('/'); // Navigate to home if re-authenticated
@@ -221,12 +207,10 @@ const useAuth = () => {
     async (email: string, password: string) => {
       setLoading(true);
       try {
-        const deviceIdentifier = await getDeviceIdentifier();
-        const response = await axiosInstance.post(
-          LOGIN_URL,
-          { email, password },
-          { headers: { 'Device-Identifier': deviceIdentifier } },
-        );
+        const response = await axiosInstance.post(LOGIN_URL, {
+          email,
+          password,
+        });
 
         if (response.status === 200) {
           message.success('Login successful');
@@ -249,17 +233,16 @@ const useAuth = () => {
     setLoading(true);
     try {
       const deviceIdentifier = await getDeviceIdentifier();
-      console.log('Device Identifier:', deviceIdentifier); // Log device identifier
 
       // Step 1: Get the Google Auth URL and open it in the browser
-      const authUrl = await fetchGoogleAuthUrl(deviceIdentifier);
+      const authUrl = await fetchGoogleAuthUrl();
       console.log('Auth URL received:', authUrl); // Log the auth URL
       await window.electron.ipcRenderer.openUrl(authUrl);
 
       // Step 2: Wait for SSE to resolve success and fetch token
       await handleSSE(deviceIdentifier);
 
-      await fetchGoogleToken(deviceIdentifier); // Fetch the token
+      await fetchGoogleToken(); // Fetch the token
 
       const response = await checkAuthStatus();
       if (response.status === 'Authenticated') {

@@ -12,6 +12,7 @@ import { useResData } from '../../context';
 import { initializeFaceLandmarker } from '../../model/faceLandmark';
 import { initializePoseLandmarker } from '../../model/bodyLandmark';
 import { filterLandmark } from '../../utility/filterLandMark';
+import axiosInstance from '../../utility/axiosInstance';
 
 const { Dragger } = Upload;
 
@@ -31,6 +32,8 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const animationFrameIdRef = useRef<number | null>(null);
   const timeCounterRef = useRef(0);
   const processResult = useRef<any[]>([]);
+
+  const processingTriggeredRef = useRef(false); // Flag to prevent re-processing
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -63,7 +66,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   // Initialize landmarkers
   const initializeLandmarkers = useCallback(async () => {
-    // Close existing landmarkers
     if (faceLandmarkerRef.current) {
       await faceLandmarkerRef.current.close();
       faceLandmarkerRef.current = null;
@@ -78,7 +80,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     poseLandmarkerRef.current = await initializePoseLandmarker();
   }, []);
 
-  // Process video
+  // Process video and upload results
   const processVideo = useCallback(async () => {
     const videoElement = mainVideoElementRef.current;
     if (!videoElement) return;
@@ -87,7 +89,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     await initializeLandmarkers();
 
     videoElement.muted = true;
-    videoElement.playbackRate = 1;
+    videoElement.playbackRate = 8;
     videoElement.controls = false;
 
     const totalDuration = videoElement.duration;
@@ -105,7 +107,23 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         setIsProcessing(false);
         setHideVideo(false);
         setIsProcessed(true);
-        message.success('Video processing completed.');
+        processingTriggeredRef.current = false; // Reset the flag
+
+        try {
+          const response = await axiosInstance.post('/files/upload/video/', {
+            file: processResult.current, // This is the array of processed data
+          });
+
+          if (response.status === 200) {
+            message.success('Video processing completed and uploaded.');
+          } else {
+            message.error('Failed to upload video.');
+          }
+        } catch (error) {
+          console.error('Error uploading video:', error);
+          message.error('Error uploading video.');
+        }
+
         videoElement.controls = true;
         return;
       }
@@ -176,7 +194,12 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   // Start processing after modal closes
   useEffect(() => {
-    if (!isModalVisible && goodPostureTime !== null) {
+    if (
+      !isModalVisible &&
+      goodPostureTime !== null &&
+      !processingTriggeredRef.current
+    ) {
+      processingTriggeredRef.current = true; // Mark processing as triggered
       processVideo();
     }
   }, [isModalVisible, goodPostureTime, processVideo]);
@@ -205,6 +228,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     processResult.current = [];
     setGoodPostureTime(null);
     setHideVideo(false);
+    processingTriggeredRef.current = false; // Reset the flag
     message.success('Uploaded video deleted and processing reset.');
   }, [setVideoFile]);
 
@@ -222,6 +246,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             setIsProcessing(false);
             setStreaming(false);
             setHideVideo(false);
+            processingTriggeredRef.current = false; // Reset the flag
           }}
           checked={useVideoFile}
         />
