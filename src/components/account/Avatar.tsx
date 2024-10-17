@@ -10,7 +10,6 @@ import { useResData } from '../../context';
 import '../../styles/styles.css';
 
 const AccountButton: React.FC = () => {
-  const { getDeviceIdentifier } = useAuth();
   const { setRenderSettings } = useResData();
   const navigate = useNavigate();
 
@@ -33,16 +32,10 @@ const AccountButton: React.FC = () => {
       onClick: async () => {
         try {
           // Ensure the device identifier is fetched properly
-          const deviceIdentifier = await getDeviceIdentifier();
-          console.log(deviceIdentifier.toString());
 
           // Perform the logout request with the correct options format
           const response = await axiosInstance.post(
             '/auth/logout/', // Ensure the URL is correct
-            {}, // Empty body if no payload is needed
-            {
-              headers: { 'Device-Identifier': deviceIdentifier.toString() },
-            },
           );
           if (response.status === 200) {
             navigate('/login');
