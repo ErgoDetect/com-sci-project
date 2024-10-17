@@ -26,70 +26,67 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
+  const modalVideoElementRef = useRef<HTMLVideoElement | null>(null);
+  const mainVideoElementRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const timeCounterRef = useRef(0);
+  const processResult = useRef<any[]>([]);
+
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [goodPostureTime, setGoodPostureTime] = useState<number | null>(null);
   const [hideVideo, setHideVideo] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
-  const timeCounterRef = useRef(0);
-  const processResult = useRef<any[]>([]);
-
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
-  const animationFrameIdRef = useRef<number | null>(null);
-
-  // State variable for video source
   const [videoSrc, setVideoSrc] = useState('');
 
-  // Update videoSrc when videoFile changes
+  // Styles
+  const videoStyles = {
+    width: '100%',
+    borderRadius: '10px',
+    display: hideVideo ? 'none' : 'block',
+  };
+
+  // Create object URL for video file
   useEffect(() => {
-    let url: string | undefined;
-
     if (videoFile) {
-      url = URL.createObjectURL(videoFile);
+      const url = URL.createObjectURL(videoFile);
       setVideoSrc(url);
-    } else {
-      setVideoSrc('');
-    }
 
-    return () => {
-      if (url) {
+      return () => {
         URL.revokeObjectURL(url);
-      }
+      };
+    }
+    return () => {
+      setVideoSrc('');
     };
   }, [videoFile]);
 
+  // Initialize landmarkers
   const initializeLandmarkers = useCallback(async () => {
-    if (!faceLandmarkerRef.current) {
-      faceLandmarkerRef.current = await initializeFaceLandmarker();
+    // Close existing landmarkers
+    if (faceLandmarkerRef.current) {
+      await faceLandmarkerRef.current.close();
+      faceLandmarkerRef.current = null;
     }
-    if (!poseLandmarkerRef.current) {
-      poseLandmarkerRef.current = await initializePoseLandmarker();
+    if (poseLandmarkerRef.current) {
+      await poseLandmarkerRef.current.close();
+      poseLandmarkerRef.current = null;
     }
+
+    // Initialize new landmarkers
+    faceLandmarkerRef.current = await initializeFaceLandmarker();
+    poseLandmarkerRef.current = await initializePoseLandmarker();
   }, []);
 
-  // Handle video processing starting from the selected posture time
+  // Process video
   const processVideo = useCallback(async () => {
-    const videoElement = videoElementRef.current;
-    if (!videoElement) {
-      console.error('Video element is hidden, cannot process video.');
-      return;
-    }
-
-    if (videoElement.readyState < 1) {
-      await new Promise<void>((resolve) => {
-        videoElement.addEventListener('loadedmetadata', () => resolve(), {
-          once: true,
-        });
-      });
-    }
+    const videoElement = mainVideoElementRef.current;
+    if (!videoElement) return;
 
     setIsProcessing(true);
     await initializeLandmarkers();
 
     videoElement.muted = true;
-    videoElement.playsInline = true;
-    videoElement.autoplay = true;
     videoElement.playbackRate = 1;
     videoElement.controls = false;
 
@@ -103,7 +100,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
     const processFrame = async () => {
       if (isProcessingFrame) return;
-      isProcessingFrame = true;
 
       if (videoElement.currentTime >= totalDuration) {
         setIsProcessing(false);
@@ -111,39 +107,29 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         setIsProcessed(true);
         message.success('Video processing completed.');
         videoElement.controls = true;
+        return;
       }
 
-      const frameInterval = 1 / 1;
-      const timeDelta = videoElement.currentTime - timeCounterRef.current;
-      if (timeDelta >= frameInterval) {
+      isProcessingFrame = true;
+      const frameInterval = 1; // Process every second
+      if (videoElement.currentTime - timeCounterRef.current >= frameInterval) {
         timeCounterRef.current = videoElement.currentTime;
         const timestamp = videoElement.currentTime * 1000;
 
-        if (videoElement.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
-          try {
-            const [faceResults, poseResults] = await Promise.all([
-              faceLandmarkerRef.current?.detectForVideo(
-                videoElement,
-                timestamp,
-              ),
-              poseLandmarkerRef.current?.detectForVideo(
-                videoElement,
-                timestamp,
-              ),
-            ]);
-            latestLandmarksResultRef.current = { faceResults, poseResults };
-            const filteredData = filterLandmark(
-              latestLandmarksResultRef.current as LandmarksResult,
-            );
-            processResult.current.push(filteredData);
+        try {
+          const [faceResults, poseResults] = await Promise.all([
+            faceLandmarkerRef.current.detectForVideo(videoElement, timestamp),
+            poseLandmarkerRef.current.detectForVideo(videoElement, timestamp),
+          ]);
 
-            setProcessingProgress(
-              (videoElement.currentTime / totalDuration) * 100,
-            );
-          } catch (error) {
-            console.error('Error processing frame:', error);
-            message.error('An error occurred during video processing.');
-          }
+          latestLandmarksResultRef.current = { faceResults, poseResults };
+          const filteredData = filterLandmark(
+            latestLandmarksResultRef.current as LandmarksResult,
+          );
+          processResult.current.push(filteredData);
+        } catch (error) {
+          message.error('Error processing frame.');
+          console.error(error);
         }
       }
 
@@ -153,36 +139,31 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
     try {
       await videoElement.play();
-    } catch (err) {
-      console.error('Error starting video playback:', err);
+      timeCounterRef.current = videoElement.currentTime;
+      processFrame();
+    } catch (error) {
+      message.error('Error starting video playback.');
+      console.error(error);
     }
-
-    timeCounterRef.current = 0;
-    processFrame();
   }, [initializeLandmarkers, goodPostureTime]);
 
   // Handle file upload
   const handleFileUpload = useCallback(
     async (file: File): Promise<boolean> => {
-      try {
-        setVideoFile(file);
-        setGoodPostureTime(null);
-        setIsModalVisible(true);
-        setHideVideo(false);
-        setIsProcessed(false);
-        message.success(`${file.name} uploaded successfully.`);
-        return true;
-      } catch (error) {
-        message.error('Error during file upload handling.');
-        return false;
-      }
+      setVideoFile(file);
+      setGoodPostureTime(null);
+      setIsModalVisible(true);
+      setHideVideo(false);
+      setIsProcessed(false);
+      message.success(`${file.name} uploaded successfully.`);
+      return false; // Prevent automatic upload
     },
     [setVideoFile],
   );
 
-  // Handle setting good posture time
+  // Set good posture time
   const handleSetGoodPosture = useCallback(() => {
-    const videoElement = videoElementRef.current;
+    const videoElement = modalVideoElementRef.current;
     if (videoElement) {
       setGoodPostureTime(videoElement.currentTime);
       setHideVideo(true);
@@ -193,18 +174,27 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     }
   }, []);
 
-  // Start processing after modal is closed
+  // Start processing after modal closes
   useEffect(() => {
     if (!isModalVisible && goodPostureTime !== null) {
       processVideo();
     }
   }, [isModalVisible, goodPostureTime, processVideo]);
 
-  // Delete uploaded video and reset states
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+      }
+    };
+  }, []);
+
+  // Delete uploaded video
   const handleDeleteVideo = useCallback(() => {
-    if (videoElementRef.current) {
-      videoElementRef.current.pause();
-      videoElementRef.current.currentTime = 0;
+    if (mainVideoElementRef.current) {
+      mainVideoElementRef.current.pause();
+      mainVideoElementRef.current.currentTime = 0;
     }
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
@@ -212,26 +202,11 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
     setVideoFile(null);
     setIsProcessing(false);
-    setProcessingProgress(0);
     processResult.current = [];
     setGoodPostureTime(null);
     setHideVideo(false);
     message.success('Uploaded video deleted and processing reset.');
   }, [setVideoFile]);
-
-  // After processing, control playback to simulate trimming
-  useEffect(() => {
-    if (isProcessed && goodPostureTime !== null) {
-      const videoElement = videoElementRef.current;
-      if (videoElement) {
-        videoElement.currentTime = goodPostureTime;
-        videoElement.play();
-        message.info(
-          `Video trimmed to start from ${goodPostureTime.toFixed(2)} seconds.`,
-        );
-      }
-    }
-  }, [isProcessed, goodPostureTime]);
 
   return (
     <VideoCard
@@ -245,7 +220,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             setUseVideoFile(checked);
             setVideoFile(null);
             setIsProcessing(false);
-            setProcessingProgress(0);
             setStreaming(false);
             setHideVideo(false);
           }}
@@ -279,14 +253,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                       zIndex: 10,
                     }}
                   >
-                    <img
-                      src="/path/to/overlay-image.png"
-                      alt="Processing Overlay"
-                      style={{
-                        width: videoElementRef.current.width,
-                        height: videoElementRef.current.height,
-                      }}
-                    />
                     <p style={{ color: 'white', textAlign: 'center' }}>
                       Processing... Please wait.
                     </p>
@@ -294,47 +260,22 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                 )}
 
                 <video
-                  ref={videoElementRef}
+                  ref={mainVideoElementRef}
                   src={videoSrc}
-                  style={{
-                    width: '100%',
-                    borderRadius: '10px',
-                    display: hideVideo ? 'none' : 'block',
-                  }}
+                  style={videoStyles}
                   controls={!isProcessing}
-                  onLoadedMetadata={() => {
-                    const videoElement = videoElementRef.current;
-                    if (
-                      videoElement &&
-                      isProcessed &&
-                      goodPostureTime !== null
-                    ) {
-                      videoElement.currentTime = goodPostureTime;
-                    }
-                  }}
-                  onSeeking={() => {
-                    const videoElement = videoElementRef.current;
-                    if (
-                      videoElement &&
-                      isProcessed &&
-                      goodPostureTime !== null &&
-                      videoElement.currentTime < goodPostureTime
-                    ) {
-                      videoElement.currentTime = goodPostureTime;
-                    }
-                  }}
-                  onTimeUpdate={() => {
-                    const videoElement = videoElementRef.current;
-                    if (
-                      videoElement &&
-                      isProcessed &&
-                      goodPostureTime !== null &&
-                      videoElement.currentTime < goodPostureTime
-                    ) {
-                      videoElement.currentTime = goodPostureTime;
-                    }
-                  }}
                   controlsList="nofullscreen"
+                  onTimeUpdate={() => {
+                    const videoElement = mainVideoElementRef.current;
+                    if (
+                      videoElement &&
+                      isProcessed &&
+                      goodPostureTime !== null &&
+                      videoElement.currentTime < goodPostureTime
+                    ) {
+                      videoElement.currentTime = goodPostureTime;
+                    }
+                  }}
                 />
 
                 <Button
@@ -352,10 +293,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                 name="file"
                 multiple={false}
                 accept=".webm, .mp4, .mov"
-                beforeUpload={async (file) => {
-                  await handleFileUpload(file);
-                  return false;
-                }}
+                beforeUpload={handleFileUpload}
                 showUploadList={false}
               >
                 <p className="ant-upload-drag-icon">
@@ -384,28 +322,17 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
           setIsModalVisible(false);
           handleDeleteVideo();
         }}
-        footer={[
-          <div
-            key="footer"
-            style={{
-              display: 'flex',
-              justifyContent: 'center', // Center the button horizontally
-            }}
-          >
-            <Button key="set" type="primary" onClick={handleSetGoodPosture}>
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <Button type="primary" onClick={handleSetGoodPosture}>
               Set Good Posture
             </Button>
-          </div>,
-        ]}
+          </div>
+        }
       >
-        <div
-          style={{
-            padding: '25px',
-            alignItems: 'center',
-          }}
-        >
+        <div style={{ padding: '25px', alignItems: 'center' }}>
           <video
-            ref={videoElementRef}
+            ref={modalVideoElementRef}
             src={videoSrc}
             style={{ width: '100%', borderRadius: '10px' }}
             controls
