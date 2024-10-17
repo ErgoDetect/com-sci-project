@@ -378,6 +378,7 @@ import { useResData } from '../../context';
 import { initializeFaceLandmarker } from '../../model/faceLandmark';
 import { initializePoseLandmarker } from '../../model/bodyLandmark';
 import axiosInstance from '../../utility/axiosInstance';
+import { filterLandmark } from '../../utility/filterLandMark';
 
 const { Dragger } = Upload;
 
@@ -508,7 +509,10 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
               ),
             ]);
             latestLandmarksResultRef.current = { faceResults, poseResults };
-            processResult.current.push(latestLandmarksResultRef.current);
+            const filteredData = filterLandmark(
+              latestLandmarksResultRef.current as LandmarksResult,
+            );
+            processResult.current.push(filteredData);
 
             setProcessingProgress(
               (videoElement.currentTime / totalDuration) * 100,
