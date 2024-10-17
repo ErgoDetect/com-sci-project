@@ -1,6 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { LandmarksResult } from '../interface/propsType';
-import { filterLandmark, getIrisDiameter } from '../utility/filterLandMark';
+import { filterLandmark } from '../utility/filterLandMark';
 import useInterval from './useInterval';
 import { useResData } from '../context';
 import useWebSocket from '../utility/webSocketConfig';
@@ -37,24 +37,6 @@ const useSendLandmarkData = ({
       }
     }
   }, [landMarkData, send]);
-
-  useEffect(() => {
-    if (combineResults && message && landMarkData) {
-      try {
-        const parsedMessage =
-          typeof message === 'string' ? JSON.parse(message) : message;
-
-        const newResult = {
-          ...parsedMessage,
-          ...getIrisDiameter(landMarkData as LandmarksResult),
-        };
-
-        setCombineResult(newResult);
-      } catch (error) {
-        console.error('Failed to combine results:', error);
-      }
-    }
-  }, [combineResults, message, landMarkData, setCombineResult]);
 
   useInterval(sendLandMarkData, logInterval, streaming);
 };
