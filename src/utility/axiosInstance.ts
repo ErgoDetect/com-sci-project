@@ -15,13 +15,13 @@ const axiosInstance = axios.create({
 
 // List of endpoints that require the 'Device-Identifier' header
 const endpointsRequiringDeviceIdentifier = [
-  '/auth/status/',
-  '/auth/google/login/',
-  '/files/upload/video/',
-  '/auth/logout/',
-  '/auth/google/set-cookies/',
-  '/auth/login/',
-  '/auth/refresh-token/',
+  '/auth/status',
+  '/auth/google/login',
+  '/files/upload/video',
+  '/auth/logout',
+  '/auth/google/set-cookies',
+  '/auth/login',
+  '/auth/refresh-token',
 ];
 
 // Add a request interceptor to conditionally attach the 'Device-Identifier' header

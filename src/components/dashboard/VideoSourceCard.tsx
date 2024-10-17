@@ -89,10 +89,10 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     await initializeLandmarkers();
 
     videoElement.muted = true;
-    videoElement.playbackRate = 8;
+    videoElement.playbackRate = 4;
     videoElement.controls = false;
 
-    const totalDuration = videoElement.duration;
+    const totalDuration = Math.floor(videoElement.duration);
 
     if (goodPostureTime !== null) {
       videoElement.currentTime = goodPostureTime;
@@ -110,7 +110,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         processingTriggeredRef.current = false; // Reset the flag
 
         try {
-          const response = await axiosInstance.post('/files/upload/video/', {
+          const response = await axiosInstance.post('/files/upload/video', {
             file: processResult.current, // This is the array of processed data
           });
 
@@ -129,7 +129,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       }
 
       isProcessingFrame = true;
-      const frameInterval = 1; // Process every second
+      const frameInterval = 1 / 15; // Process every second
       if (videoElement.currentTime - timeCounterRef.current >= frameInterval) {
         timeCounterRef.current = videoElement.currentTime;
         const timestamp = videoElement.currentTime * 1000;
