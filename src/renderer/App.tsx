@@ -16,6 +16,7 @@ import useAuth from '../hooks/useAuth';
 import DashboardPage from '../pages/DashboardPage';
 import Login from '../pages/Login';
 import Signup from '../pages/SignUp';
+import WaitVerify from '../pages/WaitVerifyPage';
 import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
 import AppHeader from '../components/layout/AppHeader';
@@ -102,6 +103,15 @@ const App: React.FC = () => {
     if (renderSettings) {
       return <SettingPage setIsSettingsOpen={closeSettings} />;
     }
+    if (location.pathname === '/login') {
+      return <Login />;
+    }
+    if (location.pathname === '/signip') {
+      return <Signup />;
+    }
+    if (location.pathname === '/wait-verify') {
+      return <WaitVerify />;
+    }
 
     return (
       <div>
@@ -110,12 +120,6 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/summary" element={<SummaryPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route
-              path="/setting"
-              element={<SettingPage setIsSettingsOpen={closeSettings} />}
-            />
           </Routes>
         </Content>
         <AppFooter />
