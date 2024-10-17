@@ -35,7 +35,7 @@ const AccountButton: React.FC = () => {
 
           // Perform the logout request with the correct options format
           const response = await axiosInstance.post(
-            '/auth/logout/', // Ensure the URL is correct
+            '/auth/logout', // Ensure the URL is correct
           );
           if (response.status === 200) {
             navigate('/login');

@@ -6,12 +6,12 @@ import { useResData } from '../context'; // App-level state
 import axiosInstance from '../utility/axiosInstance'; // Axios instance
 import { AuthStatusResponse } from '../interface/propsType';
 
-const GOOGLE_SSE_URL = `http://localhost:8000/auth/google/sse/`;
-const GOOGLE_LOGIN_URL = `/auth/google/login/`;
-const GOOGLE_SET_COOKIES_URL = `/auth/google/set-cookies/`;
-const LOGIN_URL = `/auth/login/`;
-const REFRESH_TOKEN_URL = `/auth/refresh-token/`;
-const AUTH_STATUS_URL = `/auth/status/`;
+const GOOGLE_SSE_URL = `http://localhost:8000/auth/google/sse`;
+const GOOGLE_LOGIN_URL = `/auth/google/login`;
+const GOOGLE_SET_COOKIES_URL = `/auth/google/set-cookies`;
+const LOGIN_URL = `/auth/login`;
+const REFRESH_TOKEN_URL = `/auth/refresh-token`;
+const AUTH_STATUS_URL = `/auth/status`;
 
 // Centralized error logger
 const logError = (messageText: string, error: unknown) => {
