@@ -12,7 +12,7 @@ import { useResData } from '../../context';
 import { initializeFaceLandmarker } from '../../model/faceLandmark';
 import { initializePoseLandmarker } from '../../model/bodyLandmark';
 import { filterLandmark } from '../../utility/filterLandMark';
-import axiosInstance from '../../utility/axiosInstance';
+import useSendLandmarkData from '../../hooks/useSendLandMarkData';
 
 const { Dragger } = Upload;
 
@@ -29,11 +29,8 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
   const modalVideoElementRef = useRef<HTMLVideoElement | null>(null);
   const mainVideoElementRef = useRef<HTMLVideoElement | null>(null);
-  const animationFrameIdRef = useRef<number | null>(null);
   const timeCounterRef = useRef(0);
   const processResult = useRef<any[]>([]);
-
-  const processingTriggeredRef = useRef(false); // Flag to prevent re-processing
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -66,6 +63,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   // Initialize landmarkers
   const initializeLandmarkers = useCallback(async () => {
+    // Close existing landmarkers
     if (faceLandmarkerRef.current) {
       await faceLandmarkerRef.current.close();
       faceLandmarkerRef.current = null;
@@ -80,90 +78,111 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     poseLandmarkerRef.current = await initializePoseLandmarker();
   }, []);
 
-  // Process video and upload results
+  // Process frame at a specific time (helper function)
+  const processFrameAtTime = async (currentTime: number) => {
+    const videoElement = mainVideoElementRef.current;
+    if (!videoElement) return;
+
+    // Set the current time of the video element
+    videoElement.currentTime = currentTime;
+
+    // Use promise-based waiting for seek
+    await new Promise((resolve) => {
+      const handleSeek = () => {
+        resolve(null);
+        videoElement.removeEventListener('seeked', handleSeek); // Ensure event listener is removed
+      };
+      videoElement.addEventListener('seeked', handleSeek);
+    });
+
+    const timestamp = currentTime * 1000; // Convert to milliseconds
+
+    console.log(`Processing frame at time: ${currentTime}`);
+
+    try {
+      // Process both face and pose landmarks simultaneously
+      const [faceResults, poseResults] = await Promise.all([
+        faceLandmarkerRef.current.detectForVideo(videoElement, timestamp),
+        poseLandmarkerRef.current.detectForVideo(videoElement, timestamp),
+      ]);
+
+      latestLandmarksResultRef.current = { faceResults, poseResults };
+      const filteredData = filterLandmark(
+        latestLandmarksResultRef.current as LandmarksResult,
+      );
+      processResult.current.push(filteredData);
+    } catch (error) {
+      message.error(`Error processing frame at time: ${currentTime}`);
+      console.error(error);
+    }
+  };
+
+  // Process video with parallel frame processing
+  // Process video with parallel frame processing
   const processVideo = useCallback(async () => {
+    if (goodPostureTime === null || isProcessed) {
+      return; // Do nothing if goodPostureTime is not set or video is already processed
+    }
+
     const videoElement = mainVideoElementRef.current;
     if (!videoElement) return;
 
     setIsProcessing(true);
     await initializeLandmarkers();
 
-    videoElement.muted = true;
-    videoElement.playbackRate = 4;
+    const startTime = performance.now(); // Start time before processing
+    console.log('Starting parallel frame processing');
+
+    videoElement.muted = true; // Mute video during processing
     videoElement.controls = false;
 
-    const totalDuration = Math.floor(videoElement.duration);
+    const frameDuration = 1 / 15; // 15 frames per second
+    const totalDuration = videoElement.duration;
+
+    console.log(`Total duration of video: ${totalDuration}`);
 
     if (goodPostureTime !== null) {
       videoElement.currentTime = goodPostureTime;
     }
 
-    let isProcessingFrame = false;
+    let totalFramesProcessed = 0; // Track number of frames processed
 
-    const processFrame = async () => {
-      if (isProcessingFrame) return;
+    // Store frame processing promises
+    const framePromises = [];
 
-      if (videoElement.currentTime >= totalDuration) {
-        setIsProcessing(false);
-        setHideVideo(false);
-        setIsProcessed(true);
-        processingTriggeredRef.current = false; // Reset the flag
+    for (
+      let currentTime = goodPostureTime;
+      currentTime < totalDuration;
+      currentTime += frameDuration
+    ) {
+      // Create a promise to process each frame
+      framePromises.push(processFrameAtTime(currentTime));
+      totalFramesProcessed += 1; // Increment processed frames count
+    }
 
-        try {
-          const response = await axiosInstance.post('/files/upload/video', {
-            file: processResult.current, // This is the array of processed data
-          });
-
-          if (response.status === 200) {
-            message.success('Video processing completed and uploaded.');
-          } else {
-            message.error('Failed to upload video.');
-          }
-        } catch (error) {
-          console.error('Error uploading video:', error);
-          message.error('Error uploading video.');
-        }
-
-        videoElement.controls = true;
-        return;
-      }
-
-      isProcessingFrame = true;
-      const frameInterval = 1 / 15; // Process every second
-      if (videoElement.currentTime - timeCounterRef.current >= frameInterval) {
-        timeCounterRef.current = videoElement.currentTime;
-        const timestamp = videoElement.currentTime * 1000;
-
-        try {
-          const [faceResults, poseResults] = await Promise.all([
-            faceLandmarkerRef.current.detectForVideo(videoElement, timestamp),
-            poseLandmarkerRef.current.detectForVideo(videoElement, timestamp),
-          ]);
-
-          latestLandmarksResultRef.current = { faceResults, poseResults };
-          const filteredData = filterLandmark(
-            latestLandmarksResultRef.current as LandmarksResult,
-          );
-          processResult.current.push(filteredData);
-        } catch (error) {
-          message.error('Error processing frame.');
-          console.error(error);
-        }
-      }
-
-      isProcessingFrame = false;
-      animationFrameIdRef.current = requestAnimationFrame(processFrame);
-    };
-
+    // Wait for all frames to be processed in parallel
     try {
-      await videoElement.play();
-      timeCounterRef.current = videoElement.currentTime;
-      processFrame();
+      await Promise.all(framePromises);
+      setIsProcessing(false);
+      setHideVideo(false);
+      setIsProcessed(true);
+
+      const endTime = performance.now(); // End time after processing
+      const processingDuration = (endTime - startTime) / 1000; // Time in seconds
+      console.log(`Processing took ${processingDuration.toFixed(2)} seconds.`);
+      console.log(`Total frames processed: ${totalFramesProcessed}`);
+      console.log(
+        `Average time per frame: ${(processingDuration / totalFramesProcessed).toFixed(2)} seconds`,
+      );
+
+      message.success('Video processing completed.');
+      videoElement.controls = true;
+      console.log(processResult.current);
     } catch (error) {
-      message.error('Error starting video playback.');
+      message.error('Error during parallel frame processing.');
       console.error(error);
     }
-  }, [initializeLandmarkers, goodPostureTime]);
+  }, [initializeLandmarkers, goodPostureTime, isProcessed]);
 
   // Handle file upload
   const handleFileUpload = useCallback(
@@ -172,7 +191,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       setGoodPostureTime(null);
       setIsModalVisible(true);
       setHideVideo(false);
-      setIsProcessed(false);
+      setIsProcessed(false); // Reset processed state on new upload
       message.success(`${file.name} uploaded successfully.`);
       return false; // Prevent automatic upload
     },
@@ -189,29 +208,16 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         `Good posture set at ${videoElement.currentTime.toFixed(2)} seconds.`,
       );
       setIsModalVisible(false);
+      setIsProcessed(false); // Mark the video as not processed to trigger processing
     }
   }, []);
 
   // Start processing after modal closes
   useEffect(() => {
-    if (
-      !isModalVisible &&
-      goodPostureTime !== null &&
-      !processingTriggeredRef.current
-    ) {
-      processingTriggeredRef.current = true; // Mark processing as triggered
+    if (!isModalVisible && goodPostureTime !== null && !isProcessed) {
       processVideo();
     }
-  }, [isModalVisible, goodPostureTime, processVideo]);
-
-  // Clean up on component unmount
-  useEffect(() => {
-    return () => {
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
-    };
-  }, []);
+  }, [isModalVisible, goodPostureTime, processVideo, isProcessed]); // Include isProcessed to ensure it doesn't retrigger
 
   // Delete uploaded video
   const handleDeleteVideo = useCallback(() => {
@@ -219,19 +225,16 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       mainVideoElementRef.current.pause();
       mainVideoElementRef.current.currentTime = 0;
     }
-    if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-    }
 
     setVideoFile(null);
     setIsProcessing(false);
     processResult.current = [];
     setGoodPostureTime(null);
     setHideVideo(false);
-    processingTriggeredRef.current = false; // Reset the flag
+    setIsProcessed(false); // Reset processed state on delete
     message.success('Uploaded video deleted and processing reset.');
   }, [setVideoFile]);
-
+  useSendLandmarkData();
   return (
     <VideoCard
       title="Video Source"
@@ -246,7 +249,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             setIsProcessing(false);
             setStreaming(false);
             setHideVideo(false);
-            processingTriggeredRef.current = false; // Reset the flag
+            setIsProcessed(false); // Reset processed state on switch
           }}
           checked={useVideoFile}
         />

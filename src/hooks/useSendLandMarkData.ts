@@ -13,10 +13,10 @@ const useSendLandmarkData = ({
   combineResults = false,
 }: UseSendLandmarkDataOptions = {}) => {
   const lastLogTimeRef = useRef<number>(0);
-  const logInterval = 1000;
+  const logInterval = 75;
   const { landMarkData, setResData, streaming, setCombineResult } =
     useResData();
-  const { send, message } = useWebSocket('landmark/results/', setResData);
+  const { send, message } = useWebSocket('landmark/results', setResData);
 
   const sendLandMarkData = useCallback(() => {
     const currentTime = Date.now();
