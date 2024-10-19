@@ -54,7 +54,7 @@ axiosInstance.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       try {
         const deviceIdentifier = await getDeviceIdentifier();
-        await axiosInstance.get('auth/status/', {
+        await axiosInstance.get('auth/status', {
           headers: { 'Device-Identifier': deviceIdentifier },
         });
       } catch (statusError) {

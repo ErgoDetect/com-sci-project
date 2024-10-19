@@ -48,7 +48,7 @@ const getDeviceIdentifier = async (): Promise<string> => {
 
 const fetchGoogleToken = async () => {
   try {
-    await axiosInstance.get(GOOGLE_SET_COOKIES_URL);
+    await axiosInstance.post(GOOGLE_SET_COOKIES_URL);
   } catch (error) {
     logError('Error fetching token and setting cookies', error);
     throw error;
