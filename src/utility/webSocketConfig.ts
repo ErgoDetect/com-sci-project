@@ -13,6 +13,7 @@ const useWebSocket = (
 ): UseWebSocketResult => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messageQueue = useRef<any[]>([]); // Queue for messages while reconnecting
   const [message, setMessage] = useState<any>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
 
@@ -25,15 +26,26 @@ const useWebSocket = (
     }
   }, []);
 
+  const flushMessageQueue = useCallback(() => {
+    if (
+      socketRef.current?.readyState === WebSocket.OPEN &&
+      messageQueue.current.length > 0
+    ) {
+      messageQueue.current.forEach((msg) => socketRef.current?.send(msg));
+      messageQueue.current = [];
+    }
+  }, []);
+
   const initializeWebSocket = useCallback(() => {
     const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
     const socketUrl = `${protocol}://localhost:8000/${dest}`;
 
+    // Close any existing socket connection before creating a new one
     if (
       socketRef.current &&
       socketRef.current.readyState !== WebSocket.CLOSED
     ) {
-      socketRef.current.close();
+      socketRef.current.close(1000, 'Reinitializing WebSocket');
     }
 
     const socket = new WebSocket(socketUrl);
@@ -42,6 +54,7 @@ const useWebSocket = (
     const handleOpen = () => {
       console.info('WebSocket connection established');
       setReconnectAttempts(0);
+      flushMessageQueue(); // Send any queued messages
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -60,6 +73,8 @@ const useWebSocket = (
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+
+      // Exponential backoff with a cap
       reconnectTimeoutRef.current = setTimeout(
         () => {
           setReconnectAttempts((prev) => prev + 1);
@@ -81,10 +96,10 @@ const useWebSocket = (
       socket.removeEventListener('close', handleClose);
 
       if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+        socket.close(1000, 'Component unmounting');
       }
     };
-  }, [dest, isJSON, onMessage, reconnectAttempts]);
+  }, [dest, isJSON, onMessage, reconnectAttempts, flushMessageQueue]);
 
   useEffect(() => {
     const cleanupWebSocket = initializeWebSocket();
@@ -98,10 +113,12 @@ const useWebSocket = (
   }, [initializeWebSocket]);
 
   const send = useCallback((data: any) => {
+    const messages = JSON.stringify(data);
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(data));
+      socketRef.current.send(messages);
     } else {
-      console.error('WebSocket is not open. Unable to send data.');
+      console.warn('WebSocket not open. Queuing message.');
+      messageQueue.current.push(messages);
     }
   }, []);
 
