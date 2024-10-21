@@ -1,8 +1,8 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useResData } from '../context';
-import { initializeFaceLandmarker } from '../model/faceLandmark';
-import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
+import { initializePoseLandmarker } from '../model/bodyLandmark';
+import { initializeFaceLandmarker } from '../model/faceLandmark';
 
 const useVideoStream = ({
   deviceId,
@@ -10,10 +10,13 @@ const useVideoStream = ({
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
   const { webcamRef, videoStreamRef, setLandMarkData } = useResData();
-  const animationFrameIdRef = useRef<number | undefined>(undefined);
+  const animationFrameIdRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
+  const lastFrameTimeRef = useRef<number>(0); // Store the last frame timestamp
 
   // Stop the video stream and cancel animation frame
   const stopVideoStream = useCallback(() => {
@@ -23,19 +26,24 @@ const useVideoStream = ({
       webcamRef.current.srcObject = null;
     }
     if (animationFrameIdRef.current !== undefined) {
-      cancelAnimationFrame(animationFrameIdRef.current);
+      clearTimeout(animationFrameIdRef.current); // Clear the timeout
     }
   }, [videoStreamRef, webcamRef]);
 
   // Render frames and detect landmarks
   const renderFrame = useCallback(async () => {
     const webcam = webcamRef.current;
+    const now = performance.now();
+    const timeSinceLastFrame = now - lastFrameTimeRef.current;
+
+    // Process frames only every 66.67ms (i.e., 15 FPS)
     if (
       webcam &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      timeSinceLastFrame >= 1000 / 15 &&
       (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
-      const timestamp = performance.now();
+      const timestamp = now;
 
       const [faceResults, poseResults] = await Promise.all([
         faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
@@ -43,17 +51,15 @@ const useVideoStream = ({
       ]);
 
       latestLandmarksResultRef.current = { faceResults, poseResults };
+      lastFrameTimeRef.current = now; // Update the last frame time
 
-      // Throttle state updates to every 5th frame to reduce re-renders
-      if (
-        animationFrameIdRef.current &&
-        animationFrameIdRef.current % 5 === 0
-      ) {
+      if (animationFrameIdRef.current) {
         setLandMarkData(latestLandmarksResultRef.current);
       }
     }
 
-    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+    // Use setTimeout to throttle frame processing to 15 FPS
+    animationFrameIdRef.current = setTimeout(renderFrame, 1000 / 15); // 15 FPS
   }, [setLandMarkData, webcamRef]);
 
   // Start video stream with fallback constraints
@@ -110,7 +116,8 @@ const useVideoStream = ({
           faceLandmarkerRef.current ||= await initializeFaceLandmarker();
           poseLandmarkerRef.current ||= await initializePoseLandmarker();
 
-          animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+          lastFrameTimeRef.current = performance.now(); // Reset the last frame time
+          animationFrameIdRef.current = setTimeout(renderFrame, 66.67); // Start the loop with 15 FPS
         };
       }
     } catch (error) {

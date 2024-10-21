@@ -5,6 +5,7 @@ type WebSocketMessageHandler = (data: any) => void;
 interface UseWebSocketResult {
   send: (data: any) => void;
   message: any;
+  reconnectAttempts: number; // Exposed to provide feedback on reconnection attempts
 }
 
 const useWebSocket = (
@@ -53,7 +54,7 @@ const useWebSocket = (
 
     const handleOpen = () => {
       console.info('WebSocket connection established');
-      setReconnectAttempts(0);
+      setReconnectAttempts(0); // Reset reconnection attempts on successful connection
       flushMessageQueue(); // Send any queued messages
     };
 
@@ -61,11 +62,12 @@ const useWebSocket = (
       const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
       console.info('WebSocket message received:', data);
       setMessage(data);
-      onMessage?.(data);
+      onMessage?.(data); // Pass the message to the onMessage callback if provided
     };
 
     const handleError = (error: Event) => {
-      console.error('WebSocket error:', error);
+      console.error('WebSocket error occurred:', error);
+      // Optional: handle specific error codes here or trigger additional error-handling strategies
     };
 
     const handleClose = () => {
@@ -74,11 +76,11 @@ const useWebSocket = (
         clearTimeout(reconnectTimeoutRef.current);
       }
 
-      // Exponential backoff with a cap
+      // Exponential backoff with a cap of 30 seconds
       reconnectTimeoutRef.current = setTimeout(
         () => {
-          setReconnectAttempts((prev) => prev + 1);
-          initializeWebSocket();
+          setReconnectAttempts((prev) => prev + 1); // Increment the reconnection attempts
+          initializeWebSocket(); // Attempt to reconnect
         },
         Math.min(5000 * (reconnectAttempts + 1), 30000),
       );
@@ -89,18 +91,22 @@ const useWebSocket = (
     socket.addEventListener('error', handleError);
     socket.addEventListener('close', handleClose);
 
+    // Clean up event listeners and close the WebSocket connection on unmount
     return () => {
-      socket.removeEventListener('open', handleOpen);
-      socket.removeEventListener('message', handleMessage);
-      socket.removeEventListener('error', handleError);
-      socket.removeEventListener('close', handleClose);
+      if (socketRef.current) {
+        socketRef.current.removeEventListener('open', handleOpen);
+        socketRef.current.removeEventListener('message', handleMessage);
+        socketRef.current.removeEventListener('error', handleError);
+        socketRef.current.removeEventListener('close', handleClose);
 
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close(1000, 'Component unmounting');
+        if (socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.close(1000, 'Component unmounting');
+        }
       }
     };
   }, [dest, isJSON, onMessage, reconnectAttempts, flushMessageQueue]);
 
+  // Effect to initialize the WebSocket connection when the component mounts or the destination changes
   useEffect(() => {
     const cleanupWebSocket = initializeWebSocket();
 
@@ -108,21 +114,30 @@ const useWebSocket = (
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-      cleanupWebSocket();
+      cleanupWebSocket(); // Cleanup the WebSocket connection
     };
   }, [initializeWebSocket]);
 
+  // Function to send messages through the WebSocket
   const send = useCallback((data: any) => {
-    const messages = JSON.stringify(data);
+    const compressedMessage = JSON.stringify(data); // Compress the message by stringifying it
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(messages);
+      socketRef.current.send(compressedMessage); // Send the message if the WebSocket is open
     } else {
       console.warn('WebSocket not open. Queuing message.');
-      messageQueue.current.push(messages);
+      messageQueue.current.push(compressedMessage); // Queue the message if WebSocket is not open
     }
   }, []);
 
-  return useMemo(() => ({ send, message }), [send, message]);
+  // Memoize the result to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      send,
+      message,
+      reconnectAttempts, // Expose reconnect attempts for UI feedback
+    }),
+    [send, message, reconnectAttempts],
+  );
 };
 
 export default useWebSocket;
