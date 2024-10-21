@@ -1,8 +1,6 @@
-import { useRef, useMemo } from 'react';
-import { debounce } from 'lodash'; // Optionally use lodash for debouncing
+import { useRef, useEffect } from 'react';
 import { LandmarksResult } from '../interface/propsType';
 import { filterLandmark } from '../utility/filterLandMark';
-import useInterval from './useInterval';
 import { useResData } from '../context';
 import useWebSocket from '../utility/webSocketConfig';
 
@@ -13,42 +11,48 @@ interface UseSendLandmarkDataOptions {
 const useSendLandmarkData = ({
   combineResults = false,
 }: UseSendLandmarkDataOptions = {}) => {
-  const lastLogTimeRef = useRef<number>(0);
-  const logInterval = 75; // Interval for sending landmark data
+  const lastLandmarkDataRef = useRef<LandmarksResult | null>(null); // Store the last sent data
   const { landMarkData, setResData, streaming, setCombineResult } =
     useResData();
   const { send, message } = useWebSocket('landmark/results', setResData);
 
-  // Debounced function to avoid rapid sends in a short time frame
-  const sendLandMarkData = useMemo(
-    () =>
-      debounce(() => {
-        const currentTime = Date.now();
-        if (
-          landMarkData &&
-          currentTime - lastLogTimeRef.current >= logInterval
-        ) {
-          try {
+  // Ref to keep track of how many times the data is sent
+  const countRef = useRef<number>(0);
+
+  useEffect(() => {
+    const sendLandMarkData = () => {
+      if (landMarkData && streaming) {
+        try {
+          const currentDataString = JSON.stringify(landMarkData);
+          const lastDataString = JSON.stringify(lastLandmarkDataRef.current);
+
+          if (lastDataString !== currentDataString) {
             const filteredData = filterLandmark(
               landMarkData as LandmarksResult,
             );
+            const currentTime = Date.now();
             const dataToSend = {
               data: filteredData,
               timestamp: currentTime,
             };
 
-            send(dataToSend); // Send filtered data
-            lastLogTimeRef.current = currentTime;
-          } catch (error) {
-            console.error('Failed to send landmark data:', error);
-          }
-        }
-      }, logInterval),
-    [landMarkData, send],
-  );
+            countRef.current += 1;
+            console.log('Send Count:', countRef.current);
+            console.log('Sending Data:', dataToSend);
 
-  // Only send data when streaming is active
-  useInterval(sendLandMarkData, logInterval, streaming);
+            send(dataToSend);
+            lastLandmarkDataRef.current = landMarkData;
+          }
+        } catch (error) {
+          console.error('Failed to send landmark data:', error);
+        }
+      } else {
+        countRef.current = 0;
+      }
+    };
+
+    sendLandMarkData(); // Call the function when landMarkData or streaming changes
+  }, [landMarkData, streaming, send]);
 };
 
 export default useSendLandmarkData;
