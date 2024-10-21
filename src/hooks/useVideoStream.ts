@@ -4,62 +4,66 @@ import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
 
+// Define target FPS (e.g., 5 FPS)
+// let lastCalledTime: any;
+// let fps;
+// let delta;
+const targetFPS = 5;
 const useVideoStream = ({
   deviceId,
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
   const { webcamRef, videoStreamRef, setLandMarkData } = useResData();
-  const animationFrameIdRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
-  const lastFrameTimeRef = useRef<number>(0); // Store the last frame timestamp
+  const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Stop the video stream and cancel animation frame
+  // Dynamically calculate IntervalFrame based on target FPS
+  const IntervalFrame = 1000 / targetFPS;
+
+  // Stop the video stream and cancel the interval
   const stopVideoStream = useCallback(() => {
     videoStreamRef.current?.getTracks().forEach((track) => track.stop());
     videoStreamRef.current = null;
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
     }
-    if (animationFrameIdRef.current !== undefined) {
-      clearTimeout(animationFrameIdRef.current); // Clear the timeout
+    if (intervalIdRef.current !== null) {
+      clearInterval(intervalIdRef.current); // Clear the interval
     }
   }, [videoStreamRef, webcamRef]);
 
   // Render frames and detect landmarks
   const renderFrame = useCallback(async () => {
     const webcam = webcamRef.current;
-    const now = performance.now();
-    const timeSinceLastFrame = now - lastFrameTimeRef.current;
 
-    // Process frames only every 66.67ms (i.e., 15 FPS)
     if (
       webcam &&
       webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      timeSinceLastFrame >= 1000 / 15 &&
       (faceLandmarkerRef.current || poseLandmarkerRef.current)
     ) {
-      const timestamp = now;
+      const timestamp = performance.now();
 
+      // Run the landmark detection asynchronously (non-blocking)
       const [faceResults, poseResults] = await Promise.all([
         faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
         poseLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
       ]);
 
       latestLandmarksResultRef.current = { faceResults, poseResults };
-      lastFrameTimeRef.current = now; // Update the last frame time
 
-      if (animationFrameIdRef.current) {
-        setLandMarkData(latestLandmarksResultRef.current);
-      }
+      setLandMarkData(latestLandmarksResultRef.current);
+      // if (!lastCalledTime) {
+      //   lastCalledTime = Date.now();
+      //   fps = 0;
+      // }
+      // delta = (Date.now() - lastCalledTime) / 1000;
+      // lastCalledTime = Date.now();
+      // fps = 1 / delta;
+      // console.log(fps);
     }
-
-    // Use setTimeout to throttle frame processing to 15 FPS
-    animationFrameIdRef.current = setTimeout(renderFrame, 1000 / 15); // 15 FPS
   }, [setLandMarkData, webcamRef]);
 
   // Start video stream with fallback constraints
@@ -116,14 +120,23 @@ const useVideoStream = ({
           faceLandmarkerRef.current ||= await initializeFaceLandmarker();
           poseLandmarkerRef.current ||= await initializePoseLandmarker();
 
-          lastFrameTimeRef.current = performance.now(); // Reset the last frame time
-          animationFrameIdRef.current = setTimeout(renderFrame, 66.67); // Start the loop with 15 FPS
+          // Start the interval to process frames at exactly the target FPS
+          intervalIdRef.current = setInterval(() => {
+            renderFrame(); // Call renderFrame every 200ms (for 5 FPS)
+          }, IntervalFrame);
         };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
-  }, [deviceId, renderFrame, stopVideoStream, videoStreamRef, webcamRef]);
+  }, [
+    deviceId,
+    renderFrame,
+    stopVideoStream,
+    videoStreamRef,
+    webcamRef,
+    IntervalFrame,
+  ]);
 
   // Stop the video stream when the component unmounts
   useEffect(() => stopVideoStream, [stopVideoStream]);
