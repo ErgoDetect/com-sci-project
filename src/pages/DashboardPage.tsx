@@ -36,6 +36,7 @@ const Dashboard = () => {
       message.info('Session stopped.');
     } else {
       setStreaming(true);
+
       message.success('Session started!');
     }
   }, [streaming, setStreaming]);

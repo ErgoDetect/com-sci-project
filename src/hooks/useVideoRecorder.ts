@@ -1,24 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import fixWebmDuration from 'webm-duration-fix';
+import { useResData } from '../context';
 
-interface UseVideoRecorderProps {
-  videoStreamRef: React.RefObject<MediaStream>;
-  streaming: boolean;
-}
-
-const useVideoRecorder = ({
-  videoStreamRef,
-  streaming,
-}: UseVideoRecorderProps) => {
+const useVideoRecorder = () => {
+  const { streaming, videoStreamRef } = useResData();
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null,
   );
-  const [recordingStarted, setRecordingStarted] = useState(false);
   const recordedChunksRef = useRef<Blob[]>([]); // Stores recorded video chunks
 
   // Save recorded video and clean up memory
   const saveRecordedVideo = useCallback(async () => {
+    if (recordedChunksRef.current.length === 0) return;
+
     const blob = await fixWebmDuration(
       new Blob(recordedChunksRef.current, { type: 'video/webm' }),
     );
@@ -43,22 +38,25 @@ const useVideoRecorder = ({
   // Start recording video stream
   const startRecording = useCallback(
     (stream: MediaStream) => {
-      if (!mediaRecorder) {
-        const recorder = new MediaRecorder(stream);
-        setMediaRecorder(recorder);
+      if (!mediaRecorder && stream) {
+        try {
+          const recorder = new MediaRecorder(stream);
+          setMediaRecorder(recorder);
 
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            recordedChunksRef.current.push(event.data); // Accumulate chunks
-          }
-        };
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              recordedChunksRef.current.push(event.data); // Accumulate chunks
+            }
+          };
 
-        recorder.onstop = async () => {
-          await saveRecordedVideo(); // Save video when recording stops
-        };
+          recorder.onstop = async () => {
+            await saveRecordedVideo(); // Save video when recording stops
+          };
 
-        recorder.start();
-        setRecordingStarted(true);
+          recorder.start();
+        } catch (error: any) {
+          message.error(`Error starting recording: ${error.message}`);
+        }
       }
     },
     [mediaRecorder, saveRecordedVideo],
@@ -68,7 +66,6 @@ const useVideoRecorder = ({
   const stopRecording = useCallback(() => {
     if (mediaRecorder) {
       mediaRecorder.stop();
-      setRecordingStarted(false);
 
       // Free up memory by clearing recorded chunks
       recordedChunksRef.current = [];
@@ -78,27 +75,22 @@ const useVideoRecorder = ({
 
   // Manage recording based on streaming state
   useEffect(() => {
-    if (streaming && !recordingStarted) {
-      if (videoStreamRef.current) {
-        startRecording(videoStreamRef.current);
+    if (streaming) {
+      if (videoStreamRef.current && videoStreamRef.current.active) {
+        startRecording(videoStreamRef?.current); // Ensure stream is active before starting recording
+        message.info('Recording started.');
+        console.log(videoStreamRef.current);
       } else {
-        message.error('No video stream available.');
+        console.log(videoStreamRef.current);
       }
-    } else if (!streaming && recordingStarted) {
+    } else if (!streaming && mediaRecorder) {
       stopRecording();
     }
-  }, [
-    streaming,
-    recordingStarted,
-    startRecording,
-    stopRecording,
-    videoStreamRef,
-  ]);
+  }, [streaming, startRecording, stopRecording, videoStreamRef, mediaRecorder]);
 
   return {
     startRecording,
     stopRecording,
-    recordingStarted,
   };
 };
 

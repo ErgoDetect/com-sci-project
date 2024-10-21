@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
 import useCaptureImage from '../../hooks/useCaptureImages';
+import { useResData } from '../../context';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
@@ -10,7 +11,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   drawingDot,
   showBlendShapes,
 }) => {
-  const { webcamRef, startVideoStream, stopVideoStream } = useVideoStream({
+  const { startVideoStream, stopVideoStream } = useVideoStream({
     deviceId,
     width,
     borderRadius,
@@ -18,6 +19,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     showBlendShapes,
     showLandmarks: false,
   });
+  const { webcamRef } = useResData();
 
   useCaptureImage(webcamRef);
 

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useResData } from '../context';
 
 type WebSocketMessageHandler = (data: any) => void;
 
@@ -104,7 +105,7 @@ const useWebSocket = (
         }
       }
     };
-  }, [dest, isJSON, onMessage, reconnectAttempts, flushMessageQueue]);
+  }, [dest, flushMessageQueue, isJSON, onMessage, reconnectAttempts]);
 
   // Effect to initialize the WebSocket connection when the component mounts or the destination changes
   useEffect(() => {
@@ -119,15 +120,19 @@ const useWebSocket = (
   }, [initializeWebSocket]);
 
   // Function to send messages through the WebSocket
-  const send = useCallback((data: any) => {
-    const compressedMessage = JSON.stringify(data); // Compress the message by stringifying it
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(compressedMessage); // Send the message if the WebSocket is open
-    } else {
-      console.warn('WebSocket not open. Queuing message.');
-      messageQueue.current.push(compressedMessage); // Queue the message if WebSocket is not open
-    }
-  }, []);
+  const send = useCallback(
+    (data: any) => {
+      const compressedMessage = JSON.stringify(data);
+
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(compressedMessage);
+      } else {
+        console.warn('WebSocket not open. Queuing message.');
+        messageQueue.current.push(compressedMessage);
+      }
+    },
+    [socketRef],
+  );
 
   // Memoize the result to prevent unnecessary re-renders
   return useMemo(
