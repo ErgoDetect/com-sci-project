@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Statistic, Button, Typography } from 'antd';
 import {
   ClockCircleOutlined,
@@ -17,7 +17,7 @@ interface SessionMetricsCardProps {
   toggleStreaming: () => void;
   blinkRate: number;
   goodPostureTime: number;
-  sessionDuration: string; // Added for dynamic session duration
+  sessionDuration: string;
 }
 
 const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
@@ -27,58 +27,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   goodPostureTime,
   sessionDuration,
 }) => {
-  const { landMarkData } = useResData();
-
-  const isButtonDisabled = useMemo(() => {
-    if (!landMarkData) return true;
-    const { faceResults, poseResults } = landMarkData;
-
-    // Helper function to validate face landmarks
-    const isFaceLandmarksValid = (faceResult: any): boolean => {
-      if (
-        !faceResult ||
-        !Array.isArray(faceResult.faceLandmarks) ||
-        faceResult.faceLandmarks.length === 0
-      ) {
-        return false;
-      }
-
-      return faceResult.faceLandmarks.every(
-        (landmarksArray: any) =>
-          Array.isArray(landmarksArray) && landmarksArray.length > 0,
-      );
-    };
-
-    // Helper function to validate pose landmarks
-    const isPoseLandmarksValid = (poseResult: any): boolean => {
-      if (
-        !poseResult ||
-        !Array.isArray(poseResult.landmarks) ||
-        poseResult.landmarks.length === 0 ||
-        !Array.isArray(poseResult.landmarks[0]) ||
-        poseResult.landmarks[0].length < 13
-      ) {
-        return false;
-      }
-
-      const requiredIndices = [7, 8, 11, 12];
-
-      return requiredIndices.every((index) => {
-        const landmark = poseResults.landmarks[0][index];
-        return landmark && (landmark.visibility ?? 0) >= 0.99;
-      });
-    };
-
-    // Disable button if landmarks are invalid
-    if (
-      !isFaceLandmarksValid(faceResults) ||
-      !isPoseLandmarksValid(poseResults)
-    ) {
-      return true;
-    }
-
-    return false;
-  }, [landMarkData]);
+  const { webcamRef } = useResData();
 
   return (
     <MetricsCard>
@@ -86,17 +35,15 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
         title="Session Duration"
         value={sessionActive ? sessionDuration : '00:00'}
         prefix={<ClockCircleOutlined />}
-        valueStyle={{
-          fontSize: 24,
-          fontWeight: 'bold',
-        }}
+        valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}
       />
+
       <Button
-        type={!sessionActive && !isButtonDisabled ? 'primary' : 'default'}
+        type={!sessionActive ? 'primary' : 'default'}
         icon={sessionActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
         onClick={toggleStreaming}
-        disabled={isButtonDisabled}
+        disabled={webcamRef === undefined}
         style={{
           marginBottom: 24,
           width: '100%',
@@ -107,17 +54,16 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
       >
         {sessionActive ? 'Stop Session' : 'Start Session'}
       </Button>
+
       <Statistic
         title="Average Blink Rate"
         value={blinkRate}
         suffix="per minute"
         prefix={<EyeOutlined />}
-        valueStyle={{
-          fontSize: 24,
-          fontWeight: 'bold',
-        }}
+        valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}
       />
+
       <Typography.Title
         level={5}
         style={{

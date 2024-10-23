@@ -6,8 +6,6 @@ import { VideoCard, VideoContainer, VideoContent } from '../../styles/styles';
 import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
 import { useResData } from '../../context';
-import useSendLandmarkData from '../../hooks/useSendLandMarkData';
-import useVideoRecorder from '../../hooks/useVideoRecorder';
 import useVideoProcessor from '../../hooks/useVideoProcessor';
 
 const { Dragger } = Upload;
@@ -20,7 +18,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   deviceId,
 }) => {
   // Context and Refs
-  const { streaming, setStreaming, videoStreamRef } = useResData();
+  const { setStreaming } = useResData();
   const modalVideoElementRef = useRef<HTMLVideoElement | null>(null);
   const mainVideoElementRef = useRef<HTMLVideoElement | null>(null);
 
@@ -44,11 +42,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     setGoodPostureTime,
     setHideVideo,
     setVideoFile,
-  });
-
-  useVideoRecorder({
-    videoStreamRef,
-    streaming,
   });
 
   // Styles
@@ -104,8 +97,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       processVideoFile();
     }
   }, [isModalVisible, goodPostureTime, processVideoFile, isProcessed]);
-
-  useSendLandmarkData();
 
   return (
     <VideoCard

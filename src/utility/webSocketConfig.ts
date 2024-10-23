@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import axiosInstance from './axiosInstance';
 
 type WebSocketMessageHandler = (data: any) => void;
 
@@ -7,6 +8,14 @@ interface UseWebSocketResult {
   message: any;
   reconnectAttempts: number; // Exposed to provide feedback on reconnection attempts
 }
+
+const getDeviceIdentifier = async (): Promise<string> => {
+  const deviceIdentifier = await window.electron.ipcRenderer.getMacAddress();
+  if (!deviceIdentifier) {
+    throw new Error('Device identifier not found');
+  }
+  return deviceIdentifier;
+};
 
 const useWebSocket = (
   dest: string,
@@ -60,7 +69,6 @@ const useWebSocket = (
 
     const handleMessage = (event: MessageEvent) => {
       const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
-      console.info('WebSocket message received:', data);
       setMessage(data);
       onMessage?.(data); // Pass the message to the onMessage callback if provided
     };
@@ -70,8 +78,15 @@ const useWebSocket = (
       // Optional: handle specific error codes here or trigger additional error-handling strategies
     };
 
-    const handleClose = () => {
+    const handleClose = async (event: CloseEvent) => {
       console.info('WebSocket connection closed');
+
+      if (event.code === 1008 || event.code === 4001) {
+        const deviceIdentifier = await getDeviceIdentifier();
+        axiosInstance.post('/auth/refresh-token', null, {
+          headers: { 'Device-Identifier': deviceIdentifier },
+        });
+      }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
@@ -104,7 +119,7 @@ const useWebSocket = (
         }
       }
     };
-  }, [dest, isJSON, onMessage, reconnectAttempts, flushMessageQueue]);
+  }, [dest, flushMessageQueue, isJSON, onMessage, reconnectAttempts]);
 
   // Effect to initialize the WebSocket connection when the component mounts or the destination changes
   useEffect(() => {
@@ -119,15 +134,19 @@ const useWebSocket = (
   }, [initializeWebSocket]);
 
   // Function to send messages through the WebSocket
-  const send = useCallback((data: any) => {
-    const compressedMessage = JSON.stringify(data); // Compress the message by stringifying it
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(compressedMessage); // Send the message if the WebSocket is open
-    } else {
-      console.warn('WebSocket not open. Queuing message.');
-      messageQueue.current.push(compressedMessage); // Queue the message if WebSocket is not open
-    }
-  }, []);
+  const send = useCallback(
+    (data: any) => {
+      const compressedMessage = JSON.stringify(data);
+
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(compressedMessage);
+      } else {
+        console.warn('WebSocket not open. Queuing message.');
+        messageQueue.current.push(compressedMessage);
+      }
+    },
+    [socketRef],
+  );
 
   // Memoize the result to prevent unnecessary re-renders
   return useMemo(

@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import axios from 'axios';
 
 const getDeviceIdentifier = async (): Promise<string> => {
@@ -51,16 +52,37 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    if (error.response && error.response.status === 401) {
+    const originalRequest = error.config;
+
+    // If we get a 401 and it's not already retried, handle it
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true; // Prevent retrying indefinitely
+
       try {
+        // Call refresh-token API to get a new token
         const deviceIdentifier = await getDeviceIdentifier();
-        await axiosInstance.get('auth/status', {
-          headers: { 'Device-Identifier': deviceIdentifier },
-        });
-      } catch (statusError) {
-        console.error('Error handling 401:', statusError);
+        const refreshResponse = await axiosInstance.post(
+          '/auth/refresh-token',
+          null,
+          {
+            headers: { 'Device-Identifier': deviceIdentifier },
+          },
+        );
+
+        if (refreshResponse.status === 200) {
+          // Token refreshed, retry the original request with the new token
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing token:', refreshError);
+        // If refresh fails, log out or handle appropriately
       }
     }
+
     return Promise.reject(error);
   },
 );

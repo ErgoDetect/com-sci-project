@@ -1,8 +1,10 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { useResData } from '../context';
 import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
+import { filterLandmark } from '../utility/filterLandMark';
+import useWebSocket from '../utility/webSocketConfig';
 
 // Define target FPS (e.g., 5 FPS)
 // let lastCalledTime: any;
@@ -14,85 +16,141 @@ const useVideoStream = ({
   showBlendShapes,
   showLandmarks,
 }: WebcamDisplayProps & { showLandmarks: boolean }) => {
-  const { webcamRef, videoStreamRef, setLandMarkData } = useResData();
+  const {
+    webcamRef,
+    videoStreamRef,
+    streaming,
+    setLandMarkData,
+    landMarkData,
+    setResData,
+    isAligned,
+    initialModal,
+    initializationSuccess,
+  } = useResData();
+
+  const animationFrameIdRef = useRef<number | null>(null);
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
-  const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
-  const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const firstFrameTimeRef = useRef<number>(0);
+  const lastFrameTimeRef = useRef<number>(0);
+  const countRef = useRef<number>(0);
+  const { send } = useWebSocket(
+    `landmark/results?stream=${streaming}`,
+    setResData,
+  );
 
-  // Dynamically calculate IntervalFrame based on target FPS
-  const IntervalFrame = 1000 / targetFPS;
+  const constraints = useMemo(
+    () => ({
+      video: {
+        deviceId: { exact: deviceId },
+        width: 1280,
+        height: 720,
+        frameRate: 30,
+      },
+      audio: false,
+    }),
+    [deviceId],
+  );
 
-  // Stop the video stream and cancel the interval
+  const fallbackConstraints = useMemo(
+    () => ({
+      video: {
+        deviceId: { exact: deviceId },
+        width: 640,
+        height: 480,
+        frameRate: 30,
+      },
+      audio: false,
+    }),
+    [deviceId],
+  );
+
+  // Stop video stream
+
   const stopVideoStream = useCallback(() => {
     videoStreamRef.current?.getTracks().forEach((track) => track.stop());
     videoStreamRef.current = null;
     if (webcamRef.current) {
       webcamRef.current.srcObject = null;
     }
-    if (intervalIdRef.current !== null) {
-      clearInterval(intervalIdRef.current); // Clear the interval
+    if (animationFrameIdRef.current !== null) {
+      cancelAnimationFrame(animationFrameIdRef.current);
     }
   }, [videoStreamRef, webcamRef]);
 
-  // Render frames and detect landmarks
+  // Render and detect landmarks
   const renderFrame = useCallback(async () => {
     const webcam = webcamRef.current;
+    const now = performance.now();
 
-    if (
-      webcam &&
-      webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      (faceLandmarkerRef.current || poseLandmarkerRef.current)
-    ) {
-      const timestamp = performance.now();
+    // Throttle to 15 FPS (1 second / 15 frames = ~66.67ms per frame)
+    const timeSinceLastFrame = now - (lastFrameTimeRef.current || 0);
+    if (timeSinceLastFrame < 1000 / 15) {
+      animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+      return;
+    }
 
-      // Run the landmark detection asynchronously (non-blocking)
+    if (webcam && webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      const timestamp = now;
+
       const [faceResults, poseResults] = await Promise.all([
         faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
         poseLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
       ]);
 
-      latestLandmarksResultRef.current = { faceResults, poseResults };
+      const latestLandmarksResult: LandmarksResult = {
+        faceResults,
+        poseResults,
+      };
 
-      setLandMarkData(latestLandmarksResultRef.current);
-      // if (!lastCalledTime) {
-      //   lastCalledTime = Date.now();
-      //   fps = 0;
-      // }
-      // delta = (Date.now() - lastCalledTime) / 1000;
-      // lastCalledTime = Date.now();
-      // fps = 1 / delta;
-      // console.log(fps);
+      setLandMarkData(latestLandmarksResult);
     }
+
+    // Update the last frame timestamp
+    lastFrameTimeRef.current = now;
+
+    // Queue the next frame
+    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+
   }, [setLandMarkData, webcamRef]);
 
-  // Start video stream with fallback constraints
-  const startVideoStream = useCallback(async () => {
-    if (!deviceId) {
-      console.error('No camera device.');
-      return;
+  // Handle WebSocket data send
+  useEffect(() => {
+    if (
+      landMarkData &&
+      streaming &&
+      (initializationSuccess || (isAligned && !initialModal))
+    ) {
+      const filteredData = filterLandmark(landMarkData as LandmarksResult);
+      const currentTime = Date.now();
+
+      send({ data: filteredData, timestamp: currentTime });
+
+      if (countRef.current === 0) {
+        firstFrameTimeRef.current = currentTime;
+      }
+
+      countRef.current += 1;
+      const elapsedTime = (currentTime - firstFrameTimeRef.current) / 1000;
+      if (elapsedTime > 0) {
+        const fps = countRef.current / elapsedTime;
+        console.log('FPS:', fps);
+      }
+    } else {
+      countRef.current = 0;
+      firstFrameTimeRef.current = 0;
     }
+  }, [
+    initializationSuccess,
+    initialModal,
+    isAligned,
+    landMarkData,
+    send,
+    streaming,
+  ]);
 
-    const constraints = {
-      video: {
-        deviceId: { exact: deviceId },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 },
-      },
-      audio: false,
-    };
-
-    const fallbackConstraints = {
-      video: {
-        deviceId: { exact: deviceId },
-        width: 640,
-        height: 480,
-        frameRate: 15,
-      },
-      audio: false,
-    };
-
+  // Start video stream
+  const startVideoStream = useCallback(async () => {
     stopVideoStream(); // Ensure any active stream is stopped
 
     try {
@@ -104,44 +162,47 @@ const useVideoStream = ({
         });
 
       if (!videoStream) {
-        console.error(
-          'Unable to access the camera with any supported resolution.',
-        );
+        console.error('Unable to access the camera.');
         return;
       }
 
       videoStreamRef.current = videoStream;
+
       if (webcamRef.current) {
         webcamRef.current.srcObject = videoStream;
         webcamRef.current.onloadedmetadata = async () => {
           await webcamRef.current?.play();
 
-          // Initialize face and pose landmarkers if not already initialized
-          faceLandmarkerRef.current ||= await initializeFaceLandmarker();
-          poseLandmarkerRef.current ||= await initializePoseLandmarker();
+          if (!faceLandmarkerRef.current) {
+            faceLandmarkerRef.current = await initializeFaceLandmarker();
+          }
+          if (!poseLandmarkerRef.current) {
+            poseLandmarkerRef.current = await initializePoseLandmarker();
+          }
 
-          // Start the interval to process frames at exactly the target FPS
-          intervalIdRef.current = setInterval(() => {
-            renderFrame(); // Call renderFrame every 200ms (for 5 FPS)
-          }, IntervalFrame);
+
+          animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+
         };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
   }, [
-    deviceId,
+
+    constraints,
+    fallbackConstraints,
     renderFrame,
     stopVideoStream,
     videoStreamRef,
     webcamRef,
-    IntervalFrame,
+
   ]);
 
-  // Stop the video stream when the component unmounts
+  // Cleanup video stream on component unmount
   useEffect(() => stopVideoStream, [stopVideoStream]);
 
-  return { webcamRef, startVideoStream, stopVideoStream };
+  return { startVideoStream, stopVideoStream };
 };
 
 export default useVideoStream;
