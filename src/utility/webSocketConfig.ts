@@ -69,7 +69,6 @@ const useWebSocket = (
 
     const handleMessage = (event: MessageEvent) => {
       const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
-      console.info('WebSocket message received:', data);
       setMessage(data);
       onMessage?.(data); // Pass the message to the onMessage callback if provided
     };

@@ -6,10 +6,7 @@ import { VideoCard, VideoContainer, VideoContent } from '../../styles/styles';
 import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
 import { useResData } from '../../context';
-// import useSendLandmarkData from '../../hooks/useSendLandMarkData';
-import useVideoRecorder from '../../hooks/useVideoRecorder';
 import useVideoProcessor from '../../hooks/useVideoProcessor';
-import useNotify from '../../hooks/useNotify';
 
 const { Dragger } = Upload;
 
@@ -46,9 +43,6 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     setHideVideo,
     setVideoFile,
   });
-
-  useVideoRecorder();
-  useNotify();
 
   // Styles
   const videoStyles = {
