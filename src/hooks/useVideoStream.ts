@@ -6,6 +6,11 @@ import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { filterLandmark } from '../utility/filterLandMark';
 import useWebSocket from '../utility/webSocketConfig';
 
+// Define target FPS (e.g., 5 FPS)
+// let lastCalledTime: any;
+// let fps;
+// let delta;
+const targetFPS = 5;
 const useVideoStream = ({
   deviceId,
   showBlendShapes,
@@ -61,6 +66,7 @@ const useVideoStream = ({
   );
 
   // Stop video stream
+
   const stopVideoStream = useCallback(() => {
     videoStreamRef.current?.getTracks().forEach((track) => track.stop());
     videoStreamRef.current = null;
@@ -86,6 +92,7 @@ const useVideoStream = ({
 
     if (webcam && webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       const timestamp = now;
+
       const [faceResults, poseResults] = await Promise.all([
         faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
         poseLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
@@ -104,6 +111,7 @@ const useVideoStream = ({
 
     // Queue the next frame
     animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+
   }, [setLandMarkData, webcamRef]);
 
   // Handle WebSocket data send
@@ -172,19 +180,23 @@ const useVideoStream = ({
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
 
+
           animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+
         };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
     }
   }, [
+
     constraints,
     fallbackConstraints,
     renderFrame,
     stopVideoStream,
     videoStreamRef,
     webcamRef,
+
   ]);
 
   // Cleanup video stream on component unmount
