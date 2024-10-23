@@ -64,8 +64,13 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   useEffect(() => {
     const { poseResults } = landMarkData || {};
 
-    if (poseResults?.landmarks) {
-      const noseX = poseResults?.landmarks[0][0]?.x; // Get the nose x-coordinate
+    const pointer =
+      poseResults?.landmarks?.length > 0 && poseResults.landmarks[0].length > 0
+        ? poseResults.landmarks[0][0].x
+        : undefined;
+
+    if (pointer) {
+      const noseX = pointer; // Get the nose x-coordinate
       const videoElement = webcamRef.current;
 
       if (videoElement) {
