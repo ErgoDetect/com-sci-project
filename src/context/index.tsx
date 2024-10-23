@@ -43,15 +43,18 @@ interface ResContextProps {
   setTheme: (theme: Theme) => void;
   showDetailedData: boolean;
   setShowDetailedData: React.Dispatch<React.SetStateAction<boolean>>;
-
   webcamRef: React.RefObject<HTMLVideoElement>;
   videoStreamRef: React.MutableRefObject<MediaStream | null>;
-
   renderSettings: boolean;
   setRenderSettings: React.Dispatch<React.SetStateAction<boolean>>;
-
   trackingData: any;
   setTrackingData: React.Dispatch<React.SetStateAction<any>>;
+  isAligned: boolean;
+  setIsAligned: React.Dispatch<React.SetStateAction<boolean>>;
+  initializationSuccess: boolean;
+  setInitializationSuccess: React.Dispatch<React.SetStateAction<boolean>>;
+  initialModal: boolean;
+  setInitialModal: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -61,6 +64,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [resData, setResData] = useState<any>(undefined);
   const [trackingData, setTrackingData] = useState<any>(undefined);
+  const [initializationSuccess, setInitializationSuccess] = useState(false);
+  const [isAligned, setIsAligned] = useState(false);
+  const [initialModal, setInitialModal] = useState(false);
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [loginResponse, setLoginResponse] = useState<boolean>(false);
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
@@ -153,6 +159,12 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setRenderSettings,
       trackingData,
       setTrackingData,
+      isAligned,
+      setIsAligned,
+      initializationSuccess,
+      setInitializationSuccess,
+      initialModal,
+      setInitialModal,
     }),
     [
       resData,
@@ -168,7 +180,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       showDetailedData,
       renderSettings,
       trackingData,
-      setTrackingData,
+      isAligned,
+      initializationSuccess,
+      initialModal,
     ],
   );
 

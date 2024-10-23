@@ -1,36 +1,33 @@
 import { useResData } from '../context';
 
 const useNotify = () => {
-  const { resData, setTrackingData } = useResData();
+  const { resData } = useResData();
 
-  if (!resData) return; // Early return if resData is null or undefined
-
-  if (resData.type === 'all_topic_alerts') {
-    setTrackingData(resData.data);
-    return; // Exit early after handling this type
-  }
-
-  if (resData.type === 'triggered_alerts') {
+  if (resData && resData.type === 'triggered_alerts') {
     const { blink, sitting, distance, thoractic } = resData.data;
 
-    let alertType = null; // Initialize alertType to null
-
-    // Determine alert type based on conditions
     if (blink) {
-      alertType = 'Blink';
-    } else if (sitting) {
-      alertType = 'Sitting';
-    } else if (distance) {
-      alertType = 'Distance';
-    } else if (thoractic) {
-      alertType = 'Thoractic';
+      window.electron.ipcRenderer.showNotification('Blink', 'blink more');
     }
 
-    // Trigger notification if any alertType is set
-    if (alertType) {
+    if (sitting) {
       window.electron.ipcRenderer.showNotification(
-        alertType,
-        `Please adjust your ${alertType.toLowerCase()} behavior.`,
+        'Sitting Alert',
+        'Take a break from sitting.',
+      );
+    }
+
+    if (distance) {
+      window.electron.ipcRenderer.showNotification(
+        'Distance Alert',
+        'Maintain proper distance.',
+      );
+    }
+
+    if (thoractic) {
+      window.electron.ipcRenderer.showNotification(
+        'Posture Alert',
+        'Adjust your thoracic posture.',
       );
     }
   }
