@@ -31,18 +31,29 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
-  const { showDetailedData, theme } = useResData();
+  const { showDetailedData, theme, setShowDetailedData } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
-  const [detailedData, setDetailedData] = useState<boolean>(showDetailedData);
   const { deviceId, devices, setDeviceId } = useDevices();
 
+  // Common theme styles for light/dark mode
+  const themeStyles = useMemo(
+    () => ({
+      titleColor: theme === 'dark' ? '#f4f5f7' : '#23272A',
+      backgroundColor: theme === 'dark' ? '#2C2F33' : '#f5f5f5',
+      contentBackground: theme === 'dark' ? '#2b2b2b' : '#FFFFFF',
+      textColor: theme === 'dark' ? '#f4f5f7' : '#333',
+      hoverColor: theme === 'dark' ? '#36393f' : '#e3e5e8',
+    }),
+    [theme],
+  );
+
+  // Handle device change
   const handleDeviceChange = useCallback(
-    (value: string) => {
-      setDeviceId(value);
-    },
+    (value: string) => setDeviceId(value),
     [setDeviceId],
   );
 
+  // Memoized device selector
   const deviceSelectorMemo = useMemo(
     () => (
       <DeviceSelector
@@ -54,19 +65,46 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
     [deviceId, devices, handleDeviceChange],
   );
 
-  const handleDetailedDataChange = useCallback((checked: boolean) => {
-    setDetailedData(checked);
-  }, []);
+  // Handle detailed data change and save to config
+  const handleDetailedDataChange = useCallback(
+    (checked: boolean): void => {
+      setShowDetailedData(checked);
+      console.log(showDetailedData);
 
+      // Fetch the current config, modify, and save it
+      window.electron.config
+        .getAppConfig()
+        .then((config) => {
+          // Update the config with the new detailed data value
+          const updatedConfig = { ...config, showStat: checked };
+
+          // Save the updated config and return the promise
+          return window.electron.config
+            .saveAppConfig(updatedConfig)
+            .then((result): void => {
+              if (result.success) {
+                console.log('Config saved successfully');
+              } else {
+                console.error('Error saving config:', result.error);
+              }
+              return null; // Explicitly return null to satisfy ESLint rule
+            });
+        })
+        .catch((error): void => {
+          console.error('Error fetching or saving appConfig:', error);
+          return null; // Explicitly return null to satisfy ESLint rule
+        });
+    },
+    [setShowDetailedData, showDetailedData],
+  );
+
+  // Render camera settings
   const renderCameraSettings = useMemo(
     () => (
       <>
         <Title
           level={4}
-          style={{
-            marginBottom: '24px',
-            color: theme === 'dark' ? '#f4f5f7' : '#23272A',
-          }}
+          style={{ marginBottom: '24px', color: themeStyles.titleColor }}
         >
           Camera Settings
         </Title>
@@ -85,18 +123,16 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
         </Form>
       </>
     ),
-    [deviceSelectorMemo, theme],
+    [deviceSelectorMemo, themeStyles.titleColor],
   );
 
+  // Render general settings
   const renderGeneralSettings = useMemo(
     () => (
       <>
         <Title
           level={4}
-          style={{
-            marginBottom: '24px',
-            color: theme === 'dark' ? '#f4f5f7' : '#23272A',
-          }}
+          style={{ marginBottom: '24px', color: themeStyles.titleColor }}
         >
           General Settings
         </Title>
@@ -132,7 +168,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
 
           <Form.Item label="Show Detailed Data During Detection and Summary">
             <Switch
-              checked={detailedData}
+              checked={showDetailedData}
               onChange={handleDetailedDataChange}
             />
             <Tooltip title="Enable or disable detailed data display during detection and in the summary.">
@@ -142,7 +178,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
         </Form>
       </>
     ),
-    [detailedData, handleDetailedDataChange, theme],
+    [showDetailedData, handleDetailedDataChange, themeStyles.titleColor],
   );
 
   const menuItems: MenuProps['items'] = useMemo(
@@ -177,45 +213,32 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
       <Sider
         width={240}
         style={{
-          backgroundColor: theme === 'dark' ? '#2C2F33' : '#f5f5f5',
+          backgroundColor: themeStyles.backgroundColor,
           height: '100%',
           overflowY: 'scroll',
         }}
       >
         <Menu
           mode="vertical"
-          selectedKeys={[selectedMenu]}
+          defaultSelectedKeys={[selectedMenu]}
           items={menuItems}
           style={{
             backgroundColor: 'transparent',
             borderRight: 0,
-            color: theme === 'dark' ? '#fff' : '#333',
+            color: themeStyles.textColor,
           }}
           onClick={(e) => setSelectedMenu(e.key)}
         />
       </Sider>
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           type="text"
-          icon={
-            <IoIosCloseCircleOutline
-              style={{
-                fontSize: '42px',
-              }}
-            />
-          }
-          onClick={() => {
-            setIsSettingsOpen(false);
-          }}
+          icon={<IoIosCloseCircleOutline style={{ fontSize: '42px' }} />}
+          onClick={() => setIsSettingsOpen(false)}
           style={{
             fontSize: '16px',
-            color: theme === 'dark' ? '#f4f5f7' : '#23272A',
+            color: themeStyles.textColor,
             backgroundColor: 'transparent',
             border: 'none',
             position: 'fixed',
@@ -225,8 +248,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
             padding: '22px',
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor =
-              theme === 'dark' ? '#36393f' : '#e3e5e8';
+            e.currentTarget.style.backgroundColor = themeStyles.hoverColor;
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.backgroundColor = 'transparent';
@@ -239,10 +261,10 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
       <Content
         style={{
           padding: '15px 45px',
-          backgroundColor: theme === 'dark' ? '#2b2b2b' : '#FFFFFF',
+          backgroundColor: themeStyles.contentBackground,
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
           borderRadius: '8px',
-          color: theme === 'dark' ? '#f4f5f7' : '#333',
+          color: themeStyles.textColor,
           flex: 1,
         }}
       >

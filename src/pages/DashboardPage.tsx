@@ -5,11 +5,17 @@ import { Container, FlexRow } from '../styles/styles';
 import VideoSourceCard from '../components/dashboard/VideoSourceCard';
 import SessionMetricsCard from '../components/dashboard/SessionMetricsCard';
 import SessionSummaryCard from '../components/SessionSummaryCard';
-import DraggableInfoBox from '../components/dashboard/DraggableInfoBox';
 import { useResData } from '../context';
 
 const Dashboard = () => {
-  const { theme, showDetailedData, streaming, setStreaming } = useResData();
+  const {
+    theme,
+    streaming,
+    setStreaming,
+    setIsAligned,
+    setInitialModal,
+    setInitializationSuccess,
+  } = useResData();
   const { deviceId } = useDevices();
 
   const [videoState, setVideoState] = useState({
@@ -18,35 +24,29 @@ const Dashboard = () => {
     isPlaying: false,
   });
 
-  const [metrics, setMetrics] = useState({
-    goodPostureTime: 51,
-    badPostureAlerts: 2,
-    blinkRate: 22,
-    proximityAlerts: 1,
-  });
-
-  const [dragPosition, setDragPosition] = useState({ x: 16, y: 16 });
-
   const frameCountRef = useRef<number>(0);
 
   const toggleStreaming = useCallback(() => {
     if (streaming) {
       frameCountRef.current = 0;
+      setIsAligned(false);
       setStreaming(false);
+      setInitializationSuccess(false);
+
       message.info('Session stopped.');
     } else {
-      setStreaming(true);
-
-      message.success('Session started!');
+      setInitialModal(true);
     }
-  }, [streaming, setStreaming]);
+  }, [
+    streaming,
+    setIsAligned,
+    setStreaming,
+    setInitializationSuccess,
+    setInitialModal,
+  ]);
 
   const handlePlayPause = () => {
     setVideoState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  };
-
-  const updateMetrics = (newMetrics: Partial<typeof metrics>) => {
-    setMetrics((prev) => ({ ...prev, ...newMetrics }));
   };
 
   return (
@@ -76,30 +76,18 @@ const Dashboard = () => {
             sessionActive={streaming}
             sessionDuration=""
             toggleStreaming={toggleStreaming}
-            blinkRate={metrics.blinkRate}
-            goodPostureTime={metrics.goodPostureTime}
+            blinkRate={0}
+            goodPostureTime={0}
           />
         )}
       </FlexRow>
 
-      {showDetailedData && (
-        <DraggableInfoBox
-          blinkRate={metrics.blinkRate}
-          sessionDuration={streaming ? '10:23' : '00:00'}
-          proximityAlerts={metrics.proximityAlerts}
-          badPostureAlerts={metrics.badPostureAlerts}
-          goodPostureTime={metrics.goodPostureTime}
-          position={dragPosition}
-          setPosition={setDragPosition}
-        />
-      )}
-
       {!videoState.useVideoFile && (
         <SessionSummaryCard
           sessionActive={streaming}
-          goodPostureTime={metrics.goodPostureTime}
-          badPostureAlerts={metrics.badPostureAlerts}
-          proximityAlerts={metrics.proximityAlerts}
+          goodPostureTime={0}
+          badPostureAlerts={0}
+          proximityAlerts={0}
         />
       )}
     </Container>

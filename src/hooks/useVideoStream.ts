@@ -6,6 +6,11 @@ import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { filterLandmark } from '../utility/filterLandMark';
 import useWebSocket from '../utility/webSocketConfig';
 
+// Define target FPS (e.g., 5 FPS)
+// let lastCalledTime: any;
+// let fps;
+// let delta;
+const targetFPS = 5;
 const useVideoStream = ({
   deviceId,
   showBlendShapes,
@@ -17,14 +22,22 @@ const useVideoStream = ({
     streaming,
     setLandMarkData,
     landMarkData,
+    setResData,
+    isAligned,
+    initialModal,
+    initializationSuccess,
   } = useResData();
 
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const firstFrameTimeRef = useRef<number>(0);
   const countRef = useRef<number>(0);
-  const { send } = useWebSocket(`landmark/results?stream=${streaming}`);
+
   const TARGET_FPS = 15;
+  const { send } = useWebSocket(
+    `landmark/results?stream=${streaming}`,
+    setResData,
+  );
 
   const constraints = useMemo(
     () => ({
@@ -95,7 +108,11 @@ const useVideoStream = ({
 
   // Handle WebSocket data send
   useEffect(() => {
-    if (landMarkData && streaming) {
+    if (
+      landMarkData &&
+      streaming &&
+      (initializationSuccess || (isAligned && !initialModal))
+    ) {
       const filteredData = filterLandmark(landMarkData as LandmarksResult);
       const currentTime = Date.now();
 
@@ -115,7 +132,14 @@ const useVideoStream = ({
       countRef.current = 0;
       firstFrameTimeRef.current = 0;
     }
-  }, [landMarkData, send, streaming]);
+  }, [
+    initializationSuccess,
+    initialModal,
+    isAligned,
+    landMarkData,
+    send,
+    streaming,
+  ]);
 
   // Start video stream
   const startVideoStream = useCallback(async () => {

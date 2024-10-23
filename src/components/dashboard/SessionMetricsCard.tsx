@@ -17,7 +17,7 @@ interface SessionMetricsCardProps {
   toggleStreaming: () => void;
   blinkRate: number;
   goodPostureTime: number;
-  sessionDuration: string; // Added for dynamic session duration
+  sessionDuration: string;
 }
 
 const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
@@ -27,58 +27,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   goodPostureTime,
   sessionDuration,
 }) => {
-  const { landMarkData, streaming } = useResData();
-
-  // Memoized helper functions to validate landmarks
-  const isFaceLandmarksValid = useCallback((faceResult: any): boolean => {
-    if (
-      !faceResult ||
-      !Array.isArray(faceResult.faceLandmarks) ||
-      faceResult.faceLandmarks.length === 0
-    ) {
-      return false;
-    }
-    return faceResult.faceLandmarks.every(
-      (landmarksArray: any) =>
-        Array.isArray(landmarksArray) && landmarksArray.length > 0,
-    );
-  }, []);
-
-  const isPoseLandmarksValid = useCallback((poseResult: any): boolean => {
-    if (
-      !poseResult ||
-      !Array.isArray(poseResult.landmarks) ||
-      poseResult.landmarks.length === 0 ||
-      !Array.isArray(poseResult.landmarks[0]) ||
-      poseResult.landmarks[0].length < 13
-    ) {
-      return false;
-    }
-
-    const requiredIndices = [7, 8, 11, 12];
-    return requiredIndices.every((index) => {
-      const landmark = poseResult.landmarks[0][index];
-      return landmark && (landmark.visibility ?? 0) >= 0.96;
-    });
-  }, []);
-
-  const isButtonDisabled = useMemo(() => {
-    if (!landMarkData) {
-      return false;
-    }
-
-    const { faceResults, poseResults } = landMarkData;
-
-    // If streaming is true, always return false
-    if (streaming === true) {
-      return false;
-    }
-
-    // If streaming is false, check the validity of face and pose landmarks
-    return (
-      !isFaceLandmarksValid(faceResults) || !isPoseLandmarksValid(poseResults)
-    );
-  }, [landMarkData, streaming, isFaceLandmarksValid, isPoseLandmarksValid]);
+  const { webcamRef } = useResData();
 
   return (
     <MetricsCard>
@@ -89,11 +38,12 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
         valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}
       />
+
       <Button
-        type={!sessionActive && !isButtonDisabled ? 'primary' : 'default'}
+        type={!sessionActive ? 'primary' : 'default'}
         icon={sessionActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
         onClick={toggleStreaming}
-        disabled={isButtonDisabled}
+        disabled={webcamRef === undefined}
         style={{
           marginBottom: 24,
           width: '100%',
@@ -104,6 +54,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
       >
         {sessionActive ? 'Stop Session' : 'Start Session'}
       </Button>
+
       <Statistic
         title="Average Blink Rate"
         value={blinkRate}
@@ -112,6 +63,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
         valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}
       />
+
       <Typography.Title
         level={5}
         style={{
@@ -123,6 +75,7 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
       >
         Posture Quality
       </Typography.Title>
+
       <Indicator isGood={goodPostureTime >= 50}>
         {goodPostureTime >= 50 ? (
           <>

@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal } from 'antd';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
 import useCaptureImage from '../../hooks/useCaptureImages';
 import { useResData } from '../../context';
+import DraggableInfoBox from '../dashboard/DraggableInfoBox';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
@@ -19,18 +21,73 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     showBlendShapes,
     showLandmarks: false,
   });
-  const { webcamRef } = useResData();
+
+  const {
+    webcamRef,
+    showDetailedData,
+    trackingData,
+    landMarkData,
+    streaming,
+    isAligned,
+    setIsAligned,
+    initialModal,
+    setInitialModal,
+    setStreaming,
+    initializationSuccess,
+  } = useResData();
+
+  const THRESHOLD = 50; // Alignment threshold
+
+  const handleOk = () => {
+    setStreaming(true);
+    setInitialModal(false); // Close the modal
+  };
+
+  // Handle Modal Cancel
+  const handleCancel = () => {
+    setInitialModal(false); // Just close the modal without starting the session
+  };
 
   useCaptureImage(webcamRef);
 
+  // Start and stop video stream based on `deviceId`
   useEffect(() => {
     if (deviceId) {
       startVideoStream();
     }
-    return stopVideoStream;
+    return () => {
+      stopVideoStream();
+    };
   }, [deviceId, startVideoStream, stopVideoStream]);
 
-  // Memoized styles with correct typing
+  // Monitor alignment and frame capture
+  useEffect(() => {
+    const { poseResults } = landMarkData || {};
+
+    if (poseResults?.landmarks) {
+      const noseX = poseResults?.landmarks[0][0]?.x; // Get the nose x-coordinate
+      const videoElement = webcamRef.current;
+
+      if (videoElement) {
+        const { videoWidth } = videoElement;
+        const centerX = videoWidth / 2;
+
+        const nosePixelX = noseX * videoWidth;
+        const offsetFromCenter = Math.abs(nosePixelX - centerX);
+
+        // Check if nose is aligned within the threshold
+        if (streaming && !initializationSuccess) {
+          if (offsetFromCenter <= THRESHOLD) {
+            setIsAligned(true);
+          } else {
+            setIsAligned(false);
+          }
+        }
+      }
+    }
+  }, [landMarkData, webcamRef, streaming, setIsAligned, initializationSuccess]);
+
+  // Memoized container styles
   const containerStyles = useMemo<React.CSSProperties>(
     () => ({
       position: 'relative',
@@ -41,6 +98,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     [width, borderRadius],
   );
 
+  // Memoized video styles
   const videoStyles = useMemo<React.CSSProperties>(
     () => ({
       width: '100%',
@@ -52,27 +110,59 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     [borderRadius],
   );
 
-  // const canvasStyles = useMemo<React.CSSProperties>(
-  //   () => ({
-  //     width: '100%',
-  //     height: 'auto',
-  //     borderRadius,
-  //     transform: 'rotateY(180deg)',
-  //     position: 'absolute',
-  //     top: 0,
-  //     left: 0,
-  //   }),
-  //   [borderRadius],
-  // );
+  // Memoized overlay styles with alignment check
+  const overlayStyles = useMemo<React.CSSProperties>(() => {
+    let backgroundColor = 'transparent'; // Default to transparent
+
+    if (streaming && !initializationSuccess) {
+      if (isAligned) {
+        backgroundColor = 'rgba(0, 255, 0, 0.2)'; // Green if aligned
+      } else {
+        backgroundColor = 'rgba(255, 0, 0, 0.2)'; // Red if not aligned
+      }
+    }
+
+    return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor,
+      borderRadius,
+      zIndex: 1,
+    };
+  }, [streaming, initializationSuccess, borderRadius, isAligned]);
 
   return (
-    <div style={containerStyles}>
-      <video ref={webcamRef} style={videoStyles} />
-      {/* <canvas ref={showCanvasRef} style={canvasStyles} />
-      {showBlendShapes && (
-        <div style={{ height: '2px' }} id="video-blend-shapes" />
-      )} */}
-    </div>
+    <>
+      <Modal
+        title="Prepare Your Position"
+        open={initialModal} // Changed `open` to `visible`
+        onOk={handleOk} // Start session when user is ready
+        onCancel={handleCancel} // Cancel the modal
+        okText="I'm Ready" // Customize button text
+        cancelText="Cancel"
+      >
+        <p>
+          Please ensure your face is centered in the frame and properly aligned
+          before starting the session.
+        </p>
+      </Modal>
+      <div style={containerStyles}>
+        <div style={overlayStyles} />
+        <video ref={webcamRef} style={videoStyles} />
+
+        {showDetailedData && (
+          <DraggableInfoBox
+            blink={trackingData?.blink}
+            sitting={trackingData?.sitting}
+            distance={trackingData?.distance}
+            thoracic={trackingData?.thoracic}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

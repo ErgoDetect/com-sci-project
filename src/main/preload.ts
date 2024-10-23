@@ -14,7 +14,11 @@ export type Channels =
   | 'open-auth-url'
   | 'save-video'
   | 'get-mac-address'
-  | 'deep-link'; // Add 'deep-link' channel for handling deep links
+  | 'deep-link'
+  | 'get-app-config'
+  | 'save-app-config'
+  | 'reset-app-config'
+  | 'get-system-theme'; // Add 'deep-link' channel for handling deep links
 
 const electronHandler = {
   ipcRenderer: {
@@ -77,6 +81,24 @@ const electronHandler = {
       buffer: Uint8Array,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
       return ipcRenderer.invoke('save-video', buffer);
+    },
+  },
+  config: {
+    getSystemTheme() {
+      return ipcRenderer.invoke('get-system-theme');
+    },
+    getAppConfig() {
+      return ipcRenderer.invoke('get-app-config'); // Fetch config from the main process
+    },
+
+    // Save app configuration
+    saveAppConfig(newConfig: any) {
+      return ipcRenderer.invoke('save-app-config', newConfig); // Save config via main process
+    },
+
+    // Optionally: Reset app configuration to default
+    resetAppConfig() {
+      return ipcRenderer.invoke('reset-app-config'); // Reset config to default
     },
   },
 };

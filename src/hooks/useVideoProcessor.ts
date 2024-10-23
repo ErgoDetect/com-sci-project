@@ -69,7 +69,6 @@ const useVideoProcessor = ({
       console.log(`Processing frame at time: ${currentTime}`);
 
       try {
-        // Batch process or limit frequency of detection calls if needed
         const [faceResults, poseResults] = await Promise.all([
           faceLandmarkerRef.current.detectForVideo(videoElement, timestamp),
           poseLandmarkerRef.current.detectForVideo(videoElement, timestamp),

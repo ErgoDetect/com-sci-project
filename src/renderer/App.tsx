@@ -23,6 +23,9 @@ import AppHeader from '../components/layout/AppHeader';
 import AppFooter from '../components/layout/AppFooter';
 import ConnectionErrorModal from '../components/layout/ConnectionErrorModal';
 import { useResData } from '../context';
+import useReceiveData from '../hooks/useReceiveData';
+import useVideoRecorder from '../hooks/useVideoRecorder';
+import useNotify from '../hooks/useNotify';
 
 const { Content } = Layout;
 
@@ -126,6 +129,10 @@ const App: React.FC = () => {
       </div>
     );
   };
+
+  useReceiveData();
+  useVideoRecorder();
+  useNotify();
 
   return (
     <>
