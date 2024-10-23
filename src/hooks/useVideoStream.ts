@@ -18,6 +18,9 @@ const useVideoStream = ({
     setLandMarkData,
     landMarkData,
     setResData,
+    isAligned,
+    initialModal,
+    initializationSuccess,
   } = useResData();
 
   const animationFrameIdRef = useRef<number | null>(null);
@@ -105,7 +108,11 @@ const useVideoStream = ({
 
   // Handle WebSocket data send
   useEffect(() => {
-    if (landMarkData && streaming) {
+    if (
+      landMarkData &&
+      streaming &&
+      (initializationSuccess || (isAligned && !initialModal))
+    ) {
       const filteredData = filterLandmark(landMarkData as LandmarksResult);
       const currentTime = Date.now();
 
@@ -125,7 +132,14 @@ const useVideoStream = ({
       countRef.current = 0;
       firstFrameTimeRef.current = 0;
     }
-  }, [landMarkData, send, streaming]);
+  }, [
+    initializationSuccess,
+    initialModal,
+    isAligned,
+    landMarkData,
+    send,
+    streaming,
+  ]);
 
   // Start video stream
   const startVideoStream = useCallback(async () => {

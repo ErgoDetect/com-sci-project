@@ -8,7 +8,14 @@ import SessionSummaryCard from '../components/SessionSummaryCard';
 import { useResData } from '../context';
 
 const Dashboard = () => {
-  const { theme, streaming, setStreaming } = useResData();
+  const {
+    theme,
+    streaming,
+    setStreaming,
+    setIsAligned,
+    setInitialModal,
+    setInitializationSuccess,
+  } = useResData();
   const { deviceId } = useDevices();
 
   const [videoState, setVideoState] = useState({
@@ -22,14 +29,21 @@ const Dashboard = () => {
   const toggleStreaming = useCallback(() => {
     if (streaming) {
       frameCountRef.current = 0;
+      setIsAligned(false);
       setStreaming(false);
+      setInitializationSuccess(false);
+
       message.info('Session stopped.');
     } else {
-      setStreaming(true);
-
-      message.success('Session started!');
+      setInitialModal(true);
     }
-  }, [streaming, setStreaming]);
+  }, [
+    streaming,
+    setIsAligned,
+    setStreaming,
+    setInitializationSuccess,
+    setInitialModal,
+  ]);
 
   const handlePlayPause = () => {
     setVideoState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
