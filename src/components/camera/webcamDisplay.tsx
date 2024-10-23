@@ -3,6 +3,7 @@ import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
 import useCaptureImage from '../../hooks/useCaptureImages';
 import { useResData } from '../../context';
+import DraggableInfoBox from '../dashboard/DraggableInfoBox';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
@@ -19,7 +20,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     showBlendShapes,
     showLandmarks: false,
   });
-  const { webcamRef } = useResData();
+  const { webcamRef, showDetailedData, trackingData } = useResData();
 
   useCaptureImage(webcamRef);
 
@@ -52,26 +53,17 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     [borderRadius],
   );
 
-  // const canvasStyles = useMemo<React.CSSProperties>(
-  //   () => ({
-  //     width: '100%',
-  //     height: 'auto',
-  //     borderRadius,
-  //     transform: 'rotateY(180deg)',
-  //     position: 'absolute',
-  //     top: 0,
-  //     left: 0,
-  //   }),
-  //   [borderRadius],
-  // );
-
   return (
     <div style={containerStyles}>
+      {showDetailedData && (
+        <DraggableInfoBox
+          blink={trackingData?.blink}
+          sitting={trackingData?.sitting}
+          distance={trackingData?.distance}
+          thoracic={trackingData?.thoracic}
+        />
+      )}
       <video ref={webcamRef} style={videoStyles} />
-      {/* <canvas ref={showCanvasRef} style={canvasStyles} />
-      {showBlendShapes && (
-        <div style={{ height: '2px' }} id="video-blend-shapes" />
-      )} */}
     </div>
   );
 };

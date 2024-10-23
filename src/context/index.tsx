@@ -5,20 +5,20 @@ import React, {
   ReactNode,
   useMemo,
   useRef,
+  useEffect,
 } from 'react';
 import {
   CombineResult,
   DebugData,
   LandmarksResult,
-  PositionData,
 } from '../interface/propsType';
 
 // Define the theme type
 type Theme = 'light' | 'dark';
 
 interface ResContextProps {
-  resData: PositionData | undefined;
-  setResData: React.Dispatch<React.SetStateAction<PositionData | undefined>>;
+  resData: any;
+  setResData: React.Dispatch<React.SetStateAction<any>>;
   isLogin: boolean;
   setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
   loginResponse: boolean;
@@ -49,6 +49,9 @@ interface ResContextProps {
 
   renderSettings: boolean;
   setRenderSettings: React.Dispatch<React.SetStateAction<boolean>>;
+
+  trackingData: any;
+  setTrackingData: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -56,7 +59,8 @@ const ResContext = createContext<ResContextProps | null>(null);
 export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [resData, setResData] = useState<PositionData | undefined>(undefined);
+  const [resData, setResData] = useState<any>(undefined);
+  const [trackingData, setTrackingData] = useState<any>(undefined);
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [loginResponse, setLoginResponse] = useState<boolean>(false);
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
@@ -71,11 +75,41 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
 
   // Theme management
   const [theme, setTheme] = useState<Theme>('light');
-
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
-  const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
+
+  // Manage showDetailedData, default to true
+  const [showDetailedData, setShowDetailedData] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Assuming the appConfig is fetched via IPC
+    window.electron.config
+      .getAppConfig()
+      .then((config): void => {
+        if (config.showStat !== undefined) {
+          setShowDetailedData(config.showStat); // Set showDetailedData based on appConfig
+        }
+        return null; // Explicitly return null to satisfy the ESLint rule
+      })
+      .catch((error) => {
+        console.error('Error fetching appConfig:', error);
+        throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
+      });
+
+    window.electron.config
+      .getSystemTheme()
+      .then((themes): void => {
+        if (themes !== undefined) {
+          setTheme(themes); // Set showDetailedData based on appConfig
+        }
+        return null; // Explicitly return null to satisfy the ESLint rule
+      })
+      .catch((error) => {
+        console.error('Error fetching system theme:', error);
+        throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
+      });
+  }, []);
 
   const debugData = useMemo(() => {
     if (resData) {
@@ -117,6 +151,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       videoStreamRef,
       renderSettings,
       setRenderSettings,
+      trackingData,
+      setTrackingData,
     }),
     [
       resData,
@@ -131,6 +167,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       isLogin,
       showDetailedData,
       renderSettings,
+      trackingData,
+      setTrackingData,
     ],
   );
 

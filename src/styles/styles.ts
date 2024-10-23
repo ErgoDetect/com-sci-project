@@ -81,18 +81,19 @@ export const PlayPauseButton = styled(Button)`
   }
 `;
 
-export const InfoBox = styled.div<{ x: number; y: number }>`
+export const InfoBox = styled.div`
   position: absolute;
-  bottom: ${({ y }) => (y ? `${y}px` : '16px')};
-  right: ${({ x }) => (x ? `${x}px` : '16px')};
+  top: 0;
+  left: 0;
   background-color: rgba(0, 0, 0, 0.7);
+  margin: 8px;
   color: #fff;
-  padding: 12px 16px;
+  padding: 12px;
   border-radius: 8px;
   font-size: 14px;
-  cursor: move;
   z-index: 10;
-  user-select: none;
+  width: max-content;
+  min-width: 10rem;
 `;
 
 export const Indicator = styled.div<{ isGood: boolean }>`
