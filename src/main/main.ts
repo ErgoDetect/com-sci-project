@@ -6,7 +6,7 @@ import {
   Tray,
   Menu,
   powerSaveBlocker,
-  dialog,
+  nativeTheme,
 } from 'electron';
 import { createMainWindow } from '../main-util/windowManager';
 import * as path from 'path';
@@ -22,6 +22,16 @@ let tray: Tray | null = null;
 let isQuitting = false;
 let powerSaveBlockerId: number | null = null;
 
+// Define the default app configuration
+const defaultAppConfig = {
+  appearance: {
+    theme: 'light',
+    fontSize: 14,
+  },
+  showStat: false,
+};
+
+// Handle default protocol for deep linking
 if (process.defaultApp && process.argv.length >= 2) {
   app.setAsDefaultProtocolClient('ergodetect', process.execPath, [
     path.resolve(process.argv[1]),
@@ -30,7 +40,7 @@ if (process.defaultApp && process.argv.length >= 2) {
   app.setAsDefaultProtocolClient('ergodetect');
 }
 
-// Define a helper to retrieve asset paths
+// Helper to get asset paths
 const getAssetPath = (...paths: string[]): string => {
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
@@ -38,15 +48,22 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-// Ensure save folder exists
+// Ensure save folder and settings file exist
 const ensureSaveFolderExists = (): void => {
   const saveFolderPath = path.join(app.getPath('userData'), 'result');
+  const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+
   if (!fs.existsSync(saveFolderPath)) {
     fs.mkdirSync(saveFolderPath, { recursive: true });
   }
+
+  if (!fs.existsSync(settingPath)) {
+    // Write the default app config to the settings file
+    fs.writeFileSync(settingPath, JSON.stringify(defaultAppConfig, null, 2));
+  }
 };
 
-// Show a welcome notification when the app starts
+// Show initial notification when the app starts
 const showInitialNotification = (): void => {
   if (Notification.isSupported()) {
     const notification = new Notification({
@@ -54,18 +71,15 @@ const showInitialNotification = (): void => {
       body: 'Your application is running successfully!',
     });
     notification.show();
-    notification.on('click', () => console.log('Notification clicked'));
-    notification.on('close', () => console.log('Notification closed'));
   } else {
     logger.error('Notifications are not supported on this platform.');
   }
 };
 
-// Create system tray and context menu
+// Create system tray with context menu
 const createTray = (): void => {
   const iconPath = getAssetPath('icons', '16x16.png');
 
-  // Log if the tray icon path does not exist
   if (!fs.existsSync(iconPath)) {
     log.error(`Tray icon not found at: ${iconPath}`);
     return;
@@ -95,27 +109,20 @@ const createTray = (): void => {
   }
 };
 
-// Handle application events
+// Setup application events
 const setupAppEvents = (): void => {
-  // Handle close event to hide the window instead of quitting
+  // Prevent window close, hide it instead
   mainWindow?.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
-      mainWindow?.hide(); // Hide the window instead of closing
-      if (process.platform === 'darwin') {
-        app.dock.hide(); // Hide the dock icon on macOS
-      }
-    } else {
-      mainWindow = null;
+      mainWindow?.hide();
+      if (process.platform === 'darwin') app.dock.hide();
     }
   });
 
-  // Handle quitting the app
   app.on('before-quit', () => {
     isQuitting = true;
-    if (tray) {
-      tray.destroy(); // Destroy the tray only when actually quitting
-    }
+    tray?.destroy();
   });
 
   app.on('window-all-closed', () => {
@@ -127,7 +134,7 @@ const setupAppEvents = (): void => {
   });
 
   app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0 && !mainWindow) {
+    if (!BrowserWindow.getAllWindows().length && !mainWindow) {
       mainWindow = await createMainWindow();
     } else {
       mainWindow?.show();
@@ -135,15 +142,14 @@ const setupAppEvents = (): void => {
   });
 
   app.on('open-url', (event, url) => {
-    // dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`);
-    if (mainWindow) {
-      mainWindow.webContents.send('deep-link', url);
-    }
+    event.preventDefault();
+    mainWindow?.webContents.send('deep-link', url);
   });
 };
 
-// Set up IPC handlers
+// Setup IPC handlers
 const setupIPCHandlers = (): void => {
+  // Handle saving video
   ipcMain.handle('save-video', async (event, buffer) => {
     try {
       const saveFolderPath = path.join(app.getPath('userData'), 'result');
@@ -152,44 +158,52 @@ const setupIPCHandlers = (): void => {
       const videoFileName = `recorded_video_${Date.now()}.webm`;
       const filePath = path.join(saveFolderPath, videoFileName);
 
-      // Create a write stream to save the buffer in chunks
-      const writeStream = fs.createWriteStream(filePath);
-
-      // Stream the buffer directly to the file
-      writeStream.write(buffer);
-      writeStream.end();
-
-      return new Promise((resolve, reject) => {
-        writeStream.on('finish', () => {
-          logger.info(`Video saved successfully to ${filePath}`);
-          resolve({ success: true, filePath });
-        });
-        writeStream.on('finish', () => {
-          logger.info(`Video saved successfully to ${filePath}`);
-          resolve({ success: true, filePath });
-        });
-
-        writeStream.on('error', (error) => {
-          logger.error('Error saving video:', error);
-          reject({
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Unexpected error occurred',
-          });
-        });
-      });
+      await fs.promises.writeFile(filePath, buffer);
+      logger.info(`Video saved successfully to ${filePath}`);
+      return { success: true, filePath };
     } catch (error) {
-      logger.error('Error in save-video handler:', error);
+      logger.error('Error saving video:', error);
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : 'Unexpected error occurred',
+        error: error instanceof Error ? error.message : 'Unexpected error',
       };
     }
   });
+
+  // Handle app config loading
+  ipcMain.handle('get-app-config', async () => {
+    try {
+      const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+      if (!fs.existsSync(settingPath)) {
+        return defaultAppConfig;
+      }
+
+      const data = await fs.promises.readFile(settingPath, 'utf-8');
+      return { ...defaultAppConfig, ...JSON.parse(data) }; // Merge default with existing config
+    } catch (error) {
+      logger.error('Error loading app config:', error);
+      return { error: 'Failed to load config' };
+    }
+  });
+
+  // Handle saving app config
+  ipcMain.handle('save-app-config', async (event, newConfig) => {
+    try {
+      const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+      const config = { ...defaultAppConfig, ...newConfig }; // Merge with default
+      await fs.promises.writeFile(settingPath, JSON.stringify(config, null, 2));
+      return { success: true, config };
+    } catch (error) {
+      logger.error('Error saving app config:', error);
+      return { success: false, error: 'Failed to save config' };
+    }
+  });
+
+  ipcMain.handle('get-system-theme', () => {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+  });
 };
+
 // Start power save blocker
 const startPowerSaveBlocker = (): void => {
   if (powerSaveBlockerId === null) {
@@ -198,18 +212,17 @@ const startPowerSaveBlocker = (): void => {
   }
 };
 
-// Single instance lock
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
+// Ensure single instance lock
+if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
+
     const deepLinkUrl = commandLine.pop();
-    // dialog.showErrorBox('Welcome Back', `You arrived from: ${deepLinkUrl}`);
     if (deepLinkUrl) {
       mainWindow?.webContents.send('deep-link', deepLinkUrl);
     }
@@ -247,7 +260,7 @@ app.whenReady().then(async () => {
   logger.info('System Memory Info:', process.getSystemMemoryInfo());
 });
 
-// Error Handling for unhandled rejections and exceptions
+// Handle unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });

@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
 import { UserOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
@@ -10,7 +9,7 @@ import { useResData } from '../../context';
 import '../../styles/styles.css';
 
 const AccountButton: React.FC = () => {
-  const { setRenderSettings } = useResData();
+  const { renderSettings, setRenderSettings } = useResData();
   const navigate = useNavigate();
 
   // Menu items with logout handling
@@ -18,10 +17,21 @@ const AccountButton: React.FC = () => {
     {
       label: <a href="/profile">Profile</a>,
       key: '0',
+      onClick: () => {
+        console.log('Profile clicked'); // Log the click action
+      },
     },
     {
-      label: <span onClick={() => setRenderSettings(true)}>Settings</span>,
+      label: <span>Settings</span>,
       key: '/setting',
+      onClick: () => {
+        setRenderSettings((prev) => {
+          return !prev; // Correctly return the updated value
+        });
+        console.log(renderSettings);
+
+        console.log('Settings clicked'); // Log the click action
+      },
     },
     {
       type: 'divider',
@@ -30,17 +40,12 @@ const AccountButton: React.FC = () => {
       label: 'Log Out',
       key: '3',
       onClick: async () => {
+        console.log('Log Out clicked'); // Log the click action
         try {
-          // Ensure the device identifier is fetched properly
-
-          // Perform the logout request with the correct options format
-          const response = await axiosInstance.post(
-            '/auth/logout', // Ensure the URL is correct
-          );
+          const response = await axiosInstance.post('/auth/logout');
           if (response.status === 200) {
             navigate('/login');
           }
-          // Optionally, handle redirection or additional logic after logout
         } catch (error) {
           console.error('Logout failed:', error);
         }
@@ -58,7 +63,11 @@ const AccountButton: React.FC = () => {
       }}
       overlayClassName="custom-dropdown-menu"
     >
-      <a onClick={(e) => e.preventDefault()}>
+      <button
+        onClick={(e) => e.preventDefault()}
+        type="button"
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+      >
         <div style={{ marginRight: '10px' }}>
           <Avatar
             icon={<UserOutlined />}
@@ -67,7 +76,7 @@ const AccountButton: React.FC = () => {
             style={{ backgroundColor: '#87d068' }}
           />
         </div>
-      </a>
+      </button>
     </Dropdown>
   );
 };
