@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { useResData } from '../context';
+import axiosInstance from './axiosInstance';
 
 type WebSocketMessageHandler = (data: any) => void;
 
@@ -8,6 +8,14 @@ interface UseWebSocketResult {
   message: any;
   reconnectAttempts: number; // Exposed to provide feedback on reconnection attempts
 }
+
+const getDeviceIdentifier = async (): Promise<string> => {
+  const deviceIdentifier = await window.electron.ipcRenderer.getMacAddress();
+  if (!deviceIdentifier) {
+    throw new Error('Device identifier not found');
+  }
+  return deviceIdentifier;
+};
 
 const useWebSocket = (
   dest: string,
@@ -71,8 +79,15 @@ const useWebSocket = (
       // Optional: handle specific error codes here or trigger additional error-handling strategies
     };
 
-    const handleClose = () => {
+    const handleClose = async (event: CloseEvent) => {
       console.info('WebSocket connection closed');
+
+      if (event.code === 1008 || event.code === 4001) {
+        const deviceIdentifier = await getDeviceIdentifier();
+        axiosInstance.post('/auth/refresh-token', null, {
+          headers: { 'Device-Identifier': deviceIdentifier },
+        });
+      }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }

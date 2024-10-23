@@ -17,6 +17,7 @@ const useVideoStream = ({
     streaming,
     setLandMarkData,
     landMarkData,
+    setResData,
   } = useResData();
 
   const animationFrameIdRef = useRef<number | null>(null);
@@ -25,7 +26,10 @@ const useVideoStream = ({
   const firstFrameTimeRef = useRef<number>(0);
   const lastFrameTimeRef = useRef<number>(0);
   const countRef = useRef<number>(0);
-  const { send } = useWebSocket(`landmark/results?stream=${streaming}`);
+  const { send } = useWebSocket(
+    `landmark/results?stream=${streaming}`,
+    setResData,
+  );
 
   const constraints = useMemo(
     () => ({
