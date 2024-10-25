@@ -219,9 +219,12 @@
       ]
     },
     "win": {
-      "target": [
-        "nsis"
-      ],
+      "target": {
+        "target": "default",
+        "arch": [
+          "x64"
+        ]
+      },
       "protocols": [
         {
           "name": "ErgoDetect Protocol",
