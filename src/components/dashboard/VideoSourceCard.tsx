@@ -46,7 +46,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   // Styles
   const videoStyles = {
-    width: '100%',
+    width: '55rem',
     borderRadius: '10px',
     display: hideVideo ? 'none' : 'block',
   };
@@ -100,6 +100,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   return (
     <VideoCard
+      style={{ height: useVideoFile ? '45rem' : '' }}
       title="Video Source"
       bordered={false}
       extra={
@@ -120,15 +121,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         {useVideoFile ? (
           <VideoContainer>
             {videoFile ? (
-              <div
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  width: '100%',
-                }}
-              >
+              <div>
                 {isProcessing && (
                   <div
                     style={{
@@ -147,35 +140,44 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                     </p>
                   </div>
                 )}
-
-                <video
-                  ref={mainVideoElementRef}
-                  src={videoSrc}
-                  style={videoStyles}
-                  controls={!isProcessing}
-                  controlsList="nofullscreen"
-                  onTimeUpdate={() => {
-                    const videoElement = mainVideoElementRef.current;
-                    if (
-                      videoElement &&
-                      isProcessed &&
-                      goodPostureTime !== null &&
-                      videoElement.currentTime < goodPostureTime
-                    ) {
-                      videoElement.currentTime = goodPostureTime;
-                    }
+                <div
+                  style={{
+                    height: '25rem',
+                    display: 'flex', // Enables Flexbox layout
+                    flexDirection: 'column', // Align elements vertically
+                    justifyContent: 'center', // Center items vertically
+                    alignItems: 'center', // Center items horizontally
+                    marginTop: '6rem',
                   }}
-                />
-
-                <Button
-                  type="primary"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleDeleteVideo}
-                  style={{ marginTop: '10px' }}
                 >
-                  Delete Video
-                </Button>
+                  <video
+                    ref={mainVideoElementRef}
+                    src={videoSrc}
+                    style={videoStyles}
+                    controls={!isProcessing}
+                    controlsList="nofullscreen"
+                    onTimeUpdate={() => {
+                      const videoElement = mainVideoElementRef.current;
+                      if (
+                        videoElement &&
+                        isProcessed &&
+                        goodPostureTime !== null &&
+                        videoElement.currentTime < goodPostureTime
+                      ) {
+                        videoElement.currentTime = goodPostureTime;
+                      }
+                    }}
+                  />
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDeleteVideo}
+                    style={{ marginTop: '3rem' }}
+                  >
+                    Delete Video
+                  </Button>
+                </div>
               </div>
             ) : (
               <Dragger
@@ -185,12 +187,22 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                 beforeUpload={handleFileUpload}
                 showUploadList={false}
               >
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">
-                  Click or drag video file to this area to upload
-                </p>
+                <div
+                  style={{
+                    height: '25rem',
+                    display: 'flex', // Enables Flexbox layout
+                    flexDirection: 'column', // Align elements vertically
+                    justifyContent: 'center', // Center items vertically
+                    alignItems: 'center', // Center items horizontally
+                  }}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">
+                    Click or drag video file to this area to upload
+                  </p>
+                </div>
               </Dragger>
             )}
           </VideoContainer>

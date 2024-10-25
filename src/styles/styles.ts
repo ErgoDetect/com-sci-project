@@ -4,12 +4,11 @@ import styled from 'styled-components';
 import { Card, Button, Upload } from 'antd';
 
 export const Container = styled.div`
-  padding: 40px 75px;
+  padding: 50px 50px 0px 50px;
   display: flex;
   flex-direction: column;
   gap: 40px;
-  background-color: #f5f5f5;
-  height: 100%;
+  height: 100dvh;
 `;
 
 export const FlexRow = styled.div`
@@ -60,7 +59,6 @@ export const SummaryCard = styled(StyledCard)`
 export const VideoContainer = styled.div`
   width: 100%;
   border-radius: 12px;
-  overflow: hidden;
 `;
 
 export const UploadButton = styled(Upload)`
