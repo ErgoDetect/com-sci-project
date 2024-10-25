@@ -16,6 +16,7 @@ import loadEnvFile from '../main-util/env';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
 import log from 'electron-log';
+import { nativeImage } from 'electron';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -81,7 +82,10 @@ const createTray = (): void => {
   const iconPath = getAssetPath('icons', '16x16.png');
 
   if (!fs.existsSync(iconPath)) {
-    log.error(`Tray icon not found at: ${iconPath}`);
+    log.error(
+      `Tray icon not found at: ${iconPath}. Falling back to default icon.`,
+    );
+    tray = new Tray(nativeImage.createEmpty()); // Fallback to empty tray icon
     return;
   }
 
@@ -123,6 +127,10 @@ const setupAppEvents = (): void => {
   app.on('before-quit', () => {
     isQuitting = true;
     tray?.destroy();
+    if (powerSaveBlockerId !== null) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+      powerSaveBlockerId = null;
+    }
   });
 
   app.on('window-all-closed', () => {
@@ -138,12 +146,21 @@ const setupAppEvents = (): void => {
       mainWindow = await createMainWindow();
     } else {
       mainWindow?.show();
+      if (process.platform === 'darwin') app.dock.show(); // Show dock icon on macOS
     }
   });
 
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    mainWindow?.webContents.send('deep-link', url);
+    if (mainWindow) {
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', () => {
+          mainWindow.webContents.send('deep-link', url);
+        });
+      } else {
+        mainWindow.webContents.send('deep-link', url);
+      }
+    }
   });
 };
 
@@ -221,9 +238,17 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.focus();
     }
 
-    const deepLinkUrl = commandLine.pop();
+    const deepLinkUrl = commandLine.find((arg) =>
+      arg.startsWith('ergodetect://'),
+    );
     if (deepLinkUrl) {
-      mainWindow?.webContents.send('deep-link', deepLinkUrl);
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', () => {
+          mainWindow.webContents.send('deep-link', deepLinkUrl);
+        });
+      } else {
+        mainWindow.webContents.send('deep-link', deepLinkUrl);
+      }
     }
   });
 }
@@ -262,9 +287,22 @@ app.whenReady().then(async () => {
 // Handle unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (mainWindow) {
+    mainWindow.webContents.send('error-notification', {
+      title: 'An error occurred',
+      message: 'An unexpected issue occurred. Please try again.',
+    });
+  }
 });
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
+  if (mainWindow) {
+    mainWindow.webContents.send('error-notification', {
+      title: 'Critical Error',
+      message:
+        'The application encountered an unexpected error and needs to close.',
+    });
+  }
   app.quit();
 });
