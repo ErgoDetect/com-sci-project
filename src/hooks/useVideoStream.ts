@@ -6,11 +6,6 @@ import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { filterLandmark } from '../utility/filterLandMark';
 import useWebSocket from '../utility/webSocketConfig';
 
-// Define target FPS (e.g., 5 FPS)
-// let lastCalledTime: any;
-// let fps;
-// let delta;
-const targetFPS = 5;
 const useVideoStream = ({
   deviceId,
   showBlendShapes,

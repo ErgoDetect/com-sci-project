@@ -18,7 +18,7 @@ export type Channels =
   | 'get-app-config'
   | 'save-app-config'
   | 'reset-app-config'
-  | 'get-system-theme'; // Add 'deep-link' channel for handling deep links
+  | 'get-system-theme';
 
 const electronHandler = {
   ipcRenderer: {
@@ -78,9 +78,10 @@ const electronHandler = {
   },
   video: {
     saveVideo(
+      videoName: string,
       buffer: Uint8Array,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-      return ipcRenderer.invoke('save-video', buffer);
+      return ipcRenderer.invoke('save-video', videoName, buffer);
     },
   },
   config: {

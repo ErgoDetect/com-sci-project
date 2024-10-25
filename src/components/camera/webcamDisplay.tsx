@@ -62,33 +62,53 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
   // Monitor alignment and frame capture
   useEffect(() => {
-    const { poseResults } = landMarkData || {};
+    if (!landMarkData?.poseResults?.landmarks?.length) {
+      setIsAligned(false);
+      return;
+    }
 
-    const pointer =
-      poseResults?.landmarks?.length > 0 && poseResults.landmarks[0].length > 0
-        ? poseResults.landmarks[0][0].x
-        : undefined;
+    const { landmarks } = landMarkData.poseResults;
+    const currentLandmarks = landmarks[0];
 
-    if (pointer) {
-      const noseX = pointer; // Get the nose x-coordinate
-      const videoElement = webcamRef.current;
+    if (!currentLandmarks?.length) {
+      setIsAligned(false);
+      return;
+    }
 
-      if (videoElement) {
-        const { videoWidth } = videoElement;
-        const centerX = videoWidth / 2;
+    const pointer = currentLandmarks[0];
+    if (!pointer) {
+      setIsAligned(false);
+      return;
+    }
 
-        const nosePixelX = noseX * videoWidth;
-        const offsetFromCenter = Math.abs(nosePixelX - centerX);
+    // Check visibility of required points
+    const requiredPointsVisible = [7, 8, 11, 12].every(
+      (index) => currentLandmarks[index]?.visibility > 0.985,
+    );
 
-        // Check if nose is aligned within the threshold
-        if (streaming && !initializationSuccess) {
-          if (offsetFromCenter <= THRESHOLD) {
-            setIsAligned(true);
-          } else {
-            setIsAligned(false);
-          }
-        }
-      }
+    if (!requiredPointsVisible) {
+      setIsAligned(false);
+      return;
+    }
+
+    // Proceed to check nose alignment
+    const videoElement = webcamRef.current;
+    if (!videoElement) {
+      setIsAligned(false);
+      return;
+    }
+
+    const { videoWidth } = videoElement;
+    const centerX = videoWidth / 2;
+    const noseX = pointer.x; // Get the nose x-coordinate
+    const nosePixelX = noseX * videoWidth;
+    const offsetFromCenter = Math.abs(nosePixelX - centerX);
+
+    // Check if nose is aligned within the threshold
+    if (streaming && !initializationSuccess) {
+      setIsAligned(offsetFromCenter <= THRESHOLD);
+    } else {
+      setIsAligned(false);
     }
   }, [landMarkData, webcamRef, streaming, setIsAligned, initializationSuccess]);
 
