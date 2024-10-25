@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Avatar, Divider, List, Skeleton } from 'antd';
-import InfiniteScroll from 'react-infinite-scroll-component';
+import { List } from 'antd';
 import axiosInstance from '../utility/axiosInstance';
 import { Container } from '../styles/styles';
 
