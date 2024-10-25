@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { message } from 'antd';
-import { useResData } from '../context'; // App-level state
 import axiosInstance from '../utility/axiosInstance'; // Axios instance
 import { AuthStatusResponse } from '../interface/propsType';
 
@@ -133,6 +132,7 @@ const useAuth = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [tryCount, setTryCount] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Handle successful login
 
@@ -172,6 +172,7 @@ const useAuth = () => {
   // Token status check
   const checkAuthStatus = useCallback(async (): Promise<AuthStatusResponse> => {
     setLoading(true);
+
     try {
       let checksTokenStatus = await checkTokenStatus();
 
@@ -186,7 +187,7 @@ const useAuth = () => {
         checksTokenStatus = await checkTokenStatus(); // Re-check status
 
         if (checksTokenStatus.status === 'Authenticated') {
-          navigate('/'); // Navigate to home if re-authenticated
+          navigate(location.pathname); // Navigate to home if re-authenticated
           return { status: 'Authenticated' }; // Return success
         }
       }
@@ -200,7 +201,7 @@ const useAuth = () => {
     } finally {
       setLoading(false); // Stop loading spinner
     }
-  }, [navigate]);
+  }, [location.pathname, navigate]);
 
   // Email login handler
   const loginWithEmail = useCallback(
