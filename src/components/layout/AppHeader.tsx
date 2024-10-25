@@ -12,6 +12,9 @@ const { Header } = Layout;
 const AppHeader: React.FC<AppHeaderProps> = ({ items }) => (
   <Header
     style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 1,
       display: 'flex',
       padding: 0,
     }}

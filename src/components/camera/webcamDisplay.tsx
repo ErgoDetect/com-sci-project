@@ -62,28 +62,53 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
 
   // Monitor alignment and frame capture
   useEffect(() => {
-    const { poseResults } = landMarkData || {};
+    if (!landMarkData?.poseResults?.landmarks?.length) {
+      setIsAligned(false);
+      return;
+    }
 
-    if (poseResults?.landmarks) {
-      const noseX = poseResults?.landmarks[0][0]?.x; // Get the nose x-coordinate
-      const videoElement = webcamRef.current;
+    const { landmarks } = landMarkData.poseResults;
+    const currentLandmarks = landmarks[0];
 
-      if (videoElement) {
-        const { videoWidth } = videoElement;
-        const centerX = videoWidth / 2;
+    if (!currentLandmarks?.length) {
+      setIsAligned(false);
+      return;
+    }
 
-        const nosePixelX = noseX * videoWidth;
-        const offsetFromCenter = Math.abs(nosePixelX - centerX);
+    const pointer = currentLandmarks[0];
+    if (!pointer) {
+      setIsAligned(false);
+      return;
+    }
 
-        // Check if nose is aligned within the threshold
-        if (streaming && !initializationSuccess) {
-          if (offsetFromCenter <= THRESHOLD) {
-            setIsAligned(true);
-          } else {
-            setIsAligned(false);
-          }
-        }
-      }
+    // Check visibility of required points
+    const requiredPointsVisible = [7, 8, 11, 12].every(
+      (index) => currentLandmarks[index]?.visibility > 0.985,
+    );
+
+    if (!requiredPointsVisible) {
+      setIsAligned(false);
+      return;
+    }
+
+    // Proceed to check nose alignment
+    const videoElement = webcamRef.current;
+    if (!videoElement) {
+      setIsAligned(false);
+      return;
+    }
+
+    const { videoWidth } = videoElement;
+    const centerX = videoWidth / 2;
+    const noseX = pointer.x; // Get the nose x-coordinate
+    const nosePixelX = noseX * videoWidth;
+    const offsetFromCenter = Math.abs(nosePixelX - centerX);
+
+    // Check if nose is aligned within the threshold
+    if (streaming && !initializationSuccess) {
+      setIsAligned(offsetFromCenter <= THRESHOLD);
+    } else {
+      setIsAligned(false);
     }
   }, [landMarkData, webcamRef, streaming, setIsAligned, initializationSuccess]);
 

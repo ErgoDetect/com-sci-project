@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import fixWebmDuration from 'webm-duration-fix';
 import { useResData } from '../context';
+import axiosInstance from '../utility/axiosInstance';
 
 const useVideoRecorder = () => {
   const { streaming, videoStreamRef, initializationSuccess } = useResData();
@@ -21,9 +22,18 @@ const useVideoRecorder = () => {
       const arrayBuffer = await blob.arrayBuffer();
       const buffer = new Uint8Array(arrayBuffer);
 
-      const result = await window.electron.video.saveVideo(buffer);
+      const videoFileName = `recorded_video_${Date.now()}.webm`;
+
+      const result = await window.electron.video.saveVideo(
+        videoFileName,
+        buffer,
+      );
+
       if (result.success) {
         message.success(`Video saved to ${result.filePath}`);
+        axiosInstance.post('/landmark/video_name', {
+          video_name: videoFileName,
+        });
       } else {
         message.error(`Failed to save video: ${result.error}`);
       }

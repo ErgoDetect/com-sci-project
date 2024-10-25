@@ -10,6 +10,7 @@ import { Layout, Spin } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
+  HistoryOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import useAuth from '../hooks/useAuth';
@@ -19,8 +20,8 @@ import Signup from '../pages/SignUp';
 import WaitVerify from '../pages/WaitVerifyPage';
 import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
+import HistoryPage from '../pages/HistoryPage';
 import AppHeader from '../components/layout/AppHeader';
-import AppFooter from '../components/layout/AppFooter';
 import ConnectionErrorModal from '../components/layout/ConnectionErrorModal';
 import { useResData } from '../context';
 import useReceiveData from '../hooks/useReceiveData';
@@ -81,6 +82,14 @@ const App: React.FC = () => {
         ),
         key: '/summary',
       },
+      {
+        label: (
+          <Link to="/history">
+            <HistoryOutlined /> History
+          </Link>
+        ),
+        key: '/history',
+      },
     ],
     [],
   );
@@ -117,16 +126,16 @@ const App: React.FC = () => {
     }
 
     return (
-      <div>
+      <>
         <AppHeader items={menuItems} />
-        <Content style={{ padding: 0 }}>
+        <Content style={{ padding: 0, backgroundColor: '#f5f5f5' }}>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/summary" element={<SummaryPage />} />
+            <Route path="/history" element={<HistoryPage />} />
           </Routes>
         </Content>
-        <AppFooter />
-      </div>
+      </>
     );
   };
 
