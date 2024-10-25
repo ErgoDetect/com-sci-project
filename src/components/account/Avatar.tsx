@@ -4,7 +4,6 @@ import type { MenuProps } from 'antd';
 import { Dropdown, Space, Avatar } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utility/axiosInstance';
-import useAuth from '../../hooks/useAuth';
 import { useResData } from '../../context';
 import '../../styles/styles.css';
 
