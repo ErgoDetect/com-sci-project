@@ -150,13 +150,12 @@ const setupAppEvents = (): void => {
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
   // Handle saving video
-  ipcMain.handle('save-video', async (event, buffer) => {
+  ipcMain.handle('save-video', async (event, videoName, buffer) => {
     try {
       const saveFolderPath = path.join(app.getPath('userData'), 'result');
       await fs.promises.mkdir(saveFolderPath, { recursive: true });
 
-      const videoFileName = `recorded_video_${Date.now()}.webm`;
-      const filePath = path.join(saveFolderPath, videoFileName);
+      const filePath = path.join(saveFolderPath, videoName);
 
       await fs.promises.writeFile(filePath, buffer);
       logger.info(`Video saved successfully to ${filePath}`);
