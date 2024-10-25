@@ -117,8 +117,8 @@ const useVideoProcessor = ({
         totalFramesProcessed++;
 
         // Schedule the next frame process
-        setTimeout(processNextFrame, 0);
-        // requestAnimationFrame(processNextFrame);
+        // setTimeout(processNextFrame, 0);
+        requestAnimationFrame(processNextFrame);
       } else {
         // Once done, finalize
         setIsProcessing(false);
