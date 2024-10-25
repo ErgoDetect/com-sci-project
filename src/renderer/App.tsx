@@ -37,12 +37,32 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Handle connection error modal visibility based on retry count
   useEffect(() => {
     if (tryCount >= 12) {
       setIsModalVisible(true);
     }
   }, [tryCount]);
 
+  // Handle deep link protocol for navigation
+  useEffect(() => {
+    const handleProtocolUrl = (url: string) => {
+      if (url.startsWith('ergodetect://login')) {
+        navigate('/login');
+      }
+    };
+
+    if (window.electron?.ipcRenderer?.onProtocolUrl) {
+      window.electron.ipcRenderer.onProtocolUrl(handleProtocolUrl);
+      return () => {
+        window.electron.ipcRenderer.removeAllListeners?.('deep-link');
+      };
+    }
+
+    return undefined;
+  }, [navigate]);
+
+  // Authenticate user and redirect if needed
   useEffect(() => {
     const authenticate = async () => {
       const response = await checkAuthStatus();
@@ -64,6 +84,7 @@ const App: React.FC = () => {
     [setRenderSettings],
   );
 
+  // Memoize menu items to avoid unnecessary re-renders
   const menuItems = useMemo(
     () => [
       {
@@ -94,7 +115,8 @@ const App: React.FC = () => {
     [],
   );
 
-  const renderContent = () => {
+  // Render content based on the application's state
+  const renderContent = useCallback(() => {
     if (loading || !isConnected) {
       return (
         <div
@@ -115,30 +137,38 @@ const App: React.FC = () => {
     if (renderSettings) {
       return <SettingPage setIsSettingsOpen={closeSettings} />;
     }
-    if (location.pathname === '/login') {
-      return <Login />;
-    }
-    if (location.pathname === '/signip') {
-      return <Signup />;
-    }
-    if (location.pathname === '/wait-verify') {
-      return <WaitVerify />;
-    }
 
-    return (
-      <>
-        <AppHeader items={menuItems} />
-        <Content style={{ padding: 0, backgroundColor: '#f5f5f5' }}>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/summary" element={<SummaryPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-          </Routes>
-        </Content>
-      </>
-    );
-  };
+    switch (location.pathname) {
+      case '/login':
+        return <Login />;
+      case '/signup':
+        return <Signup />;
+      case '/wait-verify':
+        return <WaitVerify />;
+      default:
+        return (
+          <>
+            <AppHeader items={menuItems} />
+            <Content style={{ padding: 0, backgroundColor: '#f5f5f5' }}>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/summary" element={<SummaryPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+              </Routes>
+            </Content>
+          </>
+        );
+    }
+  }, [
+    loading,
+    isConnected,
+    renderSettings,
+    location.pathname,
+    closeSettings,
+    menuItems,
+  ]);
 
+  // Initialize hooks for additional functionality
   useReceiveData();
   useVideoRecorder();
   useNotify();
