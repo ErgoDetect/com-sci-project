@@ -118,7 +118,7 @@ const App: React.FC = () => {
     if (location.pathname === '/login') {
       return <Login />;
     }
-    if (location.pathname === '/signip') {
+    if (location.pathname === '/signup') {
       return <Signup />;
     }
     if (location.pathname === '/wait-verify') {
