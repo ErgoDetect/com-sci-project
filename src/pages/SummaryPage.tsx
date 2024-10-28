@@ -13,16 +13,17 @@ import { useLocation } from 'react-router-dom';
 import ProgressCard from '../components/ProgressCard';
 import { useResData } from '../context';
 import axiosInstance from '../utility/axiosInstance';
+import { log } from 'winston';
 
 const { Content } = Layout;
 const { Title } = Typography;
 
-type EventType = 'blink' | 'proximity' | 'hunchback' | 'sitting';
+type EventType = 'blink' | 'distance' | 'thoracic' | 'sitting';
 
 const colorMap: Record<EventType, string> = {
   blink: '#FF4D4F',
-  proximity: '#FFC107',
-  hunchback: '#52C41A',
+  distance: '#FFC107',
+  thoracic: '#52C41A',
   sitting: '#00B8D9',
 };
 
@@ -37,12 +38,12 @@ const cardDetails: Record<EventType, { title: string; description: string }> = {
     description:
       'The teal segments indicate when the sitting duration exceeded the recommended time.',
   },
-  proximity: {
+  distance: {
     title: 'Sitting Too Close to Screen',
     description:
       'The amber segments indicate when proximity issues were detected, i.e., when the user sat too close to the screen for extended periods.',
   },
-  hunchback: {
+  thoracic: {
     title: 'Hunchback Posture',
     description:
       'The green segments indicate when hunchback posture was detected. This helps track how long the user sat with poor posture.',
@@ -50,20 +51,10 @@ const cardDetails: Record<EventType, { title: string; description: string }> = {
 };
 
 interface Event {
-  time: number;
+  start: number;
   type: EventType;
-  length: number;
+  end: number;
 }
-
-// Replace this with actual event data from data if available
-const exampleEvents: Event[] = [
-  { time: 10, type: 'blink', length: 5 },
-  { time: 25, type: 'proximity', length: 10 },
-  { time: 40, type: 'hunchback', length: 8 },
-  { time: 55, type: 'blink', length: 5 },
-  { time: 70, type: 'proximity', length: 7 },
-  { time: 85, type: 'sitting', length: 15 },
-];
 
 const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -74,6 +65,7 @@ const Summary: React.FC = () => {
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
   const { theme } = useResData();
   const location = useLocation();
+  const FPS = 15;
   const sessionTitle = useMemo(
     () => new URLSearchParams(location.search).get('session_title'),
     [location.search],
@@ -115,6 +107,7 @@ const Summary: React.FC = () => {
           } else {
             console.error('Failed to load video:');
           }
+          // console.log(data);
         } catch (error) {
           console.error('Error fetching video:', error);
         }
@@ -142,24 +135,91 @@ const Summary: React.FC = () => {
     }
   }, []);
 
+  const getEvent = useCallback(() => {
+    const event: Event[] = [];
+    for (let index = 0; index < data?.blink.length; index++) {
+      if (data?.blink[index].length == 1) {
+        event.push({
+          start: data?.blink[index][0],
+          type: 'blink',
+          end: data?.duration,
+        });
+      } else {
+        event.push({
+          start: data?.blink[index][0],
+          type: 'blink',
+          end: data?.blink[index][1],
+        });
+      }
+    }
+    for (let index = 0; index < data?.sitting.length; index++) {
+      if (data?.sitting[index].length == 1) {
+        event.push({
+          start: data?.sitting[index][0],
+          type: 'sitting',
+          end: data?.duration,
+        });
+      } else {
+        event.push({
+          start: data?.sitting[index][0],
+          type: 'sitting',
+          end: data?.sitting[index][1],
+        });
+      }
+    }
+    for (let index = 0; index < data?.distance.length; index++) {
+      if (data?.distance[index].length == 1) {
+        event.push({
+          start: data?.distance[index][0],
+          type: 'distance',
+          end: data?.duration,
+        });
+      } else {
+        event.push({
+          start: data?.distance[index][0],
+          type: 'distance',
+          end: data?.distance[index][1],
+        });
+      }
+    }
+    for (let index = 0; index < data?.thoracic.length; index++) {
+      if (data?.thoracic[index].length == 1) {
+        event.push({
+          start: data?.thoracic[index][0],
+          type: 'thoracic',
+          end: data?.duration,
+        });
+      } else {
+        event.push({
+          start: data?.thoracic[index][0],
+          type: 'thoracic',
+          end: data?.thoracic[index][1],
+        });
+      }
+    }
+    return event;
+  }, [data]);
+
+  const event = getEvent();
   const createProgressBar = useCallback(
     (eventType: EventType) =>
-      exampleEvents
+      event
         .filter((event) => event.type === eventType)
         .map((event) => {
-          const duration = 100;
-          const startPosition = (event.time / duration) * 100;
-          const width = (event.length / duration) * 100;
+          const duration = data?.duration || 0;
+          const startPosition = (event.start / duration) * 100;
+          const eventLength = event.end - event.start;
+          const width = (eventLength / duration) * 100;
           return (
             <Tooltip
-              title={`${event.type} detected from ${new Date(event.time * 1000)
-                .toISOString()
-                .substring(14, 19)} to ${new Date(
-                (event.time + event.length) * 1000,
+              title={`${event.type} detected from ${new Date(
+                (event.start / FPS) * 1000,
               )
                 .toISOString()
+                .substring(14, 19)} to ${new Date((event.end / FPS) * 1000)
+                .toISOString()
                 .substring(14, 19)}`}
-              key={`${event.type}-${event.time}`}
+              key={`${event.type}-${event.start}`}
             >
               <div
                 style={{
@@ -174,13 +234,13 @@ const Summary: React.FC = () => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSeek(event.time);
+                  handleSeek(event.start / FPS);
                 }}
               />
             </Tooltip>
           );
         }),
-    [handleSeek],
+    [handleSeek, data?.duration], // Add data?.duration as a dependency
   );
 
   const videoPlayer = useMemo(
@@ -273,6 +333,7 @@ const Summary: React.FC = () => {
                 expanded={expandedCard}
                 onExpandToggle={handleExpandToggle}
                 progressBar={createProgressBar(eventType)}
+                // progressBar=
                 description={description}
                 themeStyles={themeStyles}
               />
