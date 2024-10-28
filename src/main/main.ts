@@ -172,7 +172,7 @@ const createThumbnail = (
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
       .screenshots({
-        timestamps: ['5%'], // Capture frame at 5% of video duration
+        timestamps: ['1%'], // Capture frame at 5% of video duration
         filename: path.basename(thumbnailPath),
         folder: path.dirname(thumbnailPath),
         size: '1280x720', // Desired thumbnail dimensions
@@ -190,22 +190,40 @@ const createThumbnail = (
 
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
+  // Utility function to ensure directory exists
+  const ensureDirectoryExists = async (directoryPath: string) => {
+    await fs.promises.mkdir(directoryPath, { recursive: true });
+  };
+
+  // Utility function to save file
+  const saveFile = async (filePath: string, data: Buffer) => {
+    await fs.promises.writeFile(filePath, data);
+  };
+
+  // Utility function to save video and generate thumbnail
+  const saveVideoWithThumbnail = async (
+    videoName: string,
+    thumbnail: string,
+    buffer: Buffer,
+  ) => {
+    const saveFolderPath = path.join(app.getPath('userData'), 'result');
+
+    await ensureDirectoryExists(saveFolderPath);
+
+    const filePath = path.join(saveFolderPath, videoName);
+    await saveFile(filePath, buffer);
+    logger.info(`Video saved successfully to ${filePath}`);
+
+    const thumbnailPath = path.join(saveFolderPath, thumbnail);
+    await createThumbnail(filePath, thumbnailPath);
+
+    return { success: true, filePath, thumbnailPath };
+  };
+
   // Handle saving video
   ipcMain.handle('save-video', async (event, videoName, thumbnail, buffer) => {
     try {
-      const saveFolderPath = path.join(app.getPath('userData'), 'result');
-      await fs.promises.mkdir(saveFolderPath, { recursive: true });
-
-      // Save the video
-      const filePath = path.join(saveFolderPath, videoName);
-      await fs.promises.writeFile(filePath, buffer);
-      logger.info(`Video saved successfully to ${filePath}`);
-
-      // Generate a thumbnail image from the saved video
-      const thumbnailPath = path.join(saveFolderPath, thumbnail);
-      await createThumbnail(filePath, thumbnailPath);
-
-      return { success: true, filePath, thumbnailPath };
+      return await saveVideoWithThumbnail(videoName, thumbnail, buffer);
     } catch (error) {
       logger.error('Error saving video or generating thumbnail:', error);
       return {
@@ -215,26 +233,58 @@ const setupIPCHandlers = (): void => {
     }
   });
 
-  ipcMain.handle('get-video', async (event, videoName) => {
-    try {
-      const saveFolderPath = path.join(app.getPath('userData'), 'result');
-      const filePath = path.join(saveFolderPath, videoName);
+  // Handle saving and uploading video
+  ipcMain.handle(
+    'save-upload-video',
+    async (event, buffer, start, videoName, thumbnail) => {
+      const tempPath = path.join(app.getPath('userData'), 'temp_video.mp4');
+      const processedPath = path.join(
+        app.getPath('userData'),
+        'processed_video.mp4',
+      );
 
-      // Check if the file exists
-      if (!fs.existsSync(filePath)) {
-        return { success: false, error: 'File not found' };
+      try {
+        await saveFile(tempPath, buffer);
+
+        await new Promise((resolve, reject) => {
+          ffmpeg(tempPath)
+            .setStartTime(start)
+            .save(processedPath)
+            .on('end', resolve)
+            .on('error', reject);
+        });
+
+        const processedBuffer = await fs.promises.readFile(processedPath);
+        await fs.promises.unlink(tempPath);
+
+        // Call saveVideoWithThumbnail directly
+        return await saveVideoWithThumbnail(
+          videoName,
+          thumbnail,
+          processedBuffer,
+        );
+      } catch (error) {
+        logger.error('Error processing or saving video:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unexpected error',
+        };
+      } finally {
+        if (fs.existsSync(processedPath))
+          await fs.promises.unlink(processedPath);
       }
+    },
+  );
 
-      // Read the file as a buffer
+  // Handle retrieving video
+  ipcMain.handle('get-video', async (event, videoName) => {
+    const filePath = path.join(app.getPath('userData'), 'result', videoName);
+
+    try {
       const buffer = await fs.promises.readFile(filePath);
-      const base64String = buffer.toString('base64');
-
-      // Create a data URL for video (assuming webm here)
-      const videoDataUrl = `data:video/webm;base64,${base64String}`;
-
-      return videoDataUrl;
+      return `data:video/webm;base64,${buffer.toString('base64')}`;
     } catch (error) {
-      console.error('Error getting video:', error);
+      logger.error('Error retrieving video:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unexpected error',
@@ -242,66 +292,59 @@ const setupIPCHandlers = (): void => {
     }
   });
 
+  // Handle retrieving thumbnail
   ipcMain.handle('get-thumbnail', async (event, thumbnailName) => {
+    const filePath = path.join(
+      app.getPath('userData'),
+      'result',
+      thumbnailName,
+    );
+
     try {
-      const saveFolderPath = path.join(app.getPath('userData'), 'result');
-      const filePath = path.join(saveFolderPath, thumbnailName);
-
-      // Check if the file exists
-      if (!fs.existsSync(filePath)) {
-        return { success: false, error: 'File not found' };
-      }
-
-      // Read the file as a buffer
       const buffer = await fs.promises.readFile(filePath);
-
-      // Convert the buffer to a Base64 encoded string
-      const base64String = buffer.toString('base64');
-      const dataUrl = `data:image/jpg;base64,${base64String}`; // Adjust MIME type if needed
-
-      // Return the Base64 data URL
-      return dataUrl;
+      return `data:image/jpg;base64,${buffer.toString('base64')}`;
     } catch (error) {
-      logger.error('Error getting thumbnail:', error);
+      logger.error('Error retrieving thumbnail:', error);
       return {
+        success: false,
         error: error instanceof Error ? error.message : 'Unexpected error',
       };
     }
   });
-
-  // Handle app config loading
-  ipcMain.handle('get-app-config', async () => {
-    try {
-      const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
-      if (!fs.existsSync(settingPath)) {
-        return defaultAppConfig;
-      }
-
-      const data = await fs.promises.readFile(settingPath, 'utf-8');
-      return { ...defaultAppConfig, ...JSON.parse(data) }; // Merge default with existing config
-    } catch (error) {
-      logger.error('Error loading app config:', error);
-      return { error: 'Failed to load config' };
-    }
-  });
-
-  // Handle saving app config
-  ipcMain.handle('save-app-config', async (event, newConfig) => {
-    try {
-      const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
-      const config = { ...defaultAppConfig, ...newConfig }; // Merge with default
-      await fs.promises.writeFile(settingPath, JSON.stringify(config, null, 2));
-      return { success: true, config };
-    } catch (error) {
-      logger.error('Error saving app config:', error);
-      return { success: false, error: 'Failed to save config' };
-    }
-  });
-
-  ipcMain.handle('get-system-theme', () => {
-    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
-  });
 };
+
+// Handle app config loading
+ipcMain.handle('get-app-config', async () => {
+  try {
+    const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+    if (!fs.existsSync(settingPath)) {
+      return defaultAppConfig;
+    }
+
+    const data = await fs.promises.readFile(settingPath, 'utf-8');
+    return { ...defaultAppConfig, ...JSON.parse(data) }; // Merge default with existing config
+  } catch (error) {
+    logger.error('Error loading app config:', error);
+    return { error: 'Failed to load config' };
+  }
+});
+
+// Handle saving app config
+ipcMain.handle('save-app-config', async (event, newConfig) => {
+  try {
+    const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+    const config = { ...defaultAppConfig, ...newConfig }; // Merge with default
+    await fs.promises.writeFile(settingPath, JSON.stringify(config, null, 2));
+    return { success: true, config };
+  } catch (error) {
+    logger.error('Error saving app config:', error);
+    return { success: false, error: 'Failed to save config' };
+  }
+});
+
+ipcMain.handle('get-system-theme', () => {
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+});
 
 // Start power save blocker
 const startPowerSaveBlocker = (): void => {

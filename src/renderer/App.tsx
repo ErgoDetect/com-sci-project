@@ -52,8 +52,8 @@ const App: React.FC = () => {
       }
     };
 
-    if (window.electron?.ipcRenderer?.onProtocolUrl) {
-      window.electron.ipcRenderer.onProtocolUrl(handleProtocolUrl);
+    if (window.electron?.notifications?.onProtocolUrl) {
+      window.electron.notifications.onProtocolUrl(handleProtocolUrl);
       return () => {
         window.electron.ipcRenderer.removeAllListeners?.('deep-link');
       };
@@ -95,14 +95,7 @@ const App: React.FC = () => {
         ),
         key: '/',
       },
-      {
-        label: (
-          <Link to="/summary">
-            <FileTextOutlined /> Summary
-          </Link>
-        ),
-        key: '/summary',
-      },
+
       {
         label: (
           <Link to="/history">
