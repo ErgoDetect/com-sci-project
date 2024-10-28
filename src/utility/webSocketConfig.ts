@@ -10,7 +10,7 @@ interface UseWebSocketResult {
 }
 
 const getDeviceIdentifier = async (): Promise<string> => {
-  const deviceIdentifier = await window.electron.ipcRenderer.getMacAddress();
+  const deviceIdentifier = await window.electron.system.getMacAddress();
   if (!deviceIdentifier) {
     throw new Error('Device identifier not found');
   }

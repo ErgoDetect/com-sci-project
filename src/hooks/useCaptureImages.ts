@@ -42,8 +42,8 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
     const onCaptureComplete = async () => {
       try {
         console.log('Image capture complete. Uploading images...');
-        if (window.electron?.ipcRenderer?.showNotification) {
-          await window.electron.ipcRenderer.showNotification(
+        if (window.electron?.notifications.showNotification) {
+          await window.electron.notifications.showNotification(
             'Capture Complete',
             'Image capture is complete.',
           );
@@ -69,8 +69,8 @@ const useCaptureImage = (videoRef: RefObject<HTMLVideoElement>) => {
         // Additional calibration logic can be added here
 
         // Notify user of completion
-        if (window.electron?.ipcRenderer?.showNotification) {
-          await window.electron.ipcRenderer.showNotification(
+        if (window.electron?.notifications.showNotification) {
+          await window.electron.notifications.showNotification(
             'Calibration Complete',
             'The calibration process has completed successfully.',
           );

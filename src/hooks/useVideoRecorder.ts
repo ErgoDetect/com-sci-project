@@ -22,10 +22,13 @@ const useVideoRecorder = () => {
       const arrayBuffer = await blob.arrayBuffer();
       const buffer = new Uint8Array(arrayBuffer);
 
-      const videoFileName = `recorded_video_${Date.now()}.webm`;
+      const timestamp = Date.now();
+      const videoFileName = `recorded_video_${timestamp}.webm`;
+      const thumbnail = `thumb_recorded_video_${timestamp}.jpg`;
 
       const result = await window.electron.video.saveVideo(
         videoFileName,
+        thumbnail,
         buffer,
       );
 
@@ -33,6 +36,7 @@ const useVideoRecorder = () => {
         message.success(`Video saved to ${result.filePath}`);
         axiosInstance.post('/landmark/video_name', {
           video_name: videoFileName,
+          thumbnail,
         });
       } else {
         message.error(`Failed to save video: ${result.error}`);

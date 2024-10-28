@@ -7,25 +7,25 @@ const useNotify = () => {
     const { blink, sitting, distance, thoractic } = resData.data;
 
     if (blink) {
-      window.electron.ipcRenderer.showNotification('Blink', 'blink more');
+      window.electron.notifications.showNotification('Blink', 'blink more');
     }
 
     if (sitting) {
-      window.electron.ipcRenderer.showNotification(
+      window.electron.notifications.showNotification(
         'Sitting Alert',
         'Take a break from sitting.',
       );
     }
 
     if (distance) {
-      window.electron.ipcRenderer.showNotification(
+      window.electron.notifications.showNotification(
         'Distance Alert',
         'Maintain proper distance.',
       );
     }
 
     if (thoractic) {
-      window.electron.ipcRenderer.showNotification(
+      window.electron.notifications.showNotification(
         'Posture Alert',
         'Adjust your thoracic posture.',
       );
