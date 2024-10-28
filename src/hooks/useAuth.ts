@@ -38,7 +38,7 @@ const handleServerError = (error: unknown) => {
 
 // Get device identifier
 const getDeviceIdentifier = async (): Promise<string> => {
-  const deviceIdentifier = await window.electron.ipcRenderer.getMacAddress();
+  const deviceIdentifier = await window.electron.system.getMacAddress();
   if (!deviceIdentifier) {
     throw new Error('Device identifier not found');
   }
@@ -238,7 +238,7 @@ const useAuth = () => {
       // Step 1: Get the Google Auth URL and open it in the browser
       const authUrl = await fetchGoogleAuthUrl();
       console.log('Auth URL received:', authUrl); // Log the auth URL
-      await window.electron.ipcRenderer.openUrl(authUrl);
+      await window.electron.notifications.openUrl(authUrl);
 
       // Step 2: Wait for SSE to resolve success and fetch token
       await handleSSE(deviceIdentifier);

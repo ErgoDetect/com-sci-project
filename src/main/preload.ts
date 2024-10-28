@@ -13,6 +13,8 @@ export type Channels =
   | 'file-exists'
   | 'open-auth-url'
   | 'save-video'
+  | 'get-video'
+  | 'get-thumbnail'
   | 'get-mac-address'
   | 'deep-link'
   | 'get-app-config'
@@ -39,22 +41,22 @@ const electronHandler = {
     invoke(channel: Channels, ...args: unknown[]) {
       return ipcRenderer.invoke(channel, ...args);
     },
+
+    removeAllListeners(channel: Channels) {
+      ipcRenderer.removeAllListeners(channel);
+    },
+  },
+  notifications: {
     showNotification(title: string, body: string) {
       return ipcRenderer.invoke('show-notification', { title, body });
     },
     openUrl(url: string) {
       return ipcRenderer.invoke('open-auth-url', url);
     },
-    getMacAddress() {
-      return ipcRenderer.invoke('get-mac-address');
-    },
     onProtocolUrl: (callback: (url: string) => void) => {
       ipcRenderer.on('deep-link', (event, url) => {
         callback(url);
       });
-    },
-    removeAllListeners(channel: Channels) {
-      ipcRenderer.removeAllListeners(channel);
     },
   },
   fs: {
@@ -79,9 +81,16 @@ const electronHandler = {
   video: {
     saveVideo(
       videoName: string,
+      thumbnail: string,
       buffer: Uint8Array,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-      return ipcRenderer.invoke('save-video', videoName, buffer);
+      return ipcRenderer.invoke('save-video', videoName, thumbnail, buffer);
+    },
+    getVideo(videoName: string): Promise<string | null> {
+      return ipcRenderer.invoke('get-video', videoName);
+    },
+    getThumbnail(videoName: string): Promise<string | null> {
+      return ipcRenderer.invoke('get-thumbnail', videoName);
     },
   },
   config: {
@@ -100,6 +109,11 @@ const electronHandler = {
     // Optionally: Reset app configuration to default
     resetAppConfig() {
       return ipcRenderer.invoke('reset-app-config'); // Reset config to default
+    },
+  },
+  system: {
+    getMacAddress() {
+      return ipcRenderer.invoke('get-mac-address');
     },
   },
 };

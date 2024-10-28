@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { List } from 'antd';
+import { List, Tag, Image, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utility/axiosInstance';
 import { Container } from '../styles/styles';
 
@@ -7,45 +8,52 @@ const HistoryPage = () => {
   interface DataType {
     session_title: string;
     date: string;
-    blink: string;
-    sitting: string;
     file_name: string;
+    thumbnail: string;
+    session_type: string;
   }
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DataType[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleItemClick = (sessionTitle: string) => {
+    const sessionId = sessionTitle.replace('Session ID: ', '');
+    navigate(`/summary?session_title=${sessionId}`);
+  };
 
   const fetchUserHistory = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('/user/history');
-      console.log(response.data); // Log the response to understand its structure
-
-      // Assuming response.data is an array of sessions
-      const newSessions = response.data.map((session: any) => ({
-        session_title: `Session ID: ${session.sitting_session_id}`, // You can make a more meaningful title here
-        date: new Date(session.date).toLocaleString(), // Convert the date to a readable format
-        file_name: session.file_name ? session.file_name : 'No Files', // Handle file names
-        blink: session.blink.length
-          ? `Blinks: ${session.blink.length}`
-          : 'No Blink Data', // Add more data if needed
-        sitting: session.sitting.length
-          ? `Sitting Events: ${session.sitting.length}`
-          : 'No Sitting Data',
-      }));
-
-      setData(newSessions); // Set the formatted session data
+      const newSessions = await Promise.all(
+        response.data.map(async (session: any) => {
+          const thumbnail = session.thumbnail
+            ? await window.electron.video.getThumbnail(session.thumbnail)
+            : 'No Thumbnail';
+          return {
+            session_title: `Session ID: ${session.sitting_session_id}`,
+            date: new Date(session.date).toLocaleString(),
+            file_name: session.file_name || 'No Files',
+            thumbnail,
+            session_type: session.session_type,
+          };
+        }),
+      );
+      setData(newSessions);
+      console.log(newSessions); // Log the fetched data
     } catch (errors) {
       console.error('Error fetching user history:', errors);
       setError('Failed to fetch user history');
+      message.error('Failed to fetch user history');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUserHistory(); // Fetch history on component mount
+    fetchUserHistory();
   }, []);
 
   return (
@@ -60,22 +68,34 @@ const HistoryPage = () => {
           borderRadius: '8px',
         }}
       >
-        <List
-          dataSource={data}
-          renderItem={(item: DataType) => (
-            <List.Item>
-              <List.Item.Meta
-                title={item.session_title}
-                description={`Date: ${item.date}`}
-              />
-              <div>
-                <div>{item.blink}</div>
-                <div>{item.sitting}</div>
-                <div>Files: {item.file_name}</div>
-              </div>
-            </List.Item>
-          )}
-        />
+        {error ? (
+          <p>{error}</p>
+        ) : (
+          <List
+            loading={loading}
+            dataSource={data}
+            renderItem={(item: DataType) => (
+              <List.Item
+                onClick={() => handleItemClick(item.session_title)}
+                style={{ cursor: 'pointer' }}
+              >
+                <Image
+                  src={item.thumbnail}
+                  alt="Thumbnail"
+                  width={200}
+                  style={{ borderRadius: '8px' }}
+                  preview={false}
+                />
+                <List.Item.Meta
+                  title={`Date: ${item.date}`}
+                  description={item.session_title}
+                  style={{ marginLeft: '32px' }}
+                />
+                <Tag color="#f50">{item.session_type}</Tag>
+              </List.Item>
+            )}
+          />
+        )}
       </div>
     </Container>
   );

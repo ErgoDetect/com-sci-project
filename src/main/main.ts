@@ -16,6 +16,8 @@ import loadEnvFile from '../main-util/env';
 import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
 import log from 'electron-log';
+import { nativeImage } from 'electron';
+import ffmpeg from 'fluent-ffmpeg';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -81,7 +83,10 @@ const createTray = (): void => {
   const iconPath = getAssetPath('icons', '16x16.png');
 
   if (!fs.existsSync(iconPath)) {
-    log.error(`Tray icon not found at: ${iconPath}`);
+    log.error(
+      `Tray icon not found at: ${iconPath}. Falling back to default icon.`,
+    );
+    tray = new Tray(nativeImage.createEmpty()); // Fallback to empty tray icon
     return;
   }
 
@@ -123,6 +128,10 @@ const setupAppEvents = (): void => {
   app.on('before-quit', () => {
     isQuitting = true;
     tray?.destroy();
+    if (powerSaveBlockerId !== null) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+      powerSaveBlockerId = null;
+    }
   });
 
   app.on('window-all-closed', () => {
@@ -138,32 +147,123 @@ const setupAppEvents = (): void => {
       mainWindow = await createMainWindow();
     } else {
       mainWindow?.show();
+      if (process.platform === 'darwin') app.dock.show(); // Show dock icon on macOS
     }
   });
 
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    mainWindow?.webContents.send('deep-link', url);
+    if (mainWindow) {
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', () => {
+          mainWindow.webContents.send('deep-link', url);
+        });
+      } else {
+        mainWindow.webContents.send('deep-link', url);
+      }
+    }
+  });
+};
+
+const createThumbnail = (
+  videoPath: string,
+  thumbnailPath: string,
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .screenshots({
+        timestamps: ['5%'], // Capture frame at 5% of video duration
+        filename: path.basename(thumbnailPath),
+        folder: path.dirname(thumbnailPath),
+        size: '1280x720', // Desired thumbnail dimensions
+      })
+      .on('end', () => {
+        console.log(`Thumbnail created successfully at ${thumbnailPath}`);
+        resolve();
+      })
+      .on('error', (err: Error) => {
+        console.error('Error creating thumbnail:', err);
+        reject(err);
+      });
   });
 };
 
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
   // Handle saving video
-  ipcMain.handle('save-video', async (event, videoName, buffer) => {
+  ipcMain.handle('save-video', async (event, videoName, thumbnail, buffer) => {
     try {
       const saveFolderPath = path.join(app.getPath('userData'), 'result');
       await fs.promises.mkdir(saveFolderPath, { recursive: true });
 
+      // Save the video
       const filePath = path.join(saveFolderPath, videoName);
-
       await fs.promises.writeFile(filePath, buffer);
       logger.info(`Video saved successfully to ${filePath}`);
-      return { success: true, filePath };
+
+      // Generate a thumbnail image from the saved video
+      const thumbnailPath = path.join(saveFolderPath, thumbnail);
+      await createThumbnail(filePath, thumbnailPath);
+
+      return { success: true, filePath, thumbnailPath };
     } catch (error) {
-      logger.error('Error saving video:', error);
+      logger.error('Error saving video or generating thumbnail:', error);
       return {
         success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
+
+  ipcMain.handle('get-video', async (event, videoName) => {
+    try {
+      const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      const filePath = path.join(saveFolderPath, videoName);
+
+      // Check if the file exists
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: 'File not found' };
+      }
+
+      // Read the file as a buffer
+      const buffer = await fs.promises.readFile(filePath);
+      const base64String = buffer.toString('base64');
+
+      // Create a data URL for video (assuming webm here)
+      const videoDataUrl = `data:video/webm;base64,${base64String}`;
+
+      return videoDataUrl;
+    } catch (error) {
+      console.error('Error getting video:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
+
+  ipcMain.handle('get-thumbnail', async (event, thumbnailName) => {
+    try {
+      const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      const filePath = path.join(saveFolderPath, thumbnailName);
+
+      // Check if the file exists
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: 'File not found' };
+      }
+
+      // Read the file as a buffer
+      const buffer = await fs.promises.readFile(filePath);
+
+      // Convert the buffer to a Base64 encoded string
+      const base64String = buffer.toString('base64');
+      const dataUrl = `data:image/jpg;base64,${base64String}`; // Adjust MIME type if needed
+
+      // Return the Base64 data URL
+      return dataUrl;
+    } catch (error) {
+      logger.error('Error getting thumbnail:', error);
+      return {
         error: error instanceof Error ? error.message : 'Unexpected error',
       };
     }
@@ -221,9 +321,17 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.focus();
     }
 
-    const deepLinkUrl = commandLine.pop();
+    const deepLinkUrl = commandLine.find((arg) =>
+      arg.startsWith('ergodetect://'),
+    );
     if (deepLinkUrl) {
-      mainWindow?.webContents.send('deep-link', deepLinkUrl);
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', () => {
+          mainWindow.webContents.send('deep-link', deepLinkUrl);
+        });
+      } else {
+        mainWindow.webContents.send('deep-link', deepLinkUrl);
+      }
     }
   });
 }
@@ -262,9 +370,22 @@ app.whenReady().then(async () => {
 // Handle unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (mainWindow) {
+    mainWindow.webContents.send('error-notification', {
+      title: 'An error occurred',
+      message: 'An unexpected issue occurred. Please try again.',
+    });
+  }
 });
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
+  if (mainWindow) {
+    mainWindow.webContents.send('error-notification', {
+      title: 'Critical Error',
+      message:
+        'The application encountered an unexpected error and needs to close.',
+    });
+  }
   app.quit();
 });
