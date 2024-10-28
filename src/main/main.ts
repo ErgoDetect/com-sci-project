@@ -17,6 +17,7 @@ import { handleFileOperations } from '../main-util/fileOperations';
 import handleNotifications from '../main-util/notification';
 import log from 'electron-log';
 import { nativeImage } from 'electron';
+import ffmpeg from 'fluent-ffmpeg';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -164,23 +165,105 @@ const setupAppEvents = (): void => {
   });
 };
 
+const createThumbnail = (
+  videoPath: string,
+  thumbnailPath: string,
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .screenshots({
+        timestamps: ['5%'], // Capture frame at 5% of video duration
+        filename: path.basename(thumbnailPath),
+        folder: path.dirname(thumbnailPath),
+        size: '1280x720', // Desired thumbnail dimensions
+      })
+      .on('end', () => {
+        console.log(`Thumbnail created successfully at ${thumbnailPath}`);
+        resolve();
+      })
+      .on('error', (err: Error) => {
+        console.error('Error creating thumbnail:', err);
+        reject(err);
+      });
+  });
+};
+
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
   // Handle saving video
-  ipcMain.handle('save-video', async (event, videoName, buffer) => {
+  ipcMain.handle('save-video', async (event, videoName, thumbnail, buffer) => {
     try {
       const saveFolderPath = path.join(app.getPath('userData'), 'result');
       await fs.promises.mkdir(saveFolderPath, { recursive: true });
 
+      // Save the video
       const filePath = path.join(saveFolderPath, videoName);
-
       await fs.promises.writeFile(filePath, buffer);
       logger.info(`Video saved successfully to ${filePath}`);
-      return { success: true, filePath };
+
+      // Generate a thumbnail image from the saved video
+      const thumbnailPath = path.join(saveFolderPath, thumbnail);
+      await createThumbnail(filePath, thumbnailPath);
+
+      return { success: true, filePath, thumbnailPath };
     } catch (error) {
-      logger.error('Error saving video:', error);
+      logger.error('Error saving video or generating thumbnail:', error);
       return {
         success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
+
+  ipcMain.handle('get-video', async (event, videoName) => {
+    try {
+      const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      const filePath = path.join(saveFolderPath, videoName);
+
+      // Check if the file exists
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: 'File not found' };
+      }
+
+      // Read the file as a buffer
+      const buffer = await fs.promises.readFile(filePath);
+      const base64String = buffer.toString('base64');
+
+      // Create a data URL for video (assuming webm here)
+      const videoDataUrl = `data:video/webm;base64,${base64String}`;
+
+      return videoDataUrl;
+    } catch (error) {
+      console.error('Error getting video:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
+  });
+
+  ipcMain.handle('get-thumbnail', async (event, thumbnailName) => {
+    try {
+      const saveFolderPath = path.join(app.getPath('userData'), 'result');
+      const filePath = path.join(saveFolderPath, thumbnailName);
+
+      // Check if the file exists
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: 'File not found' };
+      }
+
+      // Read the file as a buffer
+      const buffer = await fs.promises.readFile(filePath);
+
+      // Convert the buffer to a Base64 encoded string
+      const base64String = buffer.toString('base64');
+      const dataUrl = `data:image/jpg;base64,${base64String}`; // Adjust MIME type if needed
+
+      // Return the Base64 data URL
+      return dataUrl;
+    } catch (error) {
+      logger.error('Error getting thumbnail:', error);
+      return {
         error: error instanceof Error ? error.message : 'Unexpected error',
       };
     }

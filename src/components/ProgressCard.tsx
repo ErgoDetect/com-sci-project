@@ -4,11 +4,14 @@ import { UpOutlined, DownOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
+// Define EventType here or import it if defined elsewhere
+type EventType = 'blink' | 'proximity' | 'hunchback' | 'sitting';
+
 interface ProgressCardProps {
   title: string;
-  type: string;
-  expanded: string | null;
-  onExpandToggle: (type: string) => void;
+  type: EventType;
+  expanded: EventType | null;
+  onExpandToggle: (type: EventType) => void;
   progressBar: React.ReactNode;
   description: string;
   themeStyles: {
@@ -26,6 +29,8 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   description,
   themeStyles,
 }) => {
+  const isExpanded = expanded === type;
+
   return (
     <Card
       style={{
@@ -43,13 +48,18 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          color: themeStyles.textColor,
         }}
       >
         {title}
-        {expanded === type ? <UpOutlined /> : <DownOutlined />}
+        {isExpanded ? <UpOutlined /> : <DownOutlined />}
       </Title>
-      {progressBar}
-      {expanded === type && (
+      <div
+        style={{ position: 'relative', height: '10px', marginBottom: '8px' }}
+      >
+        {progressBar}
+      </div>
+      {isExpanded && (
         <div style={{ paddingTop: '12px' }}>
           <Text type="secondary" style={{ color: themeStyles.textColor }}>
             {description}
