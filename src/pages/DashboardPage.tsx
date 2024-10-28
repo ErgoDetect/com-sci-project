@@ -16,13 +16,8 @@ const Dashboard = () => {
     setInitialModal,
     setInitializationSuccess,
   } = useResData();
-  const { deviceId } = useDevices();
 
-  const [videoState, setVideoState] = useState({
-    useVideoFile: false,
-    videoFile: null as File | null,
-    isPlaying: false,
-  });
+  const [videoState, setVideoState] = useState(false);
 
   const frameCountRef = useRef<number>(0);
 
@@ -45,33 +40,18 @@ const Dashboard = () => {
     setInitialModal,
   ]);
 
-  const handlePlayPause = () => {
-    setVideoState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  };
-
   return (
     <Container>
       <FlexRow>
         <VideoSourceCard
-          useVideoFile={videoState.useVideoFile}
-          setUseVideoFile={(value: any) =>
-            setVideoState((prev) => ({ ...prev, useVideoFile: value }))
+          useVideoFile={videoState}
+          setUseVideoFile={() =>
+            setVideoState((prev) => {
+              return !prev;
+            })
           }
-          videoFile={videoState.videoFile}
-          setVideoFile={(file: any) =>
-            setVideoState((prev) => ({ ...prev, videoFile: file }))
-          }
-          isPlaying={videoState.isPlaying}
-          handlePlayPause={handlePlayPause}
-          deviceId={deviceId}
-          theme={theme}
-          streaming={streaming}
-          onRecordingStart={() =>
-            message.success('Recording started automatically')
-          }
-          onRecordingStop={() => message.success('Recording stopped')}
         />
-        {!videoState.useVideoFile && (
+        {!videoState && (
           <SessionMetricsCard
             sessionActive={streaming}
             sessionDuration=""
@@ -82,7 +62,7 @@ const Dashboard = () => {
         )}
       </FlexRow>
 
-      {!videoState.useVideoFile && (
+      {!videoState && (
         <SessionSummaryCard
           sessionActive={streaming}
           goodPostureTime={0}

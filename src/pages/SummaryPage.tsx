@@ -82,7 +82,7 @@ const Summary: React.FC = () => {
   const themeStyles = useMemo(
     () => ({
       cardBackground: theme === 'dark' ? '#2b2b2b' : '#fff',
-      textColor: theme === 'dark' ? '#e1e3e6' : '#333',
+      textColor: theme === 'dark' ? '#f0f1f3' : '#666',
     }),
     [theme],
   );
@@ -94,7 +94,7 @@ const Summary: React.FC = () => {
           const response = await axiosInstance.get(
             `/user/summary?session_id=${sessionTitle}`,
           );
-          setData(response.data);
+          setData(response?.data);
         } catch (error) {
           console.error('Error fetching summary data:', error);
         }
@@ -248,14 +248,18 @@ const Summary: React.FC = () => {
           borderRadius: '12px',
         }}
       >
-        <Title level={3} style={{ color: themeStyles.textColor }}>
-          Session Summary
-        </Title>
+        <h2 style={{ color: themeStyles.textColor }}>
+          {`Session : ${data?.session_id}`}
+        </h2>
+        <text style={{ color: themeStyles.textColor }}>
+          {`Date : ${data?.date}`}
+        </text>
+
         <Card
           style={{
             backgroundColor: themeStyles.cardBackground,
             color: themeStyles.textColor,
-            marginBottom: '24px',
+            margin: '24px 0px',
             padding: '0',
             borderRadius: '12px',
           }}

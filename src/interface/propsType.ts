@@ -149,15 +149,6 @@ export interface websocketProcessData {
 export interface VideoSourceCardProps {
   useVideoFile: boolean;
   setUseVideoFile: (value: boolean) => void;
-  videoFile: File | null;
-  setVideoFile: (file: File | null) => void;
-  isPlaying: boolean;
-  handlePlayPause: () => void;
-  deviceId: string | undefined;
-  theme: 'light' | 'dark';
-  streaming: boolean;
-  onRecordingStart?: () => void; // Optional callback when recording starts
-  onRecordingStop?: () => void; // Optional callback when recording stops
 }
 
 export interface OAuthTokens {
