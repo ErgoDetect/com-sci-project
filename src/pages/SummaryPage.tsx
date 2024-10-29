@@ -13,12 +13,12 @@ import { useLocation } from 'react-router-dom';
 import ProgressCard from '../components/ProgressCard';
 import { useResData } from '../context';
 import axiosInstance from '../utility/axiosInstance';
-import { log } from 'winston';
 
 const { Content } = Layout;
 const { Title } = Typography;
 
 type EventType = 'blink' | 'distance' | 'thoracic' | 'sitting';
+type VideoResponse = { success: false; error: string } | string;
 
 const colorMap: Record<EventType, string> = {
   blink: '#FF4D4F',
@@ -46,7 +46,7 @@ const cardDetails: Record<EventType, { title: string; description: string }> = {
   thoracic: {
     title: 'Thoracic posture detect longer than 2 seconds',
     description:
-      'The green segments indicate when yhoracic posture was detected. This helps track how long the user sat with poor posture.',
+      'The green segments indicate when thoracic posture was detected. This helps track how long the user sat with poor posture.',
   },
 };
 
@@ -56,6 +56,10 @@ interface Event {
   end: number;
 }
 
+interface videoResponse {
+  suscess: boolean;
+}
+
 const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -63,6 +67,7 @@ const Summary: React.FC = () => {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
+  const [isVideoAvailable, setIsVideoAvailable] = useState(false);
   const { theme } = useResData();
   const location = useLocation();
   const FPS = 15;
@@ -99,17 +104,22 @@ const Summary: React.FC = () => {
     const fetchVideo = async () => {
       if (data?.file_name) {
         try {
-          const videoResponse = await window.electron.video.getVideo(
-            data.file_name,
-          );
+          const videoResponse: VideoResponse =
+            await window.electron.video.getVideo(data.file_name);
           if (videoResponse) {
-            setVideoSrc(videoResponse || '');
+            if (typeof videoResponse === 'string') {
+              setVideoSrc(videoResponse);
+              setIsVideoAvailable(true);
+            } else {
+              setIsVideoAvailable(false);
+            }
           } else {
             console.error('Failed to load video:');
+            setIsVideoAvailable(false);
           }
-          // console.log(data);
         } catch (error) {
           console.error('Error fetching video:', error);
+          setIsVideoAvailable(false);
         }
       }
     };
@@ -117,7 +127,7 @@ const Summary: React.FC = () => {
   }, [data?.file_name]);
 
   const handlePlayPause = useCallback(() => {
-    if (videoRef.current) {
+    if (isVideoAvailable && videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
@@ -125,15 +135,18 @@ const Summary: React.FC = () => {
       }
       setIsPlaying((prev) => !prev);
     }
-  }, [isPlaying]);
+  }, [isPlaying, isVideoAvailable]);
 
-  const handleSeek = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      videoRef.current.play();
-      setIsPlaying(true);
-    }
-  }, []);
+  const handleSeek = useCallback(
+    (time: number) => {
+      if (isVideoAvailable && videoRef.current) {
+        videoRef.current.currentTime = time;
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    },
+    [isVideoAvailable],
+  );
 
   const getEvent = useCallback(() => {
     const event: Event[] = [];
@@ -233,14 +246,16 @@ const Summary: React.FC = () => {
                   transition: 'background-color 0.3s ease',
                 }}
                 onClick={(e) => {
-                  e.stopPropagation();
-                  handleSeek(event.start / FPS);
+                  if (isVideoAvailable) {
+                    e.stopPropagation();
+                    handleSeek(event.start / FPS);
+                  }
                 }}
               />
             </Tooltip>
           );
         }),
-    [handleSeek, data?.duration], // Add data?.duration as a dependency
+    [handleSeek, data?.duration, isVideoAvailable],
   );
 
   const videoPlayer = useMemo(
@@ -250,9 +265,9 @@ const Summary: React.FC = () => {
           ref={videoRef}
           style={{ width: '100%', borderRadius: '12px' }}
           controls
-          src={videoSrc || ''}
+          src={isVideoAvailable ? videoSrc || '' : undefined}
         />
-        {!isPlaying && (
+        {!isPlaying && isVideoAvailable && (
           <Button
             icon={<PlayCircleOutlined />}
             onClick={handlePlayPause}
@@ -270,7 +285,7 @@ const Summary: React.FC = () => {
         )}
       </div>
     ),
-    [videoSrc, isPlaying, handlePlayPause],
+    [videoSrc, isPlaying, handlePlayPause, isVideoAvailable],
   );
 
   const handleExportPDF = useCallback(async () => {
@@ -288,7 +303,6 @@ const Summary: React.FC = () => {
   const handleExpandToggle = useCallback((type: EventType) => {
     setExpandedCard((prev) => (prev === type ? null : type));
   }, []);
-
   return (
     <Layout
       style={{
