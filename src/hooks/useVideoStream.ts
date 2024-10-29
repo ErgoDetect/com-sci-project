@@ -23,12 +23,12 @@ const useVideoStream = ({
     initializationSuccess,
   } = useResData();
 
-  const animationFrameIdRef = useRef<number | null>(null);
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const firstFrameTimeRef = useRef<number>(0);
-  const lastFrameTimeRef = useRef<number>(0);
   const countRef = useRef<number>(0);
+
+  const TARGET_FPS = 15;
   const { send } = useWebSocket(
     `landmark/results?stream=${streaming}`,
     setResData,
@@ -60,34 +60,34 @@ const useVideoStream = ({
     [deviceId],
   );
 
-  // Stop video stream
+  // Frame timing control
+  const startFrameTiming = useCallback(
+    (processFrame: () => Promise<void>, targetFPS: number) => {
+      const interval = 1000 / targetFPS;
+      let lastFrameTime = performance.now();
 
-  const stopVideoStream = useCallback(() => {
-    videoStreamRef.current?.getTracks().forEach((track) => track.stop());
-    videoStreamRef.current = null;
-    if (webcamRef.current) {
-      webcamRef.current.srcObject = null;
-    }
-    if (animationFrameIdRef.current !== null) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-    }
-  }, [videoStreamRef, webcamRef]);
+      const frameLoop = async () => {
+        const now = performance.now();
+        const deltaTime = now - lastFrameTime;
 
-  // Render and detect landmarks
-  const renderFrame = useCallback(async () => {
+        if (deltaTime >= interval) {
+          lastFrameTime = now - (deltaTime % interval);
+          await processFrame();
+        }
+
+        setTimeout(frameLoop, interval - deltaTime); // Use setTimeout for precise scheduling
+      };
+
+      setTimeout(frameLoop, interval);
+    },
+    [],
+  );
+
+  // Processing frame and detecting landmarks
+  const processFrame = useCallback(async () => {
     const webcam = webcamRef.current;
-    const now = performance.now();
-
-    // Throttle to 15 FPS (1 second / 15 frames = ~66.67ms per frame)
-    const timeSinceLastFrame = now - (lastFrameTimeRef.current || 0);
-    if (timeSinceLastFrame < 1000 / 15) {
-      animationFrameIdRef.current = requestAnimationFrame(renderFrame);
-      return;
-    }
-
     if (webcam && webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const timestamp = now;
-
+      const timestamp = performance.now();
       const [faceResults, poseResults] = await Promise.all([
         faceLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
         poseLandmarkerRef.current?.detectForVideo(webcam, timestamp) ?? null,
@@ -97,15 +97,8 @@ const useVideoStream = ({
         faceResults,
         poseResults,
       };
-
       setLandMarkData(latestLandmarksResult);
     }
-
-    // Update the last frame timestamp
-    lastFrameTimeRef.current = now;
-
-    // Queue the next frame
-    animationFrameIdRef.current = requestAnimationFrame(renderFrame);
   }, [setLandMarkData, webcamRef]);
 
   // Handle WebSocket data send
@@ -145,8 +138,6 @@ const useVideoStream = ({
 
   // Start video stream
   const startVideoStream = useCallback(async () => {
-    stopVideoStream(); // Ensure any active stream is stopped
-
     try {
       const videoStream = await navigator.mediaDevices
         .getUserMedia(constraints)
@@ -174,7 +165,8 @@ const useVideoStream = ({
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
 
-          animationFrameIdRef.current = requestAnimationFrame(renderFrame);
+          // Start frame timing with target FPS
+          startFrameTiming(processFrame, TARGET_FPS); // You can easily adjust target FPS here
         };
       }
     } catch (error) {
@@ -183,14 +175,27 @@ const useVideoStream = ({
   }, [
     constraints,
     fallbackConstraints,
-    renderFrame,
-    stopVideoStream,
+    processFrame,
+    startFrameTiming,
     videoStreamRef,
     webcamRef,
   ]);
 
+  // Stop video stream and cleanup
+  const stopVideoStream = useCallback(() => {
+    if (videoStreamRef.current) {
+      const tracks = videoStreamRef.current.getTracks();
+      tracks.forEach((track) => track.stop());
+      videoStreamRef.current = null;
+    }
+  }, [videoStreamRef]);
+
   // Cleanup video stream on component unmount
-  useEffect(() => stopVideoStream, [stopVideoStream]);
+  useEffect(() => {
+    return () => {
+      stopVideoStream(); // Clean up the video stream
+    };
+  }, [stopVideoStream]);
 
   return { startVideoStream, stopVideoStream };
 };

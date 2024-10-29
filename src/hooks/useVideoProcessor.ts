@@ -34,7 +34,7 @@ const useVideoProcessor = ({
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
-  const frameDuration = 1 / 5;
+  const frameDuration = 1 / 15;
 
   // Initialize landmarkers
   const initializeLandmarkers = useCallback(async () => {
@@ -57,13 +57,17 @@ const useVideoProcessor = ({
       if (!videoElement) return;
 
       videoElement.currentTime = currentTime;
-      await new Promise<void>((resolve) => {
-        const handleSeek = () => {
-          resolve();
-          videoElement.removeEventListener('seeked', handleSeek);
-        };
-        videoElement.addEventListener('seeked', handleSeek);
-      });
+      // Only seek if the current time is different
+      // if (videoElement.currentTime !== currentTime) {
+      //   videoElement.currentTime = currentTime;
+      //   await new Promise<void>((resolve) => {
+      //     const handleSeek = () => {
+      //       resolve();
+      //       videoElement.removeEventListener('seeked', handleSeek);
+      //     };
+      //     videoElement.addEventListener('seeked', handleSeek);
+      //   });
+      // }
 
       const timestamp = currentTime * 1000;
       console.log(`Processing frame at time: ${currentTime}`);
@@ -109,8 +113,11 @@ const useVideoProcessor = ({
         console.log(`Processing frame at time: ${currentTime}`);
         await processFrameAtTime(currentTime);
         currentTime += frameDuration;
-        totalFramesProcessed += 1;
-        setTimeout(processNextFrame, 0); // Non-blocking frame processing
+        totalFramesProcessed++;
+
+        // Schedule the next frame process
+        // setTimeout(processNextFrame, 0);
+        requestAnimationFrame(processNextFrame);
       } else {
         setIsProcessing(false);
         setHideVideo(false);
