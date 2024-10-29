@@ -84,14 +84,14 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     let stat2 = '';
     if (type == 'blink') {
       let averageSeconds = getAverageInSeconds(data?.blink);
-      let longestSeconds = getAverageInSeconds(data?.blink);
+      let longestSeconds = getLongestInSeconds(data?.blink);
       stat1 = 'Average not blinking longer than 5 seconds: ';
       stat2 = 'Longest not blinking longer than 5 seconds: ';
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
     } else if (type == 'distance') {
       let averageSeconds = getAverageInSeconds(data?.distance);
-      let longestSeconds = getAverageInSeconds(data?.distance);
+      let longestSeconds = getLongestInSeconds(data?.distance);
       stat1 =
         'Average times sitting too close to screen longer than 30 seconds : ';
       stat2 =
@@ -100,7 +100,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat2 += convertSeconds(longestSeconds);
     } else if (type == 'thoracic') {
       let averageSeconds = getAverageInSeconds(data?.thoracic);
-      let longestSeconds = getAverageInSeconds(data?.thoracic);
+      let longestSeconds = getLongestInSeconds(data?.thoracic);
       stat1 =
         'Average times to thoracic posture detect longer than 2 seconds : ';
       stat2 =
@@ -109,7 +109,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat2 += convertSeconds(longestSeconds);
     } else if (type == 'sitting') {
       let averageSeconds = getAverageInSeconds(data?.sitting);
-      let longestSeconds = getAverageInSeconds(data?.sitting);
+      let longestSeconds = getLongestInSeconds(data?.sitting);
       stat1 = 'Average times sitting longer than 45 minutes : ';
       stat2 = 'Longest times sitting longer than 45 minutes : ';
       stat1 += convertSeconds(averageSeconds);

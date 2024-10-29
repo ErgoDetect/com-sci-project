@@ -326,25 +326,26 @@ const Summary: React.FC = () => {
         >
           {videoPlayer}
         </Card>
-        {Object.entries(cardDetails).map(
-          ([typeKey, { title, description }]) => {
-            const eventType = typeKey as EventType;
-            return (
-              <ProgressCard
-                key={eventType}
-                title={title}
-                type={eventType}
-                expanded={expandedCard}
-                onExpandToggle={handleExpandToggle}
-                progressBar={createProgressBar(eventType)}
-                // progressBar=
-                description={description}
-                themeStyles={themeStyles}
-                data={data}
-              />
-            );
-          },
-        )}
+        {data &&
+          data.duration &&
+          Object.entries(cardDetails).map(
+            ([typeKey, { title, description }]) => {
+              const eventType = typeKey as EventType;
+              return (
+                <ProgressCard
+                  key={eventType}
+                  title={title}
+                  type={eventType}
+                  expanded={expandedCard}
+                  onExpandToggle={handleExpandToggle}
+                  progressBar={createProgressBar(eventType)}
+                  description={description}
+                  themeStyles={themeStyles}
+                  data={data}
+                />
+              );
+            },
+          )}
         <Button
           type="primary"
           icon={<DownloadOutlined />}
