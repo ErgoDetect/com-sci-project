@@ -29,24 +29,24 @@ const colorMap: Record<EventType, string> = {
 
 const cardDetails: Record<EventType, { title: string; description: string }> = {
   blink: {
-    title: 'Not Blinking',
+    title: 'Not Blinking longer than 5 seconds',
     description:
       'The red segments indicate when blinks were detected. You can analyze the time since the last blink to monitor fatigue.',
   },
   sitting: {
-    title: 'Sitting Too Long',
+    title: 'Sitting longer than 45 minutes',
     description:
       'The teal segments indicate when the sitting duration exceeded the recommended time.',
   },
   distance: {
-    title: 'Sitting Too Close to Screen',
+    title: 'Sitting too close to screen longer than 30 seconds',
     description:
       'The amber segments indicate when proximity issues were detected, i.e., when the user sat too close to the screen for extended periods.',
   },
   thoracic: {
-    title: 'Hunchback Posture',
+    title: 'Thoracic posture detect longer than 2 seconds',
     description:
-      'The green segments indicate when hunchback posture was detected. This helps track how long the user sat with poor posture.',
+      'The green segments indicate when yhoracic posture was detected. This helps track how long the user sat with poor posture.',
   },
 };
 
@@ -336,6 +336,7 @@ const Summary: React.FC = () => {
                 // progressBar=
                 description={description}
                 themeStyles={themeStyles}
+                data={data}
               />
             );
           },
