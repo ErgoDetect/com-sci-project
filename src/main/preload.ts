@@ -14,6 +14,7 @@ export type Channels =
   | 'open-auth-url'
   | 'save-video'
   | 'get-video'
+  | 'save-upload-video'
   | 'get-thumbnail'
   | 'get-mac-address'
   | 'deep-link'
@@ -91,6 +92,20 @@ const electronHandler = {
     },
     getThumbnail(videoName: string): Promise<string | null> {
       return ipcRenderer.invoke('get-thumbnail', videoName);
+    },
+    saveUploadVideo(
+      buffer: Uint8Array,
+      start: number,
+      videoNamne: string,
+      thumbnail: string,
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+      return ipcRenderer.invoke(
+        'save-upload-video',
+        buffer,
+        start,
+        videoNamne,
+        thumbnail,
+      );
     },
   },
   config: {

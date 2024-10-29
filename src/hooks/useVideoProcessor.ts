@@ -7,12 +7,14 @@ import { LandmarksResult } from '../interface/propsType';
 import axiosInstance from '../utility/axiosInstance';
 
 interface UseVideoProcessorProps {
-  videoFile: File | null;
   mainVideoElementRef: React.RefObject<HTMLVideoElement>;
   goodPostureTime: number | null;
   setGoodPostureTime: React.Dispatch<React.SetStateAction<number | null>>;
   setHideVideo: React.Dispatch<React.SetStateAction<boolean>>;
   setVideoFile: (file: File | null) => void;
+  setNewVideoSrc: React.Dispatch<React.SetStateAction<string>>;
+  videoFileName: string;
+  thumbnailName: string;
 }
 
 const useVideoProcessor = ({
@@ -21,6 +23,9 @@ const useVideoProcessor = ({
   setGoodPostureTime,
   setHideVideo,
   setVideoFile,
+  setNewVideoSrc,
+  videoFileName,
+  thumbnailName,
 }: UseVideoProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
@@ -46,7 +51,6 @@ const useVideoProcessor = ({
     poseLandmarkerRef.current = await initializePoseLandmarker();
   }, []);
 
-  // Process a single frame
   const processFrameAtTime = useCallback(
     async (currentTime: number) => {
       const videoElement = mainVideoElementRef.current;
@@ -65,8 +69,7 @@ const useVideoProcessor = ({
       //   });
       // }
 
-      const timestamp = currentTime * 1000; // Convert to milliseconds
-
+      const timestamp = currentTime * 1000;
       console.log(`Processing frame at time: ${currentTime}`);
 
       try {
@@ -74,7 +77,6 @@ const useVideoProcessor = ({
           faceLandmarkerRef.current.detectForVideo(videoElement, timestamp),
           poseLandmarkerRef.current.detectForVideo(videoElement, timestamp),
         ]);
-
         latestLandmarksResultRef.current = { faceResults, poseResults };
         const filteredData = filterLandmark(
           latestLandmarksResultRef.current as LandmarksResult,
@@ -88,21 +90,17 @@ const useVideoProcessor = ({
     [mainVideoElementRef],
   );
 
-  // Process video frame by frame
   const processVideoFile = useCallback(async () => {
-    if (goodPostureTime === null || isProcessed) {
-      return;
-    }
+    if (goodPostureTime === null || isProcessed) return;
 
     const videoElement = mainVideoElementRef.current;
     if (!videoElement) return;
 
+    console.log('Starting video processing...');
     setIsProcessing(true);
     await initializeLandmarkers();
 
     const startTime = performance.now();
-    console.log('Starting sequential frame processing');
-
     videoElement.muted = true;
     videoElement.controls = false;
 
@@ -112,6 +110,7 @@ const useVideoProcessor = ({
 
     const processNextFrame = async () => {
       if (currentTime < totalDuration) {
+        console.log(`Processing frame at time: ${currentTime}`);
         await processFrameAtTime(currentTime);
         currentTime += frameDuration;
         totalFramesProcessed++;
@@ -120,7 +119,6 @@ const useVideoProcessor = ({
         // setTimeout(processNextFrame, 0);
         requestAnimationFrame(processNextFrame);
       } else {
-        // Once done, finalize
         setIsProcessing(false);
         setHideVideo(false);
         setIsProcessed(true);
@@ -136,9 +134,12 @@ const useVideoProcessor = ({
           `Average time per frame: ${(processingDuration / totalFramesProcessed).toFixed(2)} seconds`,
         );
 
+        // Attempt upload and check for success or failure
         try {
           const response = await axiosInstance.post('/files/upload/video/', {
-            file: processResult.current,
+            video_name: videoFileName,
+            thumbnail: thumbnailName,
+            files: processResult.current,
           });
           if (response.status === 200) {
             message.success('Video processing completed and uploaded.');
@@ -152,15 +153,17 @@ const useVideoProcessor = ({
         message.success('Video processing completed.');
       }
     };
-
     processNextFrame();
   }, [
+    frameDuration,
     goodPostureTime,
     initializeLandmarkers,
     isProcessed,
     mainVideoElementRef,
     processFrameAtTime,
     setHideVideo,
+    thumbnailName,
+    videoFileName,
   ]);
 
   const handleDeleteVideo = useCallback(() => {
@@ -169,13 +172,20 @@ const useVideoProcessor = ({
       mainVideoElementRef.current.currentTime = 0;
     }
     setVideoFile(null);
+    setNewVideoSrc('');
     setGoodPostureTime(null);
     setIsProcessing(false);
     processResult.current = [];
     setHideVideo(false);
     setIsProcessed(false);
     message.success('Uploaded video deleted and processing reset.');
-  }, [mainVideoElementRef, setGoodPostureTime, setHideVideo, setVideoFile]);
+  }, [
+    mainVideoElementRef,
+    setGoodPostureTime,
+    setHideVideo,
+    setNewVideoSrc,
+    setVideoFile,
+  ]);
 
   return {
     setVideoFile,
