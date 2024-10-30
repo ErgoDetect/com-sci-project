@@ -5,17 +5,15 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Layout, Card, Typography, Tooltip, Button } from 'antd';
+import { Layout, Card, Tooltip, Button } from 'antd';
 import { PlayCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useLocation } from 'react-router-dom';
 import ProgressCard from '../components/ProgressCard';
-import { useResData } from '../context';
 import axiosInstance from '../utility/axiosInstance';
 
 const { Content } = Layout;
-const { Title } = Typography;
 
 type EventType = 'blink' | 'distance' | 'thoracic' | 'sitting';
 type VideoResponse = { success: false; error: string } | string;
@@ -56,10 +54,6 @@ interface Event {
   end: number;
 }
 
-interface videoResponse {
-  suscess: boolean;
-}
-
 const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -68,20 +62,11 @@ const Summary: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
   const [isVideoAvailable, setIsVideoAvailable] = useState(false);
-  const { theme } = useResData();
   const location = useLocation();
   const FPS = 15;
   const sessionTitle = useMemo(
     () => new URLSearchParams(location.search).get('session_title'),
     [location.search],
-  );
-
-  const themeStyles = useMemo(
-    () => ({
-      cardBackground: theme === 'dark' ? '#2b2b2b' : '#fff',
-      textColor: theme === 'dark' ? '#f0f1f3' : '#666',
-    }),
-    [theme],
   );
 
   useEffect(() => {
@@ -150,8 +135,8 @@ const Summary: React.FC = () => {
 
   const getEvent = useCallback(() => {
     const event: Event[] = [];
-    for (let index = 0; index < data?.blink.length; index++) {
-      if (data?.blink[index].length == 1) {
+    for (let index = 0; index < data?.blink.length; index + 1) {
+      if (data?.blink[index].length === 1) {
         event.push({
           start: data?.blink[index][0],
           type: 'blink',
@@ -165,8 +150,8 @@ const Summary: React.FC = () => {
         });
       }
     }
-    for (let index = 0; index < data?.sitting.length; index++) {
-      if (data?.sitting[index].length == 1) {
+    for (let index = 0; index < data?.sitting.length; index + 1) {
+      if (data?.sitting[index].length === 1) {
         event.push({
           start: data?.sitting[index][0],
           type: 'sitting',
@@ -180,8 +165,8 @@ const Summary: React.FC = () => {
         });
       }
     }
-    for (let index = 0; index < data?.distance.length; index++) {
-      if (data?.distance[index].length == 1) {
+    for (let index = 0; index < data?.distance.length; index + 1) {
+      if (data?.distance[index].length === 1) {
         event.push({
           start: data?.distance[index][0],
           type: 'distance',
@@ -195,8 +180,8 @@ const Summary: React.FC = () => {
         });
       }
     }
-    for (let index = 0; index < data?.thoracic.length; index++) {
-      if (data?.thoracic[index].length == 1) {
+    for (let index = 0; index < data?.thoracic.length; index + 1) {
+      if (data?.thoracic[index].length === 1) {
         event.push({
           start: data?.thoracic[index][0],
           type: 'thoracic',
@@ -217,22 +202,22 @@ const Summary: React.FC = () => {
   const createProgressBar = useCallback(
     (eventType: EventType) =>
       event
-        .filter((event) => event.type === eventType)
-        .map((event) => {
+        .filter((events) => events.type === eventType)
+        .map((events) => {
           const duration = data?.duration || 0;
-          const startPosition = (event.start / duration) * 100;
-          const eventLength = event.end - event.start;
+          const startPosition = (events.start / duration) * 100;
+          const eventLength = events.end - events.start;
           const width = (eventLength / duration) * 100;
           return (
             <Tooltip
-              title={`${event.type} detected from ${new Date(
-                (event.start / FPS) * 1000,
+              title={`${events.type} detected from ${new Date(
+                (events.start / FPS) * 1000,
               )
                 .toISOString()
-                .substring(14, 19)} to ${new Date((event.end / FPS) * 1000)
+                .substring(14, 19)} to ${new Date((events.end / FPS) * 1000)
                 .toISOString()
                 .substring(14, 19)}`}
-              key={`${event.type}-${event.start}`}
+              key={`${events.type}-${events.start}`}
             >
               <div
                 style={{
@@ -240,7 +225,7 @@ const Summary: React.FC = () => {
                   left: `${startPosition}%`,
                   width: `${width}%`,
                   height: '100%',
-                  backgroundColor: colorMap[event.type],
+                  backgroundColor: colorMap[events.type],
                   cursor: 'pointer',
                   borderRadius: '5px',
                   transition: 'background-color 0.3s ease',
@@ -248,14 +233,14 @@ const Summary: React.FC = () => {
                 onClick={(e) => {
                   if (isVideoAvailable) {
                     e.stopPropagation();
-                    handleSeek(event.start / FPS);
+                    handleSeek(events.start / FPS);
                   }
                 }}
               />
             </Tooltip>
           );
         }),
-    [handleSeek, data?.duration, isVideoAvailable],
+    [event, data?.duration, isVideoAvailable, handleSeek],
   );
 
   const videoPlayer = useMemo(
@@ -306,33 +291,47 @@ const Summary: React.FC = () => {
   return (
     <Layout
       style={{
+        display: 'flex',
+        justifyContent: 'center', // Center horizontally
+        alignItems: 'center', // Center vertically
         padding: '24px',
-        backgroundColor: 'var(--background-color)',
         minHeight: '100vh',
+        position: 'relative', // Needed for absolutely positioning child elements
       }}
     >
+      {/* Button at the top-right of the page */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '16px',
+          right: '16px',
+        }}
+      >
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={handleExportPDF}
+        >
+          Export to PDF
+        </Button>
+      </div>
+
       <Content
         ref={summaryRef}
         style={{
-          backgroundColor: themeStyles.cardBackground,
-          color: themeStyles.textColor,
           width: '100%',
-          maxWidth: '1200px',
+          maxWidth: '80%', // Limit the width for better centering
           padding: '24px',
           borderRadius: '12px',
+          backgroundColor: '#fff',
+          boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',
         }}
       >
-        <h2 style={{ color: themeStyles.textColor }}>
-          {`Session : ${data?.session_id}`}
-        </h2>
-        <text style={{ color: themeStyles.textColor }}>
-          {`Date : ${data?.date}`}
-        </text>
+        <h2>{`Session : ${data?.session_id}`}</h2>
+        <text>{`Date : ${data?.date}`}</text>
 
         <Card
           style={{
-            backgroundColor: themeStyles.cardBackground,
-            color: themeStyles.textColor,
             margin: '24px 0px',
             padding: '0',
             borderRadius: '12px',
@@ -354,20 +353,11 @@ const Summary: React.FC = () => {
                   onExpandToggle={handleExpandToggle}
                   progressBar={createProgressBar(eventType)}
                   description={description}
-                  themeStyles={themeStyles}
                   data={data}
                 />
               );
             },
           )}
-        <Button
-          type="primary"
-          icon={<DownloadOutlined />}
-          onClick={handleExportPDF}
-          style={{ marginTop: '16px' }}
-        >
-          Export to PDF
-        </Button>
       </Content>
     </Layout>
   );

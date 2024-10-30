@@ -151,6 +151,17 @@ export interface VideoSourceCardProps {
   setUseVideoFile: (value: boolean) => void;
 }
 
+export interface UseVideoProcessorProps {
+  mainVideoElementRef: React.RefObject<HTMLVideoElement>;
+  goodPostureTime: number | null;
+  setGoodPostureTime: React.Dispatch<React.SetStateAction<number | null>>;
+  setHideVideo: React.Dispatch<React.SetStateAction<boolean>>;
+  setVideoFile: (file: File | null) => void;
+  setNewVideoSrc: React.Dispatch<React.SetStateAction<string>>;
+  videoFileName: string;
+  thumbnailName: string;
+}
+
 export interface OAuthTokens {
   access_token: string;
   refresh_token?: string | null | undefined;
