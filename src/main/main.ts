@@ -26,11 +26,8 @@ let powerSaveBlockerId: number | null = null;
 
 // Define the default app configuration
 const defaultAppConfig = {
-  appearance: {
-    theme: 'light',
-    fontSize: 14,
-  },
   showStat: false,
+  saveUploadVideo: true,
 };
 
 // Handle default protocol for deep linking

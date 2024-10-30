@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { Switch, Upload, message, Button, Modal } from 'antd';
+import { Switch, Upload, message, Button, Modal, Checkbox, Spin } from 'antd';
 import { InboxOutlined, DeleteOutlined } from '@ant-design/icons';
-import { VideoCard, VideoContainer, VideoContent } from '../../styles/styles';
+import { VideoCard, VideoContainer } from '../../styles/styles';
 import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
 import { useResData } from '../../context';
@@ -14,44 +14,23 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   useVideoFile,
   setUseVideoFile,
 }) => {
-  const { setStreaming } = useResData();
+  const { setStreaming, saveUploadVideo, setSaveUploadVideo } = useResData();
   const { deviceId } = useDevices();
-  const modalVideoElementRef = useRef<HTMLVideoElement | null>(null);
-  const mainVideoElementRef = useRef<HTMLVideoElement | null>(null);
+  const modalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const mainVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [goodPostureTime, setGoodPostureTime] = useState<number | null>(null);
   const [hideVideo, setHideVideo] = useState(false);
-  const [videoSrc, setVideoSrc] = useState<string>(''); // for modal display
+  const [videoSrc, setVideoSrc] = useState<string>('');
   const [videoFileName, setVideoFileName] = useState<string>('');
   const [thumbnailName, setThumbnailName] = useState<string>('');
-  const [newVideoSrc, setNewVideoSrc] = useState<string>(''); // for main video element display
+  const [newVideoSrc, setNewVideoSrc] = useState<string>('');
 
-  const handleFileUpload = useCallback(
-    async (file: File): Promise<boolean> => {
-      setVideoFile(file);
-      setGoodPostureTime(null);
-      setIsModalVisible(true);
-      setHideVideo(false);
-
-      const timestamp = Date.now();
-      setVideoFileName(`recorded_video_${timestamp}.webm`);
-      setThumbnailName(`thumb_recorded_video_${timestamp}.jpg`);
-
-      // Directly use the file URL for modal preview
-      const url = URL.createObjectURL(file);
-      setVideoSrc(url);
-
-      message.success(`${file.name} uploaded successfully.`);
-      return false;
-    },
-    [setVideoFile],
-  );
-
-  const { isProcessing, isProcessed, processVideoFile, handleDeleteVideo } =
+  const { isProcessing, processVideoFile, handleDeleteVideo } =
     useVideoProcessor({
-      mainVideoElementRef,
+      mainVideoElementRef: mainVideoRef,
       goodPostureTime,
       setGoodPostureTime,
       setHideVideo,
@@ -61,11 +40,20 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
       thumbnailName,
     });
 
-  const videoStyles = {
-    width: '55rem',
-    borderRadius: '10px',
-    display: hideVideo ? 'none' : 'block',
-  };
+  const handleFileUpload = useCallback(async (file: File): Promise<boolean> => {
+    setVideoFile(file);
+    setGoodPostureTime(null);
+    setIsModalVisible(true);
+    setHideVideo(false);
+
+    const timestamp = Date.now();
+    setVideoFileName(`recorded_video_${timestamp}.webm`);
+    setThumbnailName(`thumb_recorded_video_${timestamp}.jpg`);
+    setVideoSrc(URL.createObjectURL(file));
+
+    message.success(`${file.name} uploaded successfully.`);
+    return false;
+  }, []);
 
   const createNewVideoFromGoodPostureTime = useCallback(
     async (startTime: number) => {
@@ -84,10 +72,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
         if (response.success && response.filePath) {
           const videoBlob = await window.electron.video.getVideo(videoFileName);
-          setNewVideoSrc(videoBlob); // set new video source for main player
-
-          // Clean up previous video source if it exists
-          if (newVideoSrc) URL.revokeObjectURL(newVideoSrc);
+          setNewVideoSrc(videoBlob);
         } else {
           console.error('Failed to save new video:', response.error);
         }
@@ -98,44 +83,63 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         );
       }
     },
-    [videoFile, videoFileName, thumbnailName, newVideoSrc],
+    [videoFile, videoFileName, thumbnailName],
   );
 
   const handleSetGoodPosture = useCallback(() => {
-    const videoElement = modalVideoElementRef.current;
+    const videoElement = modalVideoRef.current;
     if (videoElement) {
       const { currentTime } = videoElement;
-      console.log(`Setting good posture time at: ${currentTime} seconds.`);
       setGoodPostureTime(currentTime);
       setHideVideo(true);
       message.success(`Good posture set at ${currentTime.toFixed(2)} seconds.`);
       setIsModalVisible(false);
-
-      createNewVideoFromGoodPostureTime(currentTime);
+      if (saveUploadVideo) createNewVideoFromGoodPostureTime(currentTime);
     }
-  }, [createNewVideoFromGoodPostureTime]);
+  }, [createNewVideoFromGoodPostureTime, saveUploadVideo]);
+
+  const handleSaveVideo = useCallback(
+    (checked: boolean): void => {
+      setSaveUploadVideo(checked);
+
+      window.electron.config
+        .getAppConfig()
+        .then((config) => {
+          const updatedConfig = { ...config, saveUploadVideo: checked };
+          return window.electron.config.saveAppConfig(updatedConfig);
+        })
+        .then((result) => {
+          if (result.success) {
+            message.success('Settings saved successfully');
+            return;
+          }
+          message.error('Failed to save settings');
+          throw new Error(result.error || 'Unknown save error');
+        })
+        .catch((error) => {
+          message.error('Error fetching or saving settings');
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error:', error);
+          }
+        });
+    },
+    [setSaveUploadVideo],
+  );
 
   useEffect(() => {
-    if (
-      !isModalVisible &&
-      goodPostureTime !== null &&
-      !isProcessed &&
-      newVideoSrc
-    ) {
-      console.log(
-        `Starting video processing with goodPostureTime: ${goodPostureTime}`,
-      );
-      processVideoFile();
+    if (!isModalVisible && goodPostureTime !== null && !isProcessing) {
+      processVideoFile().catch((error) => {
+        console.error('Error processing video file:', error);
+      });
     }
-  }, [
-    isModalVisible,
-    goodPostureTime,
-    processVideoFile,
-    isProcessed,
-    newVideoSrc,
-  ]);
+  }, [isModalVisible, goodPostureTime, processVideoFile, isProcessing]);
 
-  // Clean up videoSrc URL when component unmounts or videoFile changes
+  useEffect(() => {
+    if (newVideoSrc) {
+      setVideoSrc(newVideoSrc);
+    }
+  }, [newVideoSrc]);
+
   useEffect(() => {
     return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
@@ -145,7 +149,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
 
   return (
     <VideoCard
-      style={{ height: useVideoFile ? '45rem' : '' }}
+      style={{ width: !useVideoFile ? '75%' : undefined }}
       title="Video Source"
       bordered={false}
       extra={
@@ -162,85 +166,81 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         />
       }
     >
-      <VideoContent>
+      <div>
         {useVideoFile ? (
           <VideoContainer>
             {videoFile ? (
-              <div>
+              <div style={{ position: 'relative', maxWidth: '100%' }}>
                 {isProcessing && (
-                  <div
+                  <Spin
+                    tip="Processing... Please wait."
                     style={{
                       position: 'absolute',
                       top: '50%',
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      padding: '20px',
-                      borderRadius: '10px',
                       zIndex: 10,
                     }}
-                  >
-                    <p style={{ color: 'white', textAlign: 'center' }}>
-                      Processing... Please wait.
-                    </p>
-                  </div>
+                  />
                 )}
-                <div
-                  style={{
-                    height: '25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginTop: '6rem',
-                  }}
-                >
-                  {newVideoSrc && (
-                    <video
-                      ref={mainVideoElementRef}
-                      src={newVideoSrc}
-                      style={videoStyles}
-                      controls={!isProcessing}
-                      controlsList="nofullscreen"
-                    />
-                  )}
-
+                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                  <video
+                    ref={mainVideoRef}
+                    src={videoSrc}
+                    style={{
+                      width: '100%',
+                      maxWidth: '55rem',
+                      borderRadius: '10px',
+                      display: hideVideo ? 'none' : 'block',
+                    }}
+                    controls={!isProcessing}
+                    controlsList="nofullscreen"
+                  />
                   <Button
                     type="primary"
                     danger
                     icon={<DeleteOutlined />}
                     onClick={handleDeleteVideo}
-                    style={{ marginTop: '3rem' }}
+                    style={{ marginTop: '1rem' }}
                   >
                     Delete Video
                   </Button>
                 </div>
               </div>
             ) : (
-              <Dragger
-                name="file"
-                multiple={false}
-                accept=".webm, .mp4, .mov"
-                beforeUpload={handleFileUpload}
-                showUploadList={false}
-              >
-                <div
-                  style={{
-                    height: '25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
+              <div>
+                <Checkbox
+                  checked={saveUploadVideo}
+                  onChange={(e) => handleSaveVideo(e.target.checked)}
+                  style={{ marginBottom: '1rem' }}
                 >
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined />
-                  </p>
-                  <p className="ant-upload-text">
-                    Click or drag video file to this area to upload
-                  </p>
-                </div>
-              </Dragger>
+                  Save uploaded video
+                </Checkbox>
+                <Dragger
+                  name="file"
+                  multiple={false}
+                  accept=".webm, .mp4, .mov"
+                  beforeUpload={handleFileUpload}
+                  showUploadList={false}
+                >
+                  <div
+                    style={{
+                      height: '25rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <InboxOutlined
+                      style={{ fontSize: '48px', color: '#1890ff' }}
+                    />
+                    <p className="ant-upload-text">
+                      Click or drag video file to upload
+                    </p>
+                  </div>
+                </Dragger>
+              </div>
             )}
           </VideoContainer>
         ) : (
@@ -251,27 +251,28 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
             showBlendShapes={false}
           />
         )}
-      </VideoContent>
-
+      </div>
       <Modal
         open={isModalVisible}
-        width="65%"
+        width="60%"
         onCancel={() => {
           setIsModalVisible(false);
           handleDeleteVideo();
         }}
         footer={
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Button type="primary" onClick={handleSetGoodPosture}>
-              Set Good Posture
-            </Button>
-          </div>
+          <Button
+            type="primary"
+            onClick={handleSetGoodPosture}
+            style={{ textAlign: 'center' }}
+          >
+            Set Good Posture
+          </Button>
         }
       >
-        <div style={{ padding: '25px', alignItems: 'center' }}>
+        <div style={{ padding: '25px' }}>
           <video
-            ref={modalVideoElementRef}
-            src={videoSrc} // Use original video source for modal
+            ref={modalVideoRef}
+            src={videoSrc}
             style={{ width: '100%', borderRadius: '10px' }}
             controls
           />
