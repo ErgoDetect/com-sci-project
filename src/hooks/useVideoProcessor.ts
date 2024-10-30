@@ -3,19 +3,11 @@ import { message } from 'antd';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { filterLandmark } from '../utility/filterLandMark';
-import { LandmarksResult } from '../interface/propsType';
+import {
+  LandmarksResult,
+  UseVideoProcessorProps,
+} from '../interface/propsType';
 import axiosInstance from '../utility/axiosInstance';
-
-interface UseVideoProcessorProps {
-  mainVideoElementRef: React.RefObject<HTMLVideoElement>;
-  goodPostureTime: number | null;
-  setGoodPostureTime: React.Dispatch<React.SetStateAction<number | null>>;
-  setHideVideo: React.Dispatch<React.SetStateAction<boolean>>;
-  setVideoFile: (file: File | null) => void;
-  setNewVideoSrc: React.Dispatch<React.SetStateAction<string>>;
-  videoFileName: string;
-  thumbnailName: string;
-}
 
 const useVideoProcessor = ({
   mainVideoElementRef,
@@ -113,7 +105,7 @@ const useVideoProcessor = ({
         console.log(`Processing frame at time: ${currentTime}`);
         await processFrameAtTime(currentTime);
         currentTime += frameDuration;
-        totalFramesProcessed++;
+        totalFramesProcessed += 1;
 
         // Schedule the next frame process
         // setTimeout(processNextFrame, 0);

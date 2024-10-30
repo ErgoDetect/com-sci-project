@@ -142,13 +142,12 @@ const App: React.FC = () => {
         return (
           <>
             <AppHeader items={menuItems} />
-            <Content style={{ padding: 0, backgroundColor: '#f5f5f5' }}>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/summary" element={<SummaryPage />} />
-                <Route path="/history" element={<HistoryPage />} />
-              </Routes>
-            </Content>
+
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/summary" element={<SummaryPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+            </Routes>
           </>
         );
     }

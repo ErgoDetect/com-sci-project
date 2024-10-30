@@ -14,7 +14,6 @@ import {
 } from '../interface/propsType';
 
 // Define the theme type
-type Theme = 'light' | 'dark';
 
 interface ResContextProps {
   resData: any;
@@ -38,9 +37,6 @@ interface ResContextProps {
   setCombineResult: React.Dispatch<
     React.SetStateAction<CombineResult | undefined>
   >;
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
   showDetailedData: boolean;
   setShowDetailedData: React.Dispatch<React.SetStateAction<boolean>>;
   webcamRef: React.RefObject<HTMLVideoElement>;
@@ -55,6 +51,8 @@ interface ResContextProps {
   setInitializationSuccess: React.Dispatch<React.SetStateAction<boolean>>;
   initialModal: boolean;
   setInitialModal: React.Dispatch<React.SetStateAction<boolean>>;
+  saveUploadVideo: boolean;
+  setSaveUploadVideo: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -79,15 +77,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     undefined,
   );
 
-  // Theme management
-  const [theme, setTheme] = useState<Theme>('light');
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
-
   // Manage showDetailedData, default to true
-  const [showDetailedData, setShowDetailedData] = useState<boolean>(true);
-
+  const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
+  const [saveUploadVideo, setSaveUploadVideo] = useState<boolean>(true);
   useEffect(() => {
     // Assuming the appConfig is fetched via IPC
     window.electron.config
@@ -102,17 +94,19 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
         console.error('Error fetching appConfig:', error);
         throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
       });
-
+  }, []);
+  useEffect(() => {
+    // Assuming the appConfig is fetched via IPC
     window.electron.config
-      .getSystemTheme()
-      .then((themes): void => {
-        if (themes !== undefined) {
-          setTheme(themes); // Set showDetailedData based on appConfig
+      .getAppConfig()
+      .then((config): void => {
+        if (config.saveUploadVideo !== undefined) {
+          setSaveUploadVideo(config.saveUploadVideo); // Set showDetailedData based on appConfig
         }
         return null; // Explicitly return null to satisfy the ESLint rule
       })
       .catch((error) => {
-        console.error('Error fetching system theme:', error);
+        console.error('Error fetching appConfig:', error);
         throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
       });
   }, []);
@@ -144,9 +138,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setCalibrationData,
       combineResult,
       setCombineResult,
-      theme,
-      toggleTheme,
-      setTheme,
       loginResponse,
       setLoginResponse,
       isLogin,
@@ -165,6 +156,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setInitializationSuccess,
       initialModal,
       setInitialModal,
+      saveUploadVideo,
+      setSaveUploadVideo,
     }),
     [
       resData,
@@ -174,7 +167,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       startCapture,
       calibrationData,
       combineResult,
-      theme,
       loginResponse,
       isLogin,
       showDetailedData,
@@ -183,6 +175,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       isAligned,
       initializationSuccess,
       initialModal,
+      saveUploadVideo,
     ],
   );
 
