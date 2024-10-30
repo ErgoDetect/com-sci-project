@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
-import useDevices from '../hooks/useDevices';
-import { Container, FlexRow } from '../styles/styles';
+import { Container, FlexColumn } from '../styles/styles'; // Assuming FlexColumn exists or will be created
 import VideoSourceCard from '../components/dashboard/VideoSourceCard';
 import SessionMetricsCard from '../components/dashboard/SessionMetricsCard';
 import SessionSummaryCard from '../components/SessionSummaryCard';
@@ -9,7 +8,6 @@ import { useResData } from '../context';
 
 const Dashboard = () => {
   const {
-    theme,
     streaming,
     setStreaming,
     setIsAligned,
@@ -42,7 +40,15 @@ const Dashboard = () => {
 
   return (
     <Container>
-      <FlexRow>
+      <div
+        style={{
+          display: !videoState ? 'flex' : 'block', // Fallback to 'block' if `videoState` is true
+          gap: '20px', // Use 'px' for consistency
+          flex: 1, // Corrected flex property
+          position: 'relative', // Added position for `top` to work
+          top: 80,
+        }}
+      >
         <VideoSourceCard
           useVideoFile={videoState}
           setUseVideoFile={() =>
@@ -52,24 +58,18 @@ const Dashboard = () => {
           }
         />
         {!videoState && (
-          <SessionMetricsCard
-            sessionActive={streaming}
-            sessionDuration=""
-            toggleStreaming={toggleStreaming}
-            blinkRate={0}
-            goodPostureTime={0}
-          />
+          <FlexColumn>
+            <SessionMetricsCard
+              sessionActive={streaming}
+              sessionDuration=""
+              toggleStreaming={toggleStreaming}
+              blinkRate={0}
+              goodPostureTime={0}
+            />
+            <SessionSummaryCard />
+          </FlexColumn>
         )}
-      </FlexRow>
-
-      {!videoState && (
-        <SessionSummaryCard
-          sessionActive={streaming}
-          goodPostureTime={0}
-          badPostureAlerts={0}
-          proximityAlerts={0}
-        />
-      )}
+      </div>
     </Container>
   );
 };

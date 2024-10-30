@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Modal } from 'antd';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
@@ -8,7 +8,7 @@ import DraggableInfoBox from '../dashboard/DraggableInfoBox';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
-  width = '35vw',
+  width = '100%',
   borderRadius = '12px',
   drawingDot,
   showBlendShapes,
@@ -116,21 +116,21 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const containerStyles = useMemo<React.CSSProperties>(
     () => ({
       position: 'relative',
-      width,
+      width: '90%', // 90% of the parent container or screen width
+      maxWidth: '900px', // Optional: set a max width if needed
       borderRadius,
       overflow: 'hidden',
+      margin: '0 auto', // Center the video on the screen
     }),
-    [width, borderRadius],
+    [borderRadius],
   );
 
   // Memoized video styles
   const videoStyles = useMemo<React.CSSProperties>(
     () => ({
       width: '100%',
-      height: 'auto',
       borderRadius,
       transform: 'rotateY(180deg)',
-      position: 'relative',
     }),
     [borderRadius],
   );
@@ -148,9 +148,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     }
 
     return {
-      position: 'absolute',
-      top: 0,
-      left: 0,
       width: '100%',
       height: '100%',
       backgroundColor,

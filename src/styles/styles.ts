@@ -1,59 +1,37 @@
-/** @format */
-
 import styled from 'styled-components';
 import { Card, Button, Upload } from 'antd';
 
 export const Container = styled.div`
-  padding: 50px 50px 0px 50px;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  height: 100dvh;
+  padding: 50px;
 `;
 
-export const FlexRow = styled.div`
+export const FlexColumn = styled.div`
   display: flex;
-  justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+  width: 35%;
 `;
 
 export const StyledCard = styled(Card)`
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  width: 100%;
 `;
 
 export const VideoCard = styled(StyledCard)`
-  flex: 1 1 60%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-`;
-
-export const VideoContent = styled.div`
-  display: flex;
-  flex: 1;
-  justify-content: center;
-  align-items: center;
+  width: 100%;
+  height: max-content;
 `;
 
 export const MetricsCard = styled(StyledCard)`
-  flex: 1 1 35%;
   text-align: center;
-  padding: 24px;
-  border-radius: 12px;
+  height:100%
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  height: max-content;
 `;
 
 export const SummaryCard = styled(StyledCard)`
   width: 100%;
+  height: 100%;
+  padding: 0px 30px;
 `;
 
 export const VideoContainer = styled.div`

@@ -54,39 +54,6 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
       >
         {sessionActive ? 'Stop Session' : 'Start Session'}
       </Button>
-
-      <Statistic
-        title="Average Blink Rate"
-        value={blinkRate}
-        suffix="per minute"
-        prefix={<EyeOutlined />}
-        valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
-        style={{ marginBottom: 24 }}
-      />
-
-      <Typography.Title
-        level={5}
-        style={{
-          margin: '28px 0 20px 0',
-          color: 'rgba(0, 0, 0, 0.45)',
-          fontWeight: 400,
-          fontSize: 14,
-        }}
-      >
-        Posture Quality
-      </Typography.Title>
-
-      <Indicator isGood={goodPostureTime >= 50}>
-        {goodPostureTime >= 50 ? (
-          <>
-            Good <SmileOutlined style={{ marginLeft: 8 }} />
-          </>
-        ) : (
-          <>
-            Needs Improvement <FrownOutlined style={{ marginLeft: 8 }} />
-          </>
-        )}
-      </Indicator>
     </MetricsCard>
   );
 };
