@@ -1,64 +1,102 @@
 /** @format */
 
-import React from 'react';
-import { Row, Col, Statistic, Progress } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Row, Col, Statistic, Spin, Alert } from 'antd';
 import { SummaryCard } from '../styles/styles';
+import axiosInstance from '../utility/axiosInstance';
+import { useResData } from '../context';
 
-interface SessionSummaryCardProps {
-  sessionActive: boolean;
-  goodPostureTime: number;
-  badPostureAlerts: number;
-  proximityAlerts: number;
-}
+const SessionSummaryCard = () => {
+  const { streaming, initializationSuccess } = useResData();
+  const [sessionData, setSessionData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const SessionSummaryCard: React.FC<SessionSummaryCardProps> = ({
-  sessionActive,
-  goodPostureTime,
-  badPostureAlerts,
-  proximityAlerts,
-}) => {
-  const totalSessionTime = 90; // Example total session time in minutes
-  const goodPosturePercentage = (goodPostureTime / totalSessionTime) * 100;
+  useEffect(() => {
+    const fetchLatestSession = async () => {
+      setLoading(true);
+      try {
+        const { data } = await axiosInstance.get('/user/history/latest');
+        setSessionData(data);
+      } catch (errors) {
+        setError('Failed to load session data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestSession();
+  }, []);
+
+  const stats = useMemo(() => {
+    if (!sessionData) return [];
+
+    return [
+      {
+        id: 'blinkAlert',
+        title: 'Blink Alert Times',
+        value: sessionData.blink?.length ?? 0,
+        color: '#52c41a',
+      },
+      {
+        id: 'thoracicAlert',
+        title: 'Thoracic Alert Times',
+        value: sessionData.thoracic?.length ?? 0,
+        color: '#ff4d4f',
+      },
+      {
+        id: 'proximityAlert',
+        title: 'Sitting Too Close Alert Times',
+        value: sessionData.distance?.length ?? 0,
+        color: '#ff4d4f',
+      },
+      {
+        id: 'sittingLongAlert',
+        title: 'Sitting Too Long Alert Times',
+        value: sessionData.sitting?.length ?? 0,
+        color: '#ff4d4f',
+      },
+      {
+        id: 'totalSessionTime',
+        title: 'Total Session Time',
+        value:
+          streaming && initializationSuccess
+            ? 'In Progress'
+            : `${sessionData.duration ?? 0} min`,
+        color: '#000',
+      },
+    ];
+  }, [sessionData, streaming, initializationSuccess]);
+
+  if (loading) {
+    return (
+      <SummaryCard title="Latest Session Summary">
+        <Spin tip="Loading session data..." />
+      </SummaryCard>
+    );
+  }
+
+  if (error) {
+    return (
+      <SummaryCard title="Latest Session Summary">
+        <Alert message={error} type="error" showIcon />
+      </SummaryCard>
+    );
+  }
 
   return (
-    <SummaryCard title="Session Summary">
-      {/* need value to display from sever */}
-      <Row gutter={16}>
-        <Col xs={24} sm={12} md={6}>
-          <Statistic
-            title="Good Posture Time"
-            value={`${goodPostureTime} min`}
-            valueStyle={{ color: '#52c41a', fontWeight: 'bold' }}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Statistic
-            title="Hunchback Alerts"
-            value={badPostureAlerts}
-            valueStyle={{ color: '#ff4d4f', fontWeight: 'bold' }}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Statistic
-            title="Too Close Alerts"
-            value={proximityAlerts}
-            valueStyle={{ color: '#ff4d4f', fontWeight: 'bold' }}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Statistic
-            title="Total Session Time"
-            value={sessionActive ? 'In Progress' : '1h 30m'}
-            valueStyle={{ fontWeight: 'bold' }}
-          />
-        </Col>
+    <SummaryCard title="Latest Session Summary">
+      <Row gutter={[16, 16]}>
+        {stats.map((stat) => (
+          <Col span={12} key={stat.id}>
+            <Statistic
+              title={stat.title}
+              value={stat.value}
+              valueStyle={{ color: stat.color, fontWeight: 'bold' }}
+            />
+          </Col>
+        ))}
       </Row>
-      <Progress
-        percent={Math.min(goodPosturePercentage, 100)}
-        status="active"
-        style={{ marginTop: 16 }}
-        format={() => `Good Posture: ${goodPosturePercentage.toFixed(2)}%`}
-      />
     </SummaryCard>
   );
 };
