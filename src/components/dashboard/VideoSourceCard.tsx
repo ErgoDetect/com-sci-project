@@ -28,7 +28,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const [thumbnailName, setThumbnailName] = useState<string>('');
   const [newVideoSrc, setNewVideoSrc] = useState<string>('');
 
-  const { isProcessing, processVideoFile, handleDeleteVideo } =
+  const { isProcessing, processVideoFile, handleDeleteVideo, isProcessed } =
     useVideoProcessor({
       mainVideoElementRef: mainVideoRef,
       goodPostureTime,
@@ -71,8 +71,8 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
         );
 
         if (response.success && response.filePath) {
-          const videoBlob = await window.electron.video.getVideo(videoFileName);
-          setNewVideoSrc(videoBlob);
+          const dataURL = await window.electron.video.getVideo(videoFileName);
+          setNewVideoSrc(dataURL);
         } else {
           console.error('Failed to save new video:', response.error);
         }
@@ -135,17 +135,18 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   }, [isModalVisible, goodPostureTime, processVideoFile, isProcessing]);
 
   useEffect(() => {
-    if (newVideoSrc) {
+    if (isProcessed && newVideoSrc) {
       setVideoSrc(newVideoSrc);
     }
-  }, [newVideoSrc]);
+  }, [isProcessed, isProcessing, newVideoSrc]);
 
   useEffect(() => {
     return () => {
-      if (videoSrc) URL.revokeObjectURL(videoSrc);
-      if (newVideoSrc) URL.revokeObjectURL(newVideoSrc);
+      if (videoSrc) {
+        URL.revokeObjectURL(videoSrc);
+      }
     };
-  }, [videoSrc, newVideoSrc]);
+  }, [videoSrc]);
 
   return (
     <VideoCard
@@ -183,7 +184,15 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                     }}
                   />
                 )}
-                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginTop: '2rem',
+                  }}
+                >
                   <video
                     ref={mainVideoRef}
                     src={videoSrc}

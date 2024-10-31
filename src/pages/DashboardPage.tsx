@@ -46,7 +46,7 @@ const Dashboard = () => {
           gap: '20px', // Use 'px' for consistency
           flex: 1, // Corrected flex property
           position: 'relative', // Added position for `top` to work
-          top: 80,
+          top: 50,
         }}
       >
         <VideoSourceCard
