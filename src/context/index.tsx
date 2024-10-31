@@ -53,6 +53,12 @@ interface ResContextProps {
   setInitialModal: React.Dispatch<React.SetStateAction<boolean>>;
   saveUploadVideo: boolean;
   setSaveUploadVideo: React.Dispatch<React.SetStateAction<boolean>>;
+  videoFile: File;
+  setVideoFile: React.Dispatch<React.SetStateAction<File>>;
+  useVideoFile: boolean;
+  setUseVideoFile: React.Dispatch<React.SetStateAction<boolean>>;
+  realTimeSessionId: string;
+  setRealTimeSessionId: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -63,6 +69,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [resData, setResData] = useState<any>(undefined);
   const [trackingData, setTrackingData] = useState<any>(undefined);
   const [initializationSuccess, setInitializationSuccess] = useState(false);
+  const [realTimeSessionId, setRealTimeSessionId] = useState<string>('');
   const [isAligned, setIsAligned] = useState(false);
   const [initialModal, setInitialModal] = useState(false);
   const [isLogin, setIsLogin] = useState<boolean>(false);
@@ -70,6 +77,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
     undefined,
   );
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [useVideoFile, setUseVideoFile] = useState<boolean>(false);
   const [streaming, setStreaming] = useState<boolean>(false);
   const [startCapture, setStartCapture] = useState<boolean>(false);
   const [calibrationData, setCalibrationData] = useState<any>(null);
@@ -158,6 +167,12 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setInitialModal,
       saveUploadVideo,
       setSaveUploadVideo,
+      videoFile,
+      setVideoFile,
+      useVideoFile,
+      setUseVideoFile,
+      realTimeSessionId,
+      setRealTimeSessionId,
     }),
     [
       resData,
@@ -176,6 +191,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       initializationSuccess,
       initialModal,
       saveUploadVideo,
+      videoFile,
+      useVideoFile,
+      realTimeSessionId,
     ],
   );
 
