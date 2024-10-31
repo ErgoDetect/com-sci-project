@@ -6,10 +6,14 @@ import React, {
   useMemo,
 } from 'react';
 import { Layout, Card, Tooltip, Button, Typography, Spin, message } from 'antd';
-import { DownloadOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import {
+  CaretLeftOutlined,
+  DownloadOutlined,
+  PlayCircleOutlined,
+} from '@ant-design/icons';
 import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ProgressCard from '../components/ProgressCard';
 import axiosInstance from '../utility/axiosInstance';
 
@@ -66,6 +70,7 @@ const Summary: React.FC = () => {
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
   const [isVideoAvailable, setIsVideoAvailable] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const FPS = 15;
   const sessionId = useMemo(
     () => new URLSearchParams(location.search).get('session_id'),
@@ -298,6 +303,12 @@ const Summary: React.FC = () => {
         minHeight: '100vh',
       }}
     >
+      <Button
+        icon={<CaretLeftOutlined />}
+        onClick={() => {
+          navigate(-1);
+        }}
+      />
       {!data ? (
         <Spin size="large" />
       ) : (

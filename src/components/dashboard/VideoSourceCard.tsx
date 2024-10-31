@@ -1,6 +1,11 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Switch, Upload, message, Button, Modal, Checkbox, Spin } from 'antd';
-import { InboxOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  InboxOutlined,
+  DeleteOutlined,
+  CaretRightOutlined,
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { VideoCard, VideoContainer } from '../../styles/styles';
 import { VideoSourceCardProps } from '../../interface/propsType';
 import WebcamDisplay from '../camera/webcamDisplay';
@@ -28,32 +33,45 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
   const [thumbnailName, setThumbnailName] = useState<string>('');
   const [newVideoSrc, setNewVideoSrc] = useState<string>('');
 
-  const { isProcessing, processVideoFile, handleDeleteVideo, isProcessed } =
-    useVideoProcessor({
-      mainVideoElementRef: mainVideoRef,
-      goodPostureTime,
-      setGoodPostureTime,
-      setHideVideo,
-      setVideoFile,
-      setNewVideoSrc,
-      videoFileName,
-      thumbnailName,
-    });
+  const navigate = useNavigate();
 
-  const handleFileUpload = useCallback(async (file: File): Promise<boolean> => {
-    setVideoFile(file);
-    setGoodPostureTime(null);
-    setIsModalVisible(true);
-    setHideVideo(false);
+  const {
+    isProcessing,
+    processVideoFile,
+    handleDeleteVideo,
+    isProcessed,
+    sessionId,
+  } = useVideoProcessor({
+    mainVideoElementRef: mainVideoRef,
+    goodPostureTime,
+    setGoodPostureTime,
+    setHideVideo,
+    setVideoFile,
+    setNewVideoSrc,
+    videoFileName,
+    thumbnailName,
+  });
 
-    const timestamp = Date.now();
-    setVideoFileName(`recorded_video_${timestamp}.webm`);
-    setThumbnailName(`thumb_recorded_video_${timestamp}.jpg`);
-    setVideoSrc(URL.createObjectURL(file));
+  const handleFileUpload = useCallback(
+    async (file: File): Promise<boolean> => {
+      setVideoFile(file);
+      setGoodPostureTime(null);
+      setIsModalVisible(true);
+      setHideVideo(false);
 
-    message.success(`${file.name} uploaded successfully.`);
-    return false;
-  }, []);
+      if (saveUploadVideo) {
+        const timestamp = Date.now();
+        setVideoFileName(`recorded_video_${timestamp}.webm`);
+        setThumbnailName(`thumb_recorded_video_${timestamp}.jpg`);
+      }
+
+      setVideoSrc(URL.createObjectURL(file));
+
+      message.success(`${file.name} uploaded successfully.`);
+      return false;
+    },
+    [saveUploadVideo],
+  );
 
   const createNewVideoFromGoodPostureTime = useCallback(
     async (startTime: number) => {
@@ -138,7 +156,7 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
     if (isProcessed && newVideoSrc) {
       setVideoSrc(newVideoSrc);
     }
-  }, [isProcessed, isProcessing, newVideoSrc]);
+  }, [isProcessed, newVideoSrc]);
 
   useEffect(() => {
     return () => {
@@ -205,15 +223,39 @@ const VideoSourceCard: React.FC<VideoSourceCardProps> = ({
                     controls={!isProcessing}
                     controlsList="nofullscreen"
                   />
-                  <Button
-                    type="primary"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleDeleteVideo}
-                    style={{ marginTop: '1rem' }}
-                  >
-                    Delete Video
-                  </Button>
+                  {!isProcessed ? (
+                    <Button
+                      type="primary"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={handleDeleteVideo}
+                      style={{ marginTop: '1rem' }}
+                    >
+                      Delete Video
+                    </Button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 20 }}>
+                      <Button
+                        onClick={handleDeleteVideo}
+                        style={{ marginTop: '1rem' }}
+                      >
+                        Continue Detect
+                      </Button>
+                      <Button
+                        style={{
+                          marginTop: '1rem',
+                          background:
+                            'linear-gradient(135deg, #6253e1, #04befe)',
+                        }}
+                        icon={<CaretRightOutlined />}
+                        onClick={() => {
+                          navigate(`/summary?session_id=${sessionId}`);
+                        }}
+                      >
+                        View Detect Result
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

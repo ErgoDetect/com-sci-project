@@ -21,6 +21,7 @@ const useVideoProcessor = ({
 }: UseVideoProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const processResult = useRef<any[]>([]);
 
   const faceLandmarkerRef = useRef<any>(null);
@@ -133,6 +134,7 @@ const useVideoProcessor = ({
           });
           if (response.status === 200) {
             message.success('Video processing completed and uploaded.');
+            setSessionId(response.data.sitting_session_id);
           } else {
             message.error('Failed to upload video.');
           }
@@ -185,6 +187,7 @@ const useVideoProcessor = ({
     processResult: processResult.current,
     processVideoFile,
     handleDeleteVideo,
+    sessionId,
   };
 };
 
