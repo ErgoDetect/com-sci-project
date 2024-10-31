@@ -14,7 +14,6 @@ interface ProgressCardProps {
   onExpandToggle: (type: EventType) => void;
   progressBar: React.ReactNode;
   description: string;
-
   data: any;
 }
 
@@ -25,7 +24,6 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   onExpandToggle,
   progressBar,
   description,
-
   data,
 }) => {
   const isExpanded = expanded === type;
@@ -34,13 +32,13 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     (inputArray: any) => {
       if (inputArray && inputArray.length !== 0) {
         let sum = 0;
-        for (let index = 0; index < inputArray.length; index + 1) {
-          if (inputArray[index].length === 1)
-            sum += data.duration - inputArray[index][0];
-          else {
-            sum += inputArray[index][1] - inputArray[index][0];
+        inputArray.forEach((element: any) => {
+          if (element.length === 1) {
+            sum += data.duration - element[0];
+          } else {
+            sum += element[1] - element[0];
           }
-        }
+        });
         const averageSeconds = sum / inputArray.length / FPS;
         return averageSeconds;
       }
@@ -52,17 +50,17 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     (inputArray: any) => {
       if (inputArray && inputArray.length !== 0) {
         let longest = 0;
-        let tmp = 0;
-        for (let index = 0; index < inputArray.length; index + 1) {
-          if (inputArray[index].length === 1)
-            tmp = data.duration - inputArray[index][0];
-          else {
-            tmp = inputArray[index][1] - inputArray[index][0];
+        inputArray.forEach((element: any) => {
+          let tmp;
+          if (element.length === 1) {
+            tmp = data.duration - element[0];
+          } else {
+            tmp = element[1] - element[0];
           }
           if (tmp > longest) {
             longest = tmp;
           }
-        }
+        });
         return longest / FPS;
       }
       return 0;
@@ -134,13 +132,12 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     getLongestInSeconds,
     type,
   ]);
-  const stats = getStat();
+  const stat = getStat();
 
   return (
     <Card
       style={{
         marginBottom: '24px',
-
         borderRadius: '12px',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         cursor: 'pointer',
@@ -167,7 +164,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         <div style={{ paddingTop: '12px' }}>
           <Text type="secondary">{description}</Text>
           <br />
-          <Text type="secondary">{stats}</Text>
+          <Text type="secondary">{stat}</Text>
         </div>
       )}
     </Card>

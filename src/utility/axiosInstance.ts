@@ -18,7 +18,6 @@ const axiosInstance = axios.create({
 const endpointsRequiringDeviceIdentifier = [
   '/auth/status',
   '/auth/google/login',
-  '/files/upload/video',
   '/auth/logout',
   '/auth/google/set-cookies',
   '/auth/login',

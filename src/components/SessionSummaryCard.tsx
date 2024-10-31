@@ -69,11 +69,7 @@ const SessionSummaryCard = () => {
   }, [sessionData, streaming, initializationSuccess]);
 
   if (loading) {
-    return (
-      <SummaryCard title="Latest Session Summary">
-        <Spin tip="Loading session data..." />
-      </SummaryCard>
-    );
+    return <SummaryCard title="Latest Session Summary" />;
   }
 
   if (error) {
