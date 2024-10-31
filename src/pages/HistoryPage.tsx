@@ -21,7 +21,7 @@ const HistoryPage = () => {
 
   const handleItemClick = (sessionTitle: string) => {
     const sessionId = sessionTitle.replace('Session ID: ', '');
-    navigate(`/summary?session_title=${sessionId}`);
+    navigate(`/summary?session_id=${sessionId}`);
   };
 
   const fetchUserHistory = async () => {

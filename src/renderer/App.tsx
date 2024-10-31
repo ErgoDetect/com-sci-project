@@ -27,8 +27,7 @@ import { useResData } from '../context';
 import useReceiveData from '../hooks/useReceiveData';
 import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
-
-const { Content } = Layout;
+import VideoUploadPage from '../pages/VideoUploadPage';
 
 const App: React.FC = () => {
   const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
@@ -142,9 +141,9 @@ const App: React.FC = () => {
         return (
           <>
             <AppHeader items={menuItems} />
-
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/video-upload" element={<VideoUploadPage />} />
               <Route path="/summary" element={<SummaryPage />} />
               <Route path="/history" element={<HistoryPage />} />
             </Routes>

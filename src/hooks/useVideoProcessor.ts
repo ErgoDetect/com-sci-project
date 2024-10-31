@@ -21,12 +21,14 @@ const useVideoProcessor = ({
 }: UseVideoProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const processResult = useRef<any[]>([]);
 
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
   const latestLandmarksResultRef = useRef<LandmarksResult | null>(null);
   const frameDuration = 1 / 15;
+  const isCancelledRef = useRef(false); // Cancellation flag
 
   // Initialize landmarkers
   const initializeLandmarkers = useCallback(async () => {
@@ -45,21 +47,13 @@ const useVideoProcessor = ({
 
   const processFrameAtTime = useCallback(
     async (currentTime: number) => {
+      if (isCancelledRef.current) {
+        return; // Exit if processing is cancelled
+      }
       const videoElement = mainVideoElementRef.current;
       if (!videoElement) return;
 
       videoElement.currentTime = currentTime;
-      // Only seek if the current time is different
-      // if (videoElement.currentTime !== currentTime) {
-      //   videoElement.currentTime = currentTime;
-      //   await new Promise<void>((resolve) => {
-      //     const handleSeek = () => {
-      //       resolve();
-      //       videoElement.removeEventListener('seeked', handleSeek);
-      //     };
-      //     videoElement.addEventListener('seeked', handleSeek);
-      //   });
-      // }
 
       const timestamp = currentTime * 1000;
       console.log(`Processing frame at time: ${currentTime}`);
@@ -90,6 +84,8 @@ const useVideoProcessor = ({
 
     console.log('Starting video processing...');
     setIsProcessing(true);
+    setIsProcessed(false);
+    isCancelledRef.current = false; // Reset cancellation flag
     await initializeLandmarkers();
 
     const startTime = performance.now();
@@ -101,20 +97,23 @@ const useVideoProcessor = ({
     let totalFramesProcessed = 0;
 
     const processNextFrame = async () => {
+      if (isCancelledRef.current) {
+        console.log('Processing cancelled.');
+        setIsProcessing(false);
+        return;
+      }
       if (currentTime < totalDuration) {
         console.log(`Processing frame at time: ${currentTime}`);
         await processFrameAtTime(currentTime);
         currentTime += frameDuration;
         totalFramesProcessed += 1;
-
-        // Schedule the next frame process
-        // setTimeout(processNextFrame, 0);
         requestAnimationFrame(processNextFrame);
       } else {
         setIsProcessing(false);
         setHideVideo(false);
         setIsProcessed(true);
         videoElement.controls = true;
+        videoElement.currentTime = 0;
 
         const endTime = performance.now();
         const processingDuration = (endTime - startTime) / 1000;
@@ -135,6 +134,7 @@ const useVideoProcessor = ({
           });
           if (response.status === 200) {
             message.success('Video processing completed and uploaded.');
+            setSessionId(response.data.sitting_session_id);
           } else {
             message.error('Failed to upload video.');
           }
@@ -163,6 +163,7 @@ const useVideoProcessor = ({
       mainVideoElementRef.current.pause();
       mainVideoElementRef.current.currentTime = 0;
     }
+    isCancelledRef.current = true; // Set cancellation flag
     setVideoFile(null);
     setNewVideoSrc('');
     setGoodPostureTime(null);
@@ -186,6 +187,7 @@ const useVideoProcessor = ({
     processResult: processResult.current,
     processVideoFile,
     handleDeleteVideo,
+    sessionId,
   };
 };
 

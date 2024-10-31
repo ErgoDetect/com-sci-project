@@ -2,21 +2,24 @@ import React, {
   useRef,
   useState,
   useEffect,
-  useMemo,
   useCallback,
+  useMemo,
 } from 'react';
-import { Layout, Card, Tooltip, Button } from 'antd';
-import { PlayCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Layout, Card, Tooltip, Button, Typography, Spin, message } from 'antd';
+import {
+  ArrowLeftOutlined,
+  DownloadOutlined,
+  PlayCircleOutlined,
+} from '@ant-design/icons';
 import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ProgressCard from '../components/ProgressCard';
 import axiosInstance from '../utility/axiosInstance';
 
 const { Content } = Layout;
 
 type EventType = 'blink' | 'distance' | 'thoracic' | 'sitting';
-type VideoResponse = { success: false; error: string } | string;
 
 const colorMap: Record<EventType, string> = {
   blink: '#FF4D4F',
@@ -54,6 +57,10 @@ interface Event {
   end: number;
 }
 
+interface videoResponse {
+  suscess: boolean;
+}
+
 const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -63,47 +70,46 @@ const Summary: React.FC = () => {
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
   const [isVideoAvailable, setIsVideoAvailable] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const FPS = 15;
-  const sessionTitle = useMemo(
-    () => new URLSearchParams(location.search).get('session_title'),
+  const sessionId = useMemo(
+    () => new URLSearchParams(location.search).get('session_id'),
     [location.search],
   );
 
   useEffect(() => {
     const fetchData = async () => {
-      if (sessionTitle) {
-        try {
-          const response = await axiosInstance.get(
-            `/user/summary?session_id=${sessionTitle}`,
-          );
-          setData(response?.data);
-        } catch (error) {
-          console.error('Error fetching summary data:', error);
+      try {
+        const response = await axiosInstance.get(
+          `/user/summary?session_id=${sessionId}`,
+        );
+        if (response.data) {
+          setData(response.data);
+        } else {
+          message.error('No data available for this session.');
         }
+      } catch (error) {
+        console.error('Error fetching summary data:', error);
+        message.error('Failed to load session summary.');
       }
     };
-    fetchData();
-  }, [sessionTitle]);
 
+    if (sessionId) fetchData();
+  }, [sessionId]);
+
+  // Fetch video based on file_name in data
   useEffect(() => {
     const fetchVideo = async () => {
       if (data?.file_name) {
         try {
-          const videoResponse: VideoResponse =
-            await window.electron.video.getVideo(data.file_name);
-          if (videoResponse) {
-            if (typeof videoResponse === 'string') {
-              setVideoSrc(videoResponse);
-              setIsVideoAvailable(true);
-            } else {
-              setIsVideoAvailable(false);
-            }
-          } else {
-            console.error('Failed to load video:');
-            setIsVideoAvailable(false);
-          }
+          const videoResponse = await window.electron.video.getVideo(
+            data.file_name,
+          );
+          setVideoSrc(videoResponse);
+          setIsVideoAvailable(true);
         } catch (error) {
           console.error('Error fetching video:', error);
+          message.error('Failed to load video.');
           setIsVideoAvailable(false);
         }
       }
@@ -135,66 +141,68 @@ const Summary: React.FC = () => {
 
   const getEvent = useCallback(() => {
     const event: Event[] = [];
-    for (let index = 0; index < data?.blink.length; index + 1) {
-      if (data?.blink[index].length === 1) {
+    data?.blink.forEach((blink: any) => {
+      if (blink.length === 1) {
         event.push({
-          start: data?.blink[index][0],
+          start: blink[0],
           type: 'blink',
           end: data?.duration,
         });
       } else {
         event.push({
-          start: data?.blink[index][0],
+          start: blink[0],
           type: 'blink',
-          end: data?.blink[index][1],
+          end: blink[1],
         });
       }
-    }
-    for (let index = 0; index < data?.sitting.length; index + 1) {
-      if (data?.sitting[index].length === 1) {
+    });
+    data?.sitting.forEach((sitting: any) => {
+      if (sitting.length === 1) {
         event.push({
-          start: data?.sitting[index][0],
+          start: sitting[0],
           type: 'sitting',
           end: data?.duration,
         });
       } else {
         event.push({
-          start: data?.sitting[index][0],
+          start: sitting[0],
           type: 'sitting',
-          end: data?.sitting[index][1],
+          end: sitting[1],
         });
       }
-    }
-    for (let index = 0; index < data?.distance.length; index + 1) {
-      if (data?.distance[index].length === 1) {
+    });
+
+    data?.distance.forEach((distance: any) => {
+      if (distance.length === 1) {
         event.push({
-          start: data?.distance[index][0],
+          start: distance[0],
           type: 'distance',
           end: data?.duration,
         });
       } else {
         event.push({
-          start: data?.distance[index][0],
+          start: distance[0],
           type: 'distance',
-          end: data?.distance[index][1],
+          end: distance[1],
         });
       }
-    }
-    for (let index = 0; index < data?.thoracic.length; index + 1) {
-      if (data?.thoracic[index].length === 1) {
+    });
+    data?.thoracic.forEach((thoracic: any) => {
+      if (thoracic.length === 1) {
         event.push({
-          start: data?.thoracic[index][0],
+          start: thoracic[0],
           type: 'thoracic',
           end: data?.duration,
         });
       } else {
         event.push({
-          start: data?.thoracic[index][0],
+          start: thoracic[0],
           type: 'thoracic',
-          end: data?.thoracic[index][1],
+          end: thoracic[1],
         });
       }
-    }
+    });
+
     return event;
   }, [data]);
 
@@ -291,74 +299,70 @@ const Summary: React.FC = () => {
   return (
     <Layout
       style={{
-        display: 'flex',
-        justifyContent: 'center', // Center horizontally
-        alignItems: 'center', // Center vertically
         padding: '24px',
         minHeight: '100vh',
-        position: 'relative', // Needed for absolutely positioning child elements
       }}
     >
-      {/* Button at the top-right of the page */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '16px',
-          right: '16px',
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => {
+          navigate(-1);
         }}
-      >
-        <Button
-          type="primary"
-          icon={<DownloadOutlined />}
-          onClick={handleExportPDF}
-        >
-          Export to PDF
-        </Button>
-      </div>
-
-      <Content
-        ref={summaryRef}
-        style={{
-          width: '100%',
-          maxWidth: '80%', // Limit the width for better centering
-          padding: '24px',
-          borderRadius: '12px',
-          backgroundColor: '#fff',
-          boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <h2>{`Session : ${data?.session_id}`}</h2>
-        <text>{`Date : ${data?.date}`}</text>
-
-        <Card
+      />
+      {!data ? (
+        <Spin size="large" />
+      ) : (
+        <Content
+          ref={summaryRef}
           style={{
-            margin: '24px 0px',
-            padding: '0',
+            width: '100%',
+            maxWidth: '1200px',
+            padding: '24px',
             borderRadius: '12px',
           }}
         >
-          {videoPlayer}
-        </Card>
-        {data &&
-          data.duration &&
-          Object.entries(cardDetails).map(
-            ([typeKey, { title, description }]) => {
-              const eventType = typeKey as EventType;
-              return (
-                <ProgressCard
-                  key={eventType}
-                  title={title}
-                  type={eventType}
-                  expanded={expandedCard}
-                  onExpandToggle={handleExpandToggle}
-                  progressBar={createProgressBar(eventType)}
-                  description={description}
-                  data={data}
-                />
-              );
-            },
-          )}
-      </Content>
+          <h2>{`Session : ${data?.session_id}`}</h2>
+          <span>{`Date : ${data?.date}`}</span>
+
+          <Card
+            style={{
+              margin: '24px 0px',
+              padding: '0',
+              borderRadius: '12px',
+            }}
+          >
+            {videoPlayer}
+          </Card>
+          {data &&
+            data.duration &&
+            Object.entries(cardDetails).map(
+              ([typeKey, { title, description }]) => {
+                const eventType = typeKey as EventType;
+                return (
+                  <ProgressCard
+                    key={eventType}
+                    title={title}
+                    type={eventType}
+                    expanded={expandedCard}
+                    onExpandToggle={handleExpandToggle}
+                    progressBar={createProgressBar(eventType)}
+                    description={description}
+                    data={data}
+                  />
+                );
+              },
+            )}
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleExportPDF}
+            style={{ marginTop: '16px' }}
+          >
+            Export to PDF
+          </Button>
+        </Content>
+      )}
     </Layout>
   );
 };

@@ -8,7 +8,7 @@ import DraggableInfoBox from '../dashboard/DraggableInfoBox';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
-  width = '100%',
+  width = '35vw',
   borderRadius = '12px',
   drawingDot,
   showBlendShapes,
@@ -116,21 +116,21 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const containerStyles = useMemo<React.CSSProperties>(
     () => ({
       position: 'relative',
-      width: '90%', // 90% of the parent container or screen width
-      maxWidth: '900px', // Optional: set a max width if needed
+      width,
       borderRadius,
       overflow: 'hidden',
-      margin: '0 auto', // Center the video on the screen
     }),
-    [borderRadius],
+    [width, borderRadius],
   );
 
   // Memoized video styles
   const videoStyles = useMemo<React.CSSProperties>(
     () => ({
       width: '100%',
+      height: 'auto',
       borderRadius,
       transform: 'rotateY(180deg)',
+      position: 'relative',
     }),
     [borderRadius],
   );
@@ -148,6 +148,9 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     }
 
     return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
       width: '100%',
       height: '100%',
       backgroundColor,
@@ -160,10 +163,10 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
     <>
       <Modal
         title="Prepare Your Position"
-        open={initialModal} // Changed `open` to `visible`
-        onOk={handleOk} // Start session when user is ready
-        onCancel={handleCancel} // Cancel the modal
-        okText="I'm Ready" // Customize button text
+        open={initialModal}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        okText="I'm Ready"
         cancelText="Cancel"
       >
         <p>
@@ -172,7 +175,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         </p>
       </Modal>
       <div style={containerStyles}>
-        <div style={overlayStyles} />
+        <div style={!initializationSuccess ? overlayStyles : {}} />
         <video ref={webcamRef} style={videoStyles} />
 
         {showDetailedData && (
