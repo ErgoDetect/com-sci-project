@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { Layout, Card, Tooltip, Button, Typography, Spin, message } from 'antd';
 import {
-  CaretLeftOutlined,
+  ArrowLeftOutlined,
   DownloadOutlined,
   PlayCircleOutlined,
 } from '@ant-design/icons';
@@ -304,7 +304,8 @@ const Summary: React.FC = () => {
       }}
     >
       <Button
-        icon={<CaretLeftOutlined />}
+        type="text"
+        icon={<ArrowLeftOutlined />}
         onClick={() => {
           navigate(-1);
         }}

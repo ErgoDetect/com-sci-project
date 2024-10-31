@@ -1,7 +1,12 @@
 import { useResData } from '../context';
 
 const useReceiveData = () => {
-  const { resData, setTrackingData, setInitializationSuccess } = useResData();
+  const {
+    resData,
+    setTrackingData,
+    setInitializationSuccess,
+    setRealTimeSessionId,
+  } = useResData();
   if (!resData) {
     return;
   }
@@ -9,7 +14,10 @@ const useReceiveData = () => {
     setTrackingData(resData.data); // Update tracking data
   } else if (resData.type === 'initialization_success') {
     setInitializationSuccess(true);
+    setRealTimeSessionId(resData.sitting_session_id);
     console.log('init success');
+  } else if (resData === 'sitting_session_id') {
+    console.log(resData);
   }
 };
 export default useReceiveData;
