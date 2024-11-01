@@ -144,6 +144,8 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
       } else {
         backgroundColor = 'rgba(255, 0, 0, 0.2)'; // Red if not aligned
       }
+    } else {
+      backgroundColor = 'transparent'; // Reset to transparent when not streaming or initialization complete
     }
 
     return {
@@ -177,7 +179,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         </p>
       </Modal>
       <div style={containerStyles}>
-        <div style={initializationSuccess ? {} : overlayStyles} />
+        <div style={overlayStyles} />
         <video ref={webcamRef} style={videoStyles} />
 
         {showDetailedData && canShowDetail && (
