@@ -21,6 +21,7 @@ const useVideoStream = ({
     isAligned,
     initialModal,
     initializationSuccess,
+    useFocalLength,
   } = useResData();
 
   const faceLandmarkerRef = useRef<any>(null);
@@ -30,7 +31,7 @@ const useVideoStream = ({
 
   const TARGET_FPS = 15;
   const { send } = useWebSocket(
-    `landmark/results?stream=${streaming}`,
+    `landmark/results?stream=${streaming}&focal_length_enabled=${useFocalLength}`,
     setResData,
   );
 
@@ -102,6 +103,7 @@ const useVideoStream = ({
   }, [setLandMarkData, webcamRef]);
 
   // Handle WebSocket data send
+
   useEffect(() => {
     if (
       landMarkData &&

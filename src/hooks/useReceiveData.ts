@@ -8,6 +8,9 @@ const useReceiveData = () => {
     setRealTimeSessionId,
   } = useResData();
   if (!resData) {
+    setInitializationSuccess(false);
+    setTrackingData(null);
+    setRealTimeSessionId('');
     return;
   }
   if (resData.type === 'all_topic_alerts') {

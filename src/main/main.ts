@@ -28,6 +28,16 @@ let powerSaveBlockerId: number | null = null;
 const defaultAppConfig = {
   showStat: false,
   saveUploadVideo: true,
+  useFocalLength: false,
+  calibrationData: {
+    cameraMatrix: [
+      [0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0],
+    ],
+    distCoeffs: [[0.0, 0.0, 0.0, 0.0, 0.0]],
+    mean_error: 0.0,
+  },
 };
 
 // Handle default protocol for deep linking
