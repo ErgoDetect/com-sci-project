@@ -6,10 +6,9 @@ import {
   useLocation,
   Link,
 } from 'react-router-dom';
-import { Layout, Spin } from 'antd';
+import { Spin } from 'antd';
 import {
   DashboardOutlined,
-  FileTextOutlined,
   HistoryOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
