@@ -1,109 +1,182 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Steps, message } from 'antd';
 import WebcamDisplay from '../camera/webcamDisplay';
+import useDevices from '../../hooks/useDevices';
+import useCaptureImage from '../../hooks/useCaptureImages';
+import { useResData } from '../../context';
 
 const { Step } = Steps;
 
 const CalibrationModal: React.FC = () => {
-  const [isCalibrationModalVisible, setIsCalibrationModalVisible] =
-    useState(false);
+  const [isCalibrationModalOpen, setCalibrationModalOpen] = useState(false);
+  const [isPreviewModalOpen, setPreviewModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [isStartClicked, setStartClicked] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = [
+  const { webcamRef } = useResData();
+  const { deviceId } = useDevices();
+  const { startImageCapture, captureCompleted, resetCapture } =
+    useCaptureImage(webcamRef);
+
+  const calibrationSteps = [
     {
       title: 'Step 1',
-      key: 'step-1',
       content: (
-        <div>
+        <>
           <p>Make sure your camera is properly connected.</p>
           <p>Adjust your camera to fit your face within the frame.</p>
-        </div>
+        </>
       ),
     },
     {
       title: 'Step 2',
-      key: 'step-2',
       content: (
-        <div>
+        <>
           <p>Look straight into the camera.</p>
           <p>Ensure that the lighting is adequate.</p>
-        </div>
-      ),
-    },
-    {
-      title: 'Calibration',
-      key: 'calibration',
-      content: (
-        <WebcamDisplay
-          deviceId="your-device-id"
-          width="100%"
-          showBlendShapes={false}
-        />
+        </>
       ),
     },
   ];
 
-  const startCalibration = useCallback(() => {
-    setIsCalibrationModalVisible(true);
-    setCurrentStep(0); // Reset to the first step
-  }, []);
+  const toggleModal = useCallback(
+    (
+      modalSetter: React.Dispatch<React.SetStateAction<boolean>>,
+      resetStep = false,
+      resetStart = false,
+    ) =>
+      () => {
+        modalSetter((prev) => {
+          if (resetStep && !prev) setCurrentStep(0);
+          if (resetStart && prev) setStartClicked(false);
+          return !prev;
+        });
+      },
+    [],
+  );
 
-  const handleCancelCalibration = useCallback(() => {
-    setIsCalibrationModalVisible(false);
-  }, []);
-
-  const handleNext = useCallback(() => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      message.success('Calibration complete!');
-      handleCancelCalibration();
+  useEffect(() => {
+    if (captureCompleted && isPreviewModalOpen) {
+      setPreviewModalOpen(false);
+      resetCapture();
     }
-  }, [currentStep, steps.length, handleCancelCalibration]);
+  }, [captureCompleted, isPreviewModalOpen, resetCapture]);
 
-  const handlePrev = useCallback(() => {
-    setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
-  }, []);
+  const startCalibrationSession = () => {
+    startImageCapture();
+    message.info('Start Calibration');
+    setConfirmationModalOpen(false);
+  };
+
+  const goToNextStep = () => {
+    if (currentStep < calibrationSteps.length - 1) {
+      setCurrentStep((prevStep) => prevStep + 1);
+    } else {
+      setPreviewModalOpen(true);
+      setCalibrationModalOpen(false);
+    }
+  };
 
   return (
     <div>
       <Button
         type="primary"
-        onClick={startCalibration}
+        onClick={toggleModal(setCalibrationModalOpen, true)}
         size="large"
-        style={{
-          backgroundColor: '#1890ff',
-          borderColor: '#1890ff',
-          borderRadius: '8px',
-        }}
       >
         Start Calibration
       </Button>
 
       <Modal
         title="Camera Calibration"
-        open={isCalibrationModalVisible}
-        onCancel={handleCancelCalibration}
+        open={isCalibrationModalOpen}
+        onCancel={toggleModal(setCalibrationModalOpen)}
         footer={null}
-        width="55%"
+        width="500px"
         centered
         destroyOnClose
       >
         <Steps current={currentStep} style={{ marginBottom: '24px' }}>
-          {steps.map((step) => (
-            <Step key={step.key} title={step.title} />
+          {calibrationSteps.map((step) => (
+            <Step key={step.title} title={step.title} />
           ))}
         </Steps>
-        <div>{steps[currentStep].content}</div>
-        <div style={{ marginTop: '24px', textAlign: 'right' }}>
+        <div>{calibrationSteps[currentStep].content}</div>
+        <div style={{ textAlign: 'right', marginTop: '24px' }}>
           {currentStep > 0 && (
-            <Button style={{ margin: '0 8px' }} onClick={handlePrev}>
+            <Button
+              style={{ margin: '0 8px' }}
+              onClick={() => setCurrentStep((prev) => prev - 1)}
+            >
               Previous
             </Button>
           )}
-          <Button type="primary" onClick={handleNext}>
-            {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
+          <Button type="primary" onClick={goToNextStep}>
+            {currentStep === calibrationSteps.length - 1
+              ? 'Open Preview'
+              : 'Next'}
           </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={isPreviewModalOpen}
+        onCancel={toggleModal(setPreviewModalOpen, false, true)}
+        title="Calibration Preview"
+        width="60%"
+        centered
+        destroyOnClose
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              setStartClicked(true);
+              setConfirmationModalOpen(true);
+            }}
+            size="large"
+            disabled={isStartClicked}
+          >
+            Start
+          </Button>
+        }
+      >
+        <WebcamDisplay
+          deviceId={deviceId}
+          width="100%"
+          showBlendShapes={false}
+          canShowDetail={!isPreviewModalOpen}
+        />
+      </Modal>
+
+      <Modal
+        open={isConfirmationModalOpen}
+        onCancel={toggleModal(setConfirmationModalOpen)}
+        footer={
+          <>
+            <Button
+              size="large"
+              onClick={toggleModal(setConfirmationModalOpen)}
+              style={{ width: '100%' }}
+            >
+              No
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              onClick={startCalibrationSession}
+              style={{ width: '100%' }}
+            >
+              Yes
+            </Button>
+          </>
+        }
+        width="300px"
+        centered
+        destroyOnClose
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          Continue to Camera Calibration?
         </div>
       </Modal>
     </div>

@@ -8,12 +8,11 @@ import React, {
   useEffect,
 } from 'react';
 import {
+  CalibrationData,
   CombineResult,
   DebugData,
   LandmarksResult,
 } from '../interface/propsType';
-
-// Define the theme type
 
 interface ResContextProps {
   resData: any;
@@ -29,10 +28,6 @@ interface ResContextProps {
   >;
   streaming: boolean;
   setStreaming: React.Dispatch<React.SetStateAction<boolean>>;
-  startCapture: boolean;
-  setStartCapture: React.Dispatch<React.SetStateAction<boolean>>;
-  calibrationData: any;
-  setCalibrationData: React.Dispatch<React.SetStateAction<any>>;
   combineResult: CombineResult | undefined;
   setCombineResult: React.Dispatch<
     React.SetStateAction<CombineResult | undefined>
@@ -53,12 +48,18 @@ interface ResContextProps {
   setInitialModal: React.Dispatch<React.SetStateAction<boolean>>;
   saveUploadVideo: boolean;
   setSaveUploadVideo: React.Dispatch<React.SetStateAction<boolean>>;
-  videoFile: File;
-  setVideoFile: React.Dispatch<React.SetStateAction<File>>;
+  videoFile: File | null;
+  setVideoFile: React.Dispatch<React.SetStateAction<File | null>>;
   useVideoFile: boolean;
   setUseVideoFile: React.Dispatch<React.SetStateAction<boolean>>;
   realTimeSessionId: string;
   setRealTimeSessionId: React.Dispatch<React.SetStateAction<string>>;
+  calibrationData: CalibrationData | null;
+  setCalibrationData: React.Dispatch<
+    React.SetStateAction<CalibrationData | null>
+  >;
+  useFocalLength: boolean;
+  setUseFocalLength: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -69,80 +70,58 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [resData, setResData] = useState<any>(undefined);
   const [trackingData, setTrackingData] = useState<any>(undefined);
   const [initializationSuccess, setInitializationSuccess] = useState(false);
-  const [realTimeSessionId, setRealTimeSessionId] = useState<string>('');
+  const [realTimeSessionId, setRealTimeSessionId] = useState('');
   const [isAligned, setIsAligned] = useState(false);
+  const [useFocalLength, setUseFocalLength] = useState(false);
   const [initialModal, setInitialModal] = useState(false);
-  const [isLogin, setIsLogin] = useState<boolean>(false);
-  const [loginResponse, setLoginResponse] = useState<boolean>(false);
+  const [isLogin, setIsLogin] = useState(false);
+  const [loginResponse, setLoginResponse] = useState(false);
   const [landMarkData, setLandMarkData] = useState<LandmarksResult | undefined>(
     undefined,
   );
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [useVideoFile, setUseVideoFile] = useState<boolean>(false);
-  const [streaming, setStreaming] = useState<boolean>(false);
-  const [startCapture, setStartCapture] = useState<boolean>(false);
-  const [calibrationData, setCalibrationData] = useState<any>(null);
+  const [useVideoFile, setUseVideoFile] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [calibrationData, setCalibrationData] =
+    useState<CalibrationData | null>(null);
   const [combineResult, setCombineResult] = useState<CombineResult | undefined>(
     undefined,
   );
-
-  // Manage showDetailedData, default to true
-  const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
-  const [saveUploadVideo, setSaveUploadVideo] = useState<boolean>(true);
-  useEffect(() => {
-    // Assuming the appConfig is fetched via IPC
-    window.electron.config
-      .getAppConfig()
-      .then((config): void => {
-        if (config.showStat !== undefined) {
-          setShowDetailedData(config.showStat); // Set showDetailedData based on appConfig
-        }
-        return null; // Explicitly return null to satisfy the ESLint rule
-      })
-      .catch((error) => {
-        console.error('Error fetching appConfig:', error);
-        throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
-      });
-  }, []);
-  useEffect(() => {
-    // Assuming the appConfig is fetched via IPC
-    window.electron.config
-      .getAppConfig()
-      .then((config): void => {
-        if (config.saveUploadVideo !== undefined) {
-          setSaveUploadVideo(config.saveUploadVideo); // Set showDetailedData based on appConfig
-        }
-        return null; // Explicitly return null to satisfy the ESLint rule
-      })
-      .catch((error) => {
-        console.error('Error fetching appConfig:', error);
-        throw error; // Re-throw the error to propagate it (satisfying the ESLint rule)
-      });
-  }, []);
-
-  const debugData = useMemo(() => {
-    if (resData) {
-      return { ...resData } as unknown as DebugData;
-    }
-    return undefined;
-  }, [resData]);
+  const [showDetailedData, setShowDetailedData] = useState(false);
+  const [saveUploadVideo, setSaveUploadVideo] = useState(true);
+  const [renderSettings, setRenderSettings] = useState(false);
 
   const webcamRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
+  useEffect(() => {
+    window.electron.config
+      .getAppConfig()
+      .then((config): void => {
+        if (config.showStat !== undefined) setShowDetailedData(config.showStat);
+        if (config.saveUploadVideo !== undefined)
+          setSaveUploadVideo(config.saveUploadVideo);
+        if (config.useFocalLength !== undefined)
+          setUseFocalLength(config.useFocalLength);
+        if (config.calibrationData !== undefined)
+          setCalibrationData(config.calibrationData);
 
-  const [renderSettings, setRenderSettings] = useState(false);
+        // Ensure that we don't update state synchronously during render
+        return null;
+      })
+      .catch((error) => {
+        console.error('Error fetching appConfig:', error);
+      });
+  }, []);
 
   const contextValue = useMemo(
     () => ({
       resData,
       setResData,
-      debugData,
+      debugData: resData ? ({ ...resData } as DebugData) : undefined,
       landMarkData,
       setLandMarkData,
       streaming,
       setStreaming,
-      startCapture,
-      setStartCapture,
       calibrationData,
       setCalibrationData,
       combineResult,
@@ -173,13 +152,13 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setUseVideoFile,
       realTimeSessionId,
       setRealTimeSessionId,
+      useFocalLength,
+      setUseFocalLength,
     }),
     [
       resData,
-      debugData,
       landMarkData,
       streaming,
-      startCapture,
       calibrationData,
       combineResult,
       loginResponse,
@@ -194,6 +173,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       videoFile,
       useVideoFile,
       realTimeSessionId,
+      useFocalLength,
     ],
   );
 
@@ -204,8 +184,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
 
 export const useResData = (): ResContextProps => {
   const context = useContext(ResContext);
-  if (context === null) {
-    throw new Error('useResData must be used within a ResProvider');
-  }
+  if (!context) throw new Error('useResData must be used within a ResProvider');
   return context;
 };

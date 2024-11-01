@@ -2,7 +2,6 @@ import React, { useEffect, useMemo } from 'react';
 import { Modal } from 'antd';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
-import useCaptureImage from '../../hooks/useCaptureImages';
 import { useResData } from '../../context';
 import DraggableInfoBox from '../dashboard/DraggableInfoBox';
 
@@ -12,6 +11,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   borderRadius = '12px',
   drawingDot,
   showBlendShapes,
+  canShowDetail = true,
 }) => {
   const { startVideoStream, stopVideoStream } = useVideoStream({
     deviceId,
@@ -47,8 +47,6 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   const handleCancel = () => {
     setInitialModal(false); // Just close the modal without starting the session
   };
-
-  useCaptureImage(webcamRef);
 
   // Start and stop video stream based on `deviceId`
   useEffect(() => {
@@ -175,10 +173,10 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         </p>
       </Modal>
       <div style={containerStyles}>
-        <div style={!initializationSuccess ? overlayStyles : {}} />
+        <div style={initializationSuccess ? {} : overlayStyles} />
         <video ref={webcamRef} style={videoStyles} />
 
-        {showDetailedData && (
+        {showDetailedData && canShowDetail && (
           <DraggableInfoBox
             blink={trackingData?.blink}
             sitting={trackingData?.sitting}

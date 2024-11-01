@@ -1,5 +1,3 @@
-/** @format */
-
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   Layout,
@@ -30,10 +28,42 @@ interface SettingsProps {
   setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// Default calibration data
+const defaultCalibrationData = {
+  cameraMatrix: [
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+  ],
+  distCoeffs: [[0.0, 0.0, 0.0, 0.0, 0.0]],
+  mean_error: 0.0,
+};
+
 const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
-  const { showDetailedData, setShowDetailedData } = useResData();
+  const {
+    showDetailedData,
+    setShowDetailedData,
+    useFocalLength,
+    setUseFocalLength,
+    calibrationData,
+  } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const { deviceId, devices, setDeviceId } = useDevices();
+
+  // Check if calibration data matches default value
+  const isCalibrationDefault = useMemo(
+    () =>
+      JSON.stringify(calibrationData) ===
+      JSON.stringify(defaultCalibrationData),
+    [calibrationData],
+  );
+
+  // Memoize disabled switch style
+  const disabledSwitchStyle = useMemo<React.CSSProperties>(() => {
+    return isCalibrationDefault
+      ? { opacity: 0.5, pointerEvents: 'none', cursor: 'not-allowed' }
+      : {};
+  }, [isCalibrationDefault]);
 
   // Device selection handler
   const handleDeviceChange = useCallback(
@@ -57,18 +87,39 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
   const handleDetailedDataChange = useCallback(
     (checked: boolean): void => {
       setShowDetailedData(checked);
-
-      // Fetch the current config, modify, and save it
       window.electron.config
         .getAppConfig()
-        .then((config): Promise<{ success: boolean; error?: string }> => {
-          // Update the config with the new detailed data value
+        .then((config) => {
           const updatedConfig = { ...config, showStat: checked };
-
-          // Save the updated config and return a promise
           return window.electron.config.saveAppConfig(updatedConfig);
         })
-        .then((result): string | void => {
+        .then((result) => {
+          if (result.success) {
+            message.success('Settings saved successfully');
+            return 'Settings saved'; // Returning a value for consistency
+          }
+          message.error('Failed to save settings');
+          throw new Error(result.error || 'Unknown save error');
+        })
+        .catch((error): void => {
+          message.error('Error fetching or saving settings');
+          console.error('Error:', error);
+          return null; // Return null explicitly to avoid promise chain issues
+        });
+    },
+    [setShowDetailedData],
+  );
+
+  const handleUseFocalLengthChange = useCallback(
+    (checked: boolean): void => {
+      setUseFocalLength(checked);
+      window.electron.config
+        .getAppConfig()
+        .then((config) => {
+          const updatedConfig = { ...config, useFocalLength: checked };
+          return window.electron.config.saveAppConfig(updatedConfig);
+        })
+        .then((result) => {
           if (result.success) {
             message.success('Settings saved successfully');
             return 'Settings saved';
@@ -76,13 +127,13 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
           message.error('Failed to save settings');
           throw new Error(result.error || 'Unknown save error');
         })
-        .catch((error): null => {
+        .catch((error): void => {
           message.error('Error fetching or saving settings');
           console.error('Error:', error);
           return null;
         });
     },
-    [setShowDetailedData],
+    [setUseFocalLength],
   );
 
   // Render camera settings section
@@ -94,6 +145,27 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
         </Title>
         <Form layout="vertical">
           <Form.Item label="Select Camera">{deviceSelectorMemo}</Form.Item>
+          <Form.Item
+            label={
+              isCalibrationDefault
+                ? 'Show Depth in Centimeter (Needed Calibration Camera)'
+                : 'Show Depth in Centimeter'
+            }
+            style={{ opacity: isCalibrationDefault ? 0.5 : '' }}
+          >
+            <Tooltip
+              title={
+                isCalibrationDefault ? 'Enable after camera calibration.' : ''
+              }
+            >
+              <Switch
+                checked={isCalibrationDefault ? false : useFocalLength}
+                onChange={handleUseFocalLengthChange}
+                disabled={isCalibrationDefault} // Disable switch if calibration data is default
+                style={disabledSwitchStyle}
+              />
+            </Tooltip>
+          </Form.Item>
           <Form.Item label="Camera Calibration">
             <CalibrationModal />
             <Tooltip title="Calibrate camera for improved detection accuracy.">
@@ -103,7 +175,13 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
         </Form>
       </>
     ),
-    [deviceSelectorMemo],
+    [
+      deviceSelectorMemo,
+      handleUseFocalLengthChange,
+      useFocalLength,
+      isCalibrationDefault,
+      disabledSwitchStyle,
+    ],
   );
 
   // Render general settings section

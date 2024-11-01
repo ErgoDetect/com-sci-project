@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import axiosInstance from './axiosInstance';
+import { useResData } from '../context';
 
 type WebSocketMessageHandler = (data: any) => void;
 
@@ -26,6 +27,21 @@ const useWebSocket = (
   const messageQueue = useRef<any[]>([]); // Queue for messages while reconnecting
   const [message, setMessage] = useState<any>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
+  const { calibrationData, useFocalLength } = useResData();
+
+  const send = useCallback(
+    (data: any) => {
+      const compressedMessage = JSON.stringify(data);
+
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(compressedMessage);
+      } else {
+        console.warn('WebSocket not open. Queuing message.');
+        messageQueue.current.push(compressedMessage);
+      }
+    },
+    [socketRef],
+  );
 
   const isJSON = useCallback((str: string): boolean => {
     try {
@@ -65,6 +81,11 @@ const useWebSocket = (
       console.info('WebSocket connection established');
       setReconnectAttempts(0); // Reset reconnection attempts on successful connection
       flushMessageQueue(); // Send any queued messages
+      if (useFocalLength)
+        send({
+          type: 'FL', // Type identifier for focal length or calibration data
+          payload: calibrationData, // The actual focal length or calibration data payload
+        });
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -119,7 +140,16 @@ const useWebSocket = (
         }
       }
     };
-  }, [dest, flushMessageQueue, isJSON, onMessage, reconnectAttempts]);
+  }, [
+    calibrationData,
+    dest,
+    flushMessageQueue,
+    isJSON,
+    onMessage,
+    reconnectAttempts,
+    send,
+    useFocalLength,
+  ]);
 
   // Effect to initialize the WebSocket connection when the component mounts or the destination changes
   useEffect(() => {
@@ -134,19 +164,6 @@ const useWebSocket = (
   }, [initializeWebSocket]);
 
   // Function to send messages through the WebSocket
-  const send = useCallback(
-    (data: any) => {
-      const compressedMessage = JSON.stringify(data);
-
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(compressedMessage);
-      } else {
-        console.warn('WebSocket not open. Queuing message.');
-        messageQueue.current.push(compressedMessage);
-      }
-    },
-    [socketRef],
-  );
 
   // Memoize the result to prevent unnecessary re-renders
   return useMemo(

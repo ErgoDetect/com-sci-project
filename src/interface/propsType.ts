@@ -73,13 +73,20 @@ export interface WebcamDisplayProps {
   width?: number | string;
   borderRadius?: number | string;
   drawingDot?: { x: number[]; y: number[] };
-  showBlendShapes: boolean;
+  showBlendShapes?: boolean;
+  canShowDetail?: boolean;
 }
 
 export interface DeviceSelectorProps {
   deviceId: string | undefined;
   devices: DeviceProps[];
   onChange: (value: string) => void;
+}
+
+export interface CalibrationData {
+  cameraMatrix: number[][];
+  distCoeffs: number[];
+  mean_error: number;
 }
 
 export interface PositionTabProps {
