@@ -1,7 +1,7 @@
 /** @format */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Row, Col, Statistic, Spin, Alert } from 'antd';
+import { Row, Col, Statistic, Alert } from 'antd';
 import { SummaryCard } from '../styles/styles';
 import axiosInstance from '../utility/axiosInstance';
 import { useResData } from '../context';
