@@ -1,39 +1,60 @@
-import React, { useMemo, useCallback } from 'react';
-import { Statistic, Button, Typography } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Statistic, Button } from 'antd';
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
-  EyeOutlined,
-  SmileOutlined,
-  FrownOutlined,
 } from '@ant-design/icons';
-import Indicator from '../Indicator';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
 import { MetricsCard } from '../../styles/styles';
 import { useResData } from '../../context';
+
+// Extend dayjs with the duration plugin
+dayjs.extend(duration);
 
 interface SessionMetricsCardProps {
   sessionActive: boolean;
   toggleStreaming: () => void;
-  blinkRate: number;
-  goodPostureTime: number;
-  sessionDuration: string;
 }
 
 const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   sessionActive,
   toggleStreaming,
-  blinkRate,
-  goodPostureTime,
-  sessionDuration,
 }) => {
-  const { webcamRef } = useResData();
+  const { webcamRef, initializationSuccess } = useResData();
+
+  // State to track the session duration in seconds
+  const [sessionDuration, setSessionDuration] = useState(0);
+
+  // Effect to handle the timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    // Start the timer if session is active
+    if (sessionActive && initializationSuccess) {
+      interval = setInterval(() => {
+        setSessionDuration((prevDuration) => prevDuration + 1);
+      }, 1000); // Increment every second
+    } else {
+      // Reset the timer when session ends
+      setSessionDuration(0);
+    }
+
+    // Clear interval when sessionActive changes or component unmounts
+    return () => clearInterval(interval);
+  }, [initializationSuccess, sessionActive]);
+
+  // Format the duration to mm:ss
+  const formattedDuration = dayjs
+    .duration(sessionDuration, 'seconds')
+    .format('mm:ss');
 
   return (
     <MetricsCard>
       <Statistic
         title="Session Duration"
-        value={sessionActive ? sessionDuration : '00:00'}
+        value={sessionActive ? formattedDuration : '00:00'}
         prefix={<ClockCircleOutlined />}
         valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}
