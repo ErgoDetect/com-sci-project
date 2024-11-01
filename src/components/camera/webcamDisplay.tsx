@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo } from 'react';
-import { Modal } from 'antd';
+import { Modal, Image } from 'antd';
 import { WebcamDisplayProps } from '../../interface/propsType';
 import useVideoStream from '../../hooks/useVideoStream';
 import useCaptureImage from '../../hooks/useCaptureImages';
 import { useResData } from '../../context';
 import DraggableInfoBox from '../dashboard/DraggableInfoBox';
+import infoImage from '../../img/Info.jpg';
 
 const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
   deviceId,
@@ -169,6 +170,9 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         okText="I'm Ready"
         cancelText="Cancel"
       >
+        <Image src={infoImage} />
+        {/* https://www.siphhospital.com/th/news/article/share/849 */}
+        <p>Source : Siriraj Piyamaharajkarun Hospital</p>
         <p>
           Please ensure your face is centered in the frame and properly aligned
           before starting the session.
