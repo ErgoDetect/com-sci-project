@@ -67,6 +67,25 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     },
     [data.duration],
   );
+  const getPerHourInSecond = useCallback(
+    (inputArray: any) => {
+      if (inputArray && inputArray.length !== 0) {
+        let sum = 0;
+        inputArray.forEach((element: any) => {
+          let tmp;
+          if (element.length === 1) {
+            tmp = data.duration - element[0];
+          } else {
+            tmp = element[1] - element[0];
+          }
+          sum = sum + tmp;
+        });
+        return sum / (FPS * (data.duration / (60 * 60 * FPS)));
+      }
+      return 0;
+    },
+    [data.duration],
+  );
   const convertSeconds = useCallback((second: number) => {
     const hours = Math.floor(second / 3600);
     const minutes = Math.floor((second % 3600) / 60);
@@ -82,6 +101,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   const getStat = useCallback(() => {
     let stat1 = '';
     let stat2 = '';
+    let stat3 = '';
     if (type === 'blink') {
       const averageSeconds = getAverageInSeconds(data?.blink);
       const longestSeconds = getLongestInSeconds(data?.blink);
@@ -92,21 +112,30 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     } else if (type === 'distance') {
       const averageSeconds = getAverageInSeconds(data?.distance);
       const longestSeconds = getLongestInSeconds(data?.distance);
+      const perHourInSeconds = getPerHourInSecond(data?.distance);
+
       stat1 =
         'Average times sitting too close to screen longer than 30 seconds : ';
       stat2 =
         'Longest times sitting too close to screen longer than 30 seconds : ';
+      stat3 =
+        'Average times sitting too close to screen longer than 30 seconds per hour : ';
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
+      stat3 += convertSeconds(perHourInSeconds);
     } else if (type === 'thoracic') {
       const averageSeconds = getAverageInSeconds(data?.thoracic);
       const longestSeconds = getLongestInSeconds(data?.thoracic);
+      const perHourInSeconds = getPerHourInSecond(data?.thoracic);
       stat1 =
         'Average times to thoracic posture detect longer than 2 seconds : ';
       stat2 =
         'Longest times to thoracic posture detect longer than 2 seconds : ';
+      stat3 =
+        'Average times to thoracic posture detect longer than 2 seconds per hour: ';
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
+      stat3 += convertSeconds(perHourInSeconds);
     } else if (type === 'sitting') {
       const averageSeconds = getAverageInSeconds(data?.sitting);
       const longestSeconds = getLongestInSeconds(data?.sitting);
@@ -120,6 +149,8 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         {stat1}
         <br />
         {stat2}
+        <br />
+        {stat3}
       </>
     );
   }, [
