@@ -17,6 +17,7 @@ import {
 interface ResContextProps {
   resData: any;
   setResData: React.Dispatch<React.SetStateAction<any>>;
+  contextLoading: boolean;
   isLogin: boolean;
   setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
   loginResponse: boolean;
@@ -68,6 +69,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [resData, setResData] = useState<any>(undefined);
+  const [contextLoading, setContextLoading] = useState(true); // New loading state
   const [trackingData, setTrackingData] = useState<any>(undefined);
   const [initializationSuccess, setInitializationSuccess] = useState(false);
   const [realTimeSessionId, setRealTimeSessionId] = useState('');
@@ -93,10 +95,13 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
 
   const webcamRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
+
   useEffect(() => {
-    window.electron.config
-      .getAppConfig()
-      .then((config): void => {
+    const fetchConfigData = async () => {
+      try {
+        const config = await window.electron.config.getAppConfig();
+
+        // Update states based on config
         if (config.showStat !== undefined) setShowDetailedData(config.showStat);
         if (config.saveUploadVideo !== undefined)
           setSaveUploadVideo(config.saveUploadVideo);
@@ -104,19 +109,25 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
           setUseFocalLength(config.useFocalLength);
         if (config.calibrationData !== undefined)
           setCalibrationData(config.calibrationData);
-
-        // Ensure that we don't update state synchronously during render
-        return null;
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error fetching appConfig:', error);
-      });
+      } finally {
+        setContextLoading(false); // Set loading to false after fetch completes
+      }
+    };
+
+    fetchConfigData();
   }, []);
 
   const contextValue = useMemo(
     () => ({
       resData,
       setResData,
+      contextLoading, // Include contextLoading state in the value
+      isLogin,
+      setIsLogin,
+      loginResponse,
+      setLoginResponse,
       debugData: resData ? ({ ...resData } as DebugData) : undefined,
       landMarkData,
       setLandMarkData,
@@ -126,10 +137,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setCalibrationData,
       combineResult,
       setCombineResult,
-      loginResponse,
-      setLoginResponse,
-      isLogin,
-      setIsLogin,
       showDetailedData,
       setShowDetailedData,
       webcamRef,
@@ -157,12 +164,12 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
     }),
     [
       resData,
+      isLogin,
+      loginResponse,
       landMarkData,
       streaming,
       calibrationData,
       combineResult,
-      loginResponse,
-      isLogin,
       showDetailedData,
       renderSettings,
       trackingData,
@@ -174,6 +181,7 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       useVideoFile,
       realTimeSessionId,
       useFocalLength,
+      contextLoading, // Add contextLoading to dependencies
     ],
   );
 

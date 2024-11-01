@@ -30,6 +30,7 @@ import VideoUploadPage from '../pages/VideoUploadPage';
 
 const App: React.FC = () => {
   const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
+  const { contextLoading } = useResData();
   const { renderSettings, setRenderSettings } = useResData();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ const App: React.FC = () => {
 
   // Render content based on the application's state
   const renderContent = useCallback(() => {
-    if (loading || !isConnected) {
+    if (loading || !isConnected || contextLoading) {
       return (
         <div
           style={{
@@ -152,6 +153,7 @@ const App: React.FC = () => {
   }, [
     loading,
     isConnected,
+    contextLoading,
     renderSettings,
     location.pathname,
     closeSettings,

@@ -78,7 +78,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
           } else {
             tmp = element[1] - element[0];
           }
-          sum = sum + tmp;
+          sum += tmp;
         });
         return sum / (FPS * (data.duration / (60 * 60 * FPS)));
       }
@@ -161,6 +161,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     data?.thoracic,
     getAverageInSeconds,
     getLongestInSeconds,
+    getPerHourInSecond,
     type,
   ]);
   const stat = getStat();

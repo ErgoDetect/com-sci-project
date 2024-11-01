@@ -7,7 +7,6 @@ type WebSocketMessageHandler = (data: any) => void;
 interface UseWebSocketResult {
   send: (data: any) => void;
   message: any;
-  reconnectAttempts: number; // Exposed to provide feedback on reconnection attempts
 }
 
 const getDeviceIdentifier = async (): Promise<string> => {
@@ -24,31 +23,18 @@ const useWebSocket = (
 ): UseWebSocketResult => {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const messageQueue = useRef<any[]>([]); // Queue for messages while reconnecting
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const messageQueue = useRef<any[]>([]);
   const [message, setMessage] = useState<any>(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
-  const { calibrationData, useFocalLength } = useResData();
 
-  const send = useCallback(
-    (data: any) => {
-      const compressedMessage = JSON.stringify(data);
+  const { calibrationData, useFocalLength, contextLoading } = useResData();
 
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(compressedMessage);
-      } else {
-        console.warn('WebSocket not open. Queuing message.');
-        messageQueue.current.push(compressedMessage);
-      }
-    },
-    [socketRef],
-  );
-
-  const isJSON = useCallback((str: string): boolean => {
-    try {
-      JSON.parse(str);
-      return true;
-    } catch {
-      return false;
+  const send = useCallback((data: any) => {
+    const compressedMessage = JSON.stringify(data);
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(compressedMessage);
+    } else {
+      messageQueue.current.push(compressedMessage);
     }
   }, []);
 
@@ -62,11 +48,21 @@ const useWebSocket = (
     }
   }, []);
 
+  const refreshToken = useCallback(async () => {
+    try {
+      const deviceIdentifier = await getDeviceIdentifier();
+      await axiosInstance.post('/auth/refresh-token', null, {
+        headers: { 'Device-Identifier': deviceIdentifier },
+      });
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+    }
+  }, []);
+
   const initializeWebSocket = useCallback(() => {
     const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
     const socketUrl = `${protocol}://localhost:8000/${dest}`;
 
-    // Close any existing socket connection before creating a new one
     if (
       socketRef.current &&
       socketRef.current.readyState !== WebSocket.CLOSED
@@ -77,103 +73,89 @@ const useWebSocket = (
     const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
-    const handleOpen = () => {
-      console.info('WebSocket connection established');
-      setReconnectAttempts(0); // Reset reconnection attempts on successful connection
-      flushMessageQueue(); // Send any queued messages
-      if (useFocalLength)
-        send({
-          type: 'FL', // Type identifier for focal length or calibration data
-          payload: calibrationData, // The actual focal length or calibration data payload
-        });
-    };
-
-    const handleMessage = (event: MessageEvent) => {
-      const data = isJSON(event.data) ? JSON.parse(event.data) : event.data;
-      setMessage(data);
-      onMessage?.(data); // Pass the message to the onMessage callback if provided
-    };
-
-    const handleError = (error: Event) => {
-      console.error('WebSocket error occurred:', error);
-      // Optional: handle specific error codes here or trigger additional error-handling strategies
-    };
-
-    const handleClose = async (event: CloseEvent) => {
-      console.info('WebSocket connection closed');
-
-      if (event.code === 1008 || event.code === 4001) {
-        const deviceIdentifier = await getDeviceIdentifier();
-        axiosInstance.post('/auth/refresh-token', null, {
-          headers: { 'Device-Identifier': deviceIdentifier },
-        });
+    socket.addEventListener('open', () => {
+      console.info('WebSocket connection opened');
+      if (useFocalLength) {
+        socket.send(JSON.stringify({ focal_length: calibrationData }));
       }
+
+      flushMessageQueue();
+
+      // Reset reconnect attempts
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
 
-      // Exponential backoff with a cap of 30 seconds
-      reconnectTimeoutRef.current = setTimeout(
-        () => {
-          setReconnectAttempts((prev) => prev + 1); // Increment the reconnection attempts
-          initializeWebSocket(); // Attempt to reconnect
-        },
-        Math.min(5000 * (reconnectAttempts + 1), 30000),
-      );
-    };
+      // Set up heartbeat to keep connection alive
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (socketRef.current?.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000); // every 30 seconds
+    });
 
-    socket.addEventListener('open', handleOpen);
-    socket.addEventListener('message', handleMessage);
-    socket.addEventListener('error', handleError);
-    socket.addEventListener('close', handleClose);
+    socket.addEventListener('message', (event) => {
+      const data = JSON.parse(event.data);
+      setMessage(data);
+      onMessage?.(data);
+    });
 
-    // Clean up event listeners and close the WebSocket connection on unmount
+    socket.addEventListener('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+
+    socket.addEventListener('close', async (event) => {
+      console.warn('WebSocket closed:', event);
+
+      if (reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
+      if (heartbeatIntervalRef.current)
+        clearInterval(heartbeatIntervalRef.current);
+
+      // Handle specific close codes that might indicate a need to refresh the token
+      if (event.code === 1008 || event.code === 4001) {
+        await refreshToken();
+      }
+
+      // Immediately attempt to reconnect
+      reconnectTimeoutRef.current = setTimeout(initializeWebSocket, 1000);
+    });
+
     return () => {
       if (socketRef.current) {
-        socketRef.current.removeEventListener('open', handleOpen);
-        socketRef.current.removeEventListener('message', handleMessage);
-        socketRef.current.removeEventListener('error', handleError);
-        socketRef.current.removeEventListener('close', handleClose);
-
-        if (socketRef.current.readyState === WebSocket.OPEN) {
-          socketRef.current.close(1000, 'Component unmounting');
-        }
+        socketRef.current.close(1000, 'Component unmounting');
+        socketRef.current = null;
       }
+      if (reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
+      if (heartbeatIntervalRef.current)
+        clearInterval(heartbeatIntervalRef.current);
     };
   }, [
     calibrationData,
     dest,
     flushMessageQueue,
-    isJSON,
     onMessage,
-    reconnectAttempts,
-    send,
+    refreshToken,
     useFocalLength,
   ]);
 
-  // Effect to initialize the WebSocket connection when the component mounts or the destination changes
   useEffect(() => {
-    const cleanupWebSocket = initializeWebSocket();
+    // Only initialize WebSocket after context has loaded completely
+    if (!contextLoading) {
+      const cleanupWebSocket = initializeWebSocket();
+      return () => {
+        cleanupWebSocket();
+        if (reconnectTimeoutRef.current)
+          clearTimeout(reconnectTimeoutRef.current);
+        if (heartbeatIntervalRef.current)
+          clearInterval(heartbeatIntervalRef.current);
+      };
+    }
+    return undefined;
+  }, [initializeWebSocket, contextLoading]);
 
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      cleanupWebSocket(); // Cleanup the WebSocket connection
-    };
-  }, [initializeWebSocket]);
-
-  // Function to send messages through the WebSocket
-
-  // Memoize the result to prevent unnecessary re-renders
-  return useMemo(
-    () => ({
-      send,
-      message,
-      reconnectAttempts, // Expose reconnect attempts for UI feedback
-    }),
-    [send, message, reconnectAttempts],
-  );
+  return useMemo(() => ({ send, message }), [send, message]);
 };
 
 export default useWebSocket;

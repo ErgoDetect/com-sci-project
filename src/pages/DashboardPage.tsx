@@ -82,10 +82,7 @@ const Dashboard = () => {
           <FlexColumn>
             <SessionMetricsCard
               sessionActive={streaming}
-              sessionDuration=""
               toggleStreaming={toggleStreaming}
-              blinkRate={0}
-              goodPostureTime={0}
             />
             <SessionSummaryCard />
           </FlexColumn>
