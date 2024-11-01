@@ -57,10 +57,6 @@ interface Event {
   end: number;
 }
 
-interface videoResponse {
-  suscess: boolean;
-}
-
 const Summary: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -69,28 +65,28 @@ const Summary: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [expandedCard, setExpandedCard] = useState<EventType | null>(null);
   const [isVideoAvailable, setIsVideoAvailable] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
   const FPS = 15;
-  const sessionId = useMemo(
-    () => new URLSearchParams(location.search).get('session_id'),
-    [location.search],
-  );
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const sessionId = queryParams.get('session_id');
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `/user/summary?session_id=${sessionId}`,
-        );
-        if (response.data) {
-          setData(response.data);
-        } else {
-          message.error('No data available for this session.');
+      if (sessionId) {
+        try {
+          const response = await axiosInstance.get(
+            `/user/summary?session_id=${sessionId}`,
+          );
+          if (response.data) {
+            setData(response.data);
+          } else {
+            message.error('No data available for this session.');
+          }
+        } catch (error) {
+          console.error('Error fetching summary data:', error);
+          message.error('Failed to load session summary.');
         }
-      } catch (error) {
-        console.error('Error fetching summary data:', error);
-        message.error('Failed to load session summary.');
       }
     };
 
