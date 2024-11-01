@@ -105,8 +105,12 @@ const Summary: React.FC = () => {
           const videoResponse = await window.electron.video.getVideo(
             data.file_name,
           );
-          setVideoSrc(videoResponse);
-          setIsVideoAvailable(true);
+          if (typeof videoResponse === 'string') {
+            setVideoSrc(videoResponse);
+            setIsVideoAvailable(true);
+          } else {
+            setIsVideoAvailable(false);
+          }
         } catch (error) {
           console.error('Error fetching video:', error);
           message.error('Failed to load video.');
