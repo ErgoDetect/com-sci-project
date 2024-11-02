@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { Layout, Card, Tooltip, Button, Typography, Spin, message } from 'antd';
+import { Layout, Card, Tooltip, Button, Spin, message } from 'antd';
 import {
   ArrowLeftOutlined,
   DownloadOutlined,
@@ -208,46 +208,51 @@ const Summary: React.FC = () => {
 
   const event = getEvent();
   const createProgressBar = useCallback(
-    (eventType: EventType) =>
-      event
-        .filter((events) => events.type === eventType)
-        .map((events) => {
-          const duration = data?.duration || 0;
-          const startPosition = (events.start / duration) * 100;
-          const eventLength = events.end - events.start;
-          const width = (eventLength / duration) * 100;
-          return (
-            <Tooltip
-              title={`${events.type} detected from ${new Date(
-                (events.start / FPS) * 1000,
-              )
-                .toISOString()
-                .substring(11, 19)} to ${new Date((events.end / FPS) * 1000)
-                .toISOString()
-                .substring(11, 19)}`}
-              key={`${events.type}-${events.start}`}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${startPosition}%`,
-                  width: `${width}%`,
-                  height: '100%',
-                  backgroundColor: colorMap[events.type],
-                  cursor: 'pointer',
-                  borderRadius: '5px',
-                  transition: 'background-color 0.3s ease',
-                }}
-                onClick={(e) => {
-                  if (isVideoAvailable) {
-                    e.stopPropagation();
-                    handleSeek(events.start / FPS);
-                  }
-                }}
-              />
-            </Tooltip>
-          );
-        }),
+    (eventType: EventType) => {
+      if (!event) return null;
+      const events = event.filter((e) => e.type === eventType);
+      const duration = data?.duration || 0;
+      const maxEndpoint = Math.max(...events.map((e) => e.end), duration); // Find the maximum endpoint
+      const scaleFactor = duration / maxEndpoint; // Calculate scale factor
+
+      return events.map((eventItem) => {
+        const startPosition = (eventItem.start / duration) * 100 * scaleFactor; // Apply scaling
+        const eventLength = eventItem.end - eventItem.start;
+        const width = (eventLength / duration) * 100 * scaleFactor; // Apply scaling
+
+        return (
+          <Tooltip
+            title={`${eventItem.type} detected from ${new Date(
+              (eventItem.start / FPS) * 1000,
+            )
+              .toISOString()
+              .substring(11, 19)} to ${new Date((eventItem.end / FPS) * 1000)
+              .toISOString()
+              .substring(11, 19)}`}
+            key={`${eventItem.type}-${eventItem.start}`}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: `${startPosition}%`,
+                width: `${width}%`,
+                height: '100%',
+                backgroundColor: colorMap[eventItem.type],
+                cursor: 'pointer',
+                borderRadius: '5px',
+                transition: 'background-color 0.3s ease',
+              }}
+              onClick={(e) => {
+                if (isVideoAvailable) {
+                  e.stopPropagation();
+                  handleSeek(eventItem.start / FPS);
+                }
+              }}
+            />
+          </Tooltip>
+        );
+      });
+    },
     [event, data?.duration, isVideoAvailable, handleSeek],
   );
 
@@ -297,40 +302,27 @@ const Summary: React.FC = () => {
     setExpandedCard((prev) => (prev === type ? null : type));
   }, []);
   return (
-    <Layout
-      style={{
-        padding: '24px',
-        minHeight: '100vh',
-      }}
-    >
+    <Layout style={{ padding: '24px', minHeight: '100vh' }}>
       <Button
         type="text"
         icon={<ArrowLeftOutlined />}
-        onClick={() => {
-          navigate(-1);
-        }}
+        onClick={() => navigate(-1)}
       />
       {!data ? (
         <Spin size="large" />
       ) : (
         <Content
-          ref={summaryRef}
           style={{
             width: '100%',
-            maxWidth: '1200px',
+            // maxWidth: '1200px',
             padding: '24px',
             borderRadius: '12px',
           }}
         >
-          <h2>{`Session : ${data?.session_id}`}</h2>
-          <span>{`Date : ${data?.date}`}</span>
-
+          <h2>Session: {data?.session_id}</h2>
+          <span>Date: {data?.date}</span>
           <Card
-            style={{
-              margin: '24px 0px',
-              padding: '0',
-              borderRadius: '12px',
-            }}
+            style={{ margin: '24px 0', padding: '0', borderRadius: '12px' }}
           >
             {videoPlayer}
           </Card>
