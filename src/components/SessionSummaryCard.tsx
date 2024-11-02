@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Statistic, Alert } from 'antd';
+import dayjs from 'dayjs';
 import { SummaryCard } from '../styles/styles';
 import axiosInstance from '../utility/axiosInstance';
 import { useResData } from '../context';
@@ -12,6 +13,7 @@ const SessionSummaryCard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const FPS = 15;
+
   useEffect(() => {
     const fetchLatestSession = async () => {
       setLoading(true);
@@ -29,10 +31,15 @@ const SessionSummaryCard = () => {
   }, []);
 
   const getSumInSeconds = useCallback(
-    (inputArray: any) => {
-      if (inputArray && inputArray.length !== 0) {
+    (inputArray: any[]) => {
+      if (
+        sessionData &&
+        sessionData.duration != null &&
+        inputArray &&
+        inputArray.length !== 0
+      ) {
         let sum = 0;
-        inputArray.forEach((element: any) => {
+        inputArray.forEach((element) => {
           if (element.length === 1) {
             sum += sessionData.duration - element[0];
           } else {
@@ -48,15 +55,16 @@ const SessionSummaryCard = () => {
   );
 
   const getColorGreenOrRed = useCallback(
-    (inputArray: any) => {
-      let sumInSeconds = getSumInSeconds(inputArray);
-      if (sumInSeconds / (sessionData.duration / FPS) <= 0.2) {
-        return '#52c41a';
-      } else {
-        return '#ff4d4f';
+    (inputArray: any[]) => {
+      if (sessionData && sessionData.duration != null) {
+        const sumInSeconds = getSumInSeconds(inputArray);
+        if (sumInSeconds / (sessionData.duration / FPS) <= 0.2) {
+          return '#52c41a';
+        }
       }
+      return '#ff4d4f';
     },
-    [sessionData],
+    [getSumInSeconds, sessionData],
   );
 
   const stats = useMemo(() => {
@@ -94,16 +102,31 @@ const SessionSummaryCard = () => {
           streaming && initializationSuccess
             ? 'In Progress'
             : (() => {
-                const totalSeconds = (sessionData.duration ?? 0) / FPS; // Convert duration in minutes to seconds and then divide by 15
-                const h = Math.floor(totalSeconds / 3600);
-                const m = Math.floor((totalSeconds % 3600) / 60);
-                const s = Math.floor(totalSeconds % 60);
-                return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                if (sessionData && sessionData.duration != null) {
+                  const totalSeconds = (sessionData.duration ?? 0) / FPS; // Convert duration to seconds
+                  const h = Math.floor(totalSeconds / 3600);
+                  const m = Math.floor((totalSeconds % 3600) / 60);
+                  const s = Math.floor(totalSeconds % 60);
+
+                  // Conditional formatting based on the duration
+                  if (totalSeconds < 60) {
+                    // Less than a minute, show only seconds
+                    return `${s} seconds`;
+                  }
+                  if (totalSeconds < 3600) {
+                    // Less than an hour, show minutes and seconds
+                    return `${m} minutes ${s} seconds`;
+                  }
+                  // One hour or more, show hours, minutes, and seconds
+                  return `${h} hours ${m} minutes ${s} seconds`;
+                }
+                return '0 seconds';
               })(),
+
         color: '#000',
       },
     ];
-  }, [sessionData, streaming, initializationSuccess]);
+  }, [sessionData, getColorGreenOrRed, streaming, initializationSuccess]);
 
   if (loading) {
     return <SummaryCard title="Latest Session Summary" />;
