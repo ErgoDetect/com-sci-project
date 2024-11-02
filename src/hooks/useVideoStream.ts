@@ -28,6 +28,7 @@ const useVideoStream = ({
   const poseLandmarkerRef = useRef<any>(null);
   const firstFrameTimeRef = useRef<number>(0);
   const countRef = useRef<number>(0);
+  const isProcessingRef = useRef<boolean>(false);
 
   const TARGET_FPS = 15;
   const { send } = useWebSocket(
@@ -63,6 +64,7 @@ const useVideoStream = ({
 
   const startFrameTiming = useCallback(
     (processFrame: () => Promise<void>, targetFPS: number) => {
+      isProcessingRef.current = true;
       const interval = 1000 / targetFPS;
       let lastFrameTime = performance.now();
 
@@ -70,12 +72,13 @@ const useVideoStream = ({
         const now = performance.now();
         const deltaTime = now - lastFrameTime;
 
-        if (deltaTime >= interval) {
+        if (isProcessingRef.current && deltaTime >= interval) {
           lastFrameTime = now - (deltaTime % interval);
           await processFrame();
         }
-
-        setTimeout(frameLoop, interval - deltaTime);
+        if (isProcessingRef.current) {
+          setTimeout(frameLoop, interval - deltaTime);
+        }
       };
 
       setTimeout(frameLoop, interval);
@@ -177,8 +180,13 @@ const useVideoStream = ({
     webcamRef,
   ]);
 
+  const stopFrameTiming = useCallback(() => {
+    isProcessingRef.current = false;
+  }, []);
+
   const stopVideoStream = useCallback(() => {
     if (videoStreamRef.current) {
+      stopFrameTiming();
       const tracks = videoStreamRef.current.getTracks();
       tracks.forEach((track) => track.stop());
       videoStreamRef.current = null;
