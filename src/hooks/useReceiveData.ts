@@ -22,7 +22,7 @@ const useReceiveData = () => {
     }
 
     // Process `resData` only if `streaming` is true
-    if (resData) {
+    if (resData && streaming) {
       if (resData.type === 'all_topic_alerts') {
         setTrackingData((prevData: any) =>
           prevData !== resData.data ? resData.data : prevData,
@@ -43,8 +43,6 @@ const useReceiveData = () => {
     setRealTimeSessionId,
     setIsAligned,
   ]);
-
-  // Optional: Return any data if needed for the component that uses this hook
 };
 
 export default useReceiveData;

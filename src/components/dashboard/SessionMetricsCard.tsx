@@ -31,30 +31,30 @@ const SessionMetricsCard: React.FC<SessionMetricsCardProps> = ({
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    // Start the timer if session is active
     if (sessionActive && initializationSuccess) {
+      // Start the timer only if the session is active and initialized
       interval = setInterval(() => {
         setSessionDuration((prevDuration) => prevDuration + 1);
       }, 1000); // Increment every second
-    } else {
-      // Reset the timer when session ends
+    } else if (!sessionActive) {
+      // Clear the timer only when the session is explicitly inactive
       setSessionDuration(0);
     }
 
-    // Clear interval when sessionActive changes or component unmounts
+    // Cleanup function to clear the interval when sessionActive changes or component unmounts
     return () => clearInterval(interval);
-  }, [initializationSuccess, sessionActive]);
+  }, [sessionActive, initializationSuccess]);
 
   // Format the duration to mm:ss
   const formattedDuration = dayjs
     .duration(sessionDuration, 'seconds')
-    .format('mm:ss');
+    .format('HH:mm:ss');
 
   return (
     <MetricsCard>
       <Statistic
         title="Session Duration"
-        value={sessionActive ? formattedDuration : '00:00'}
+        value={sessionActive ? formattedDuration : '00:00:00'}
         prefix={<ClockCircleOutlined />}
         valueStyle={{ fontSize: 24, fontWeight: 'bold' }}
         style={{ marginBottom: 24 }}

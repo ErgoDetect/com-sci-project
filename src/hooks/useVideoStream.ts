@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useEffect } from 'react';
 import { useResData } from '../context';
 import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
@@ -185,9 +185,11 @@ const useVideoStream = ({
     }
   }, [videoStreamRef]);
 
-  useMemo(() => handleWebSocketSend(), [handleWebSocketSend]);
+  useEffect(() => {
+    handleWebSocketSend();
+  }, [handleWebSocketSend]);
 
-  useMemo(() => {
+  useEffect(() => {
     return () => {
       stopVideoStream();
     };
