@@ -222,9 +222,9 @@ const Summary: React.FC = () => {
                 (events.start / FPS) * 1000,
               )
                 .toISOString()
-                .substring(14, 19)} to ${new Date((events.end / FPS) * 1000)
+                .substring(11, 19)} to ${new Date((events.end / FPS) * 1000)
                 .toISOString()
-                .substring(14, 19)}`}
+                .substring(11, 19)}`}
               key={`${events.type}-${events.start}`}
             >
               <div
