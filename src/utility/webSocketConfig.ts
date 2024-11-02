@@ -87,11 +87,11 @@ const useWebSocket = (
       }
 
       // Set up heartbeat to keep connection alive
-      heartbeatIntervalRef.current = setInterval(() => {
-        if (socketRef.current?.readyState === WebSocket.OPEN) {
-          socketRef.current.send(JSON.stringify({ type: 'ping' }));
-        }
-      }, 30000); // every 30 seconds
+      // heartbeatIntervalRef.current = setInterval(() => {
+      //   if (socketRef.current?.readyState === WebSocket.OPEN) {
+      //     socketRef.current.send(JSON.stringify({ type: 'ping' }));
+      //   }
+      // }, 10); // every 30 seconds
     });
 
     socket.addEventListener('message', (event) => {
