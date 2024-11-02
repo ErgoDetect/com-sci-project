@@ -30,7 +30,7 @@ import VideoUploadPage from '../pages/VideoUploadPage';
 
 const App: React.FC = () => {
   const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
-  const { contextLoading } = useResData();
+  const { contextLoading, setStreaming } = useResData();
   const { renderSettings, setRenderSettings } = useResData();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const navigate = useNavigate();
@@ -77,6 +77,14 @@ const App: React.FC = () => {
       authenticate();
     }
   }, [checkAuthStatus, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (['/video-upload', '/summary', '/history'].includes(location.pathname)) {
+      setStreaming(true);
+    } else {
+      setStreaming(false);
+    }
+  }, [location.pathname, setStreaming]);
 
   const closeSettings = useCallback(
     () => setRenderSettings(false),

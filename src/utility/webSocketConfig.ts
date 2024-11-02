@@ -149,8 +149,8 @@ const useWebSocket = (
         cleanupWebSocket();
         if (reconnectTimeoutRef.current)
           clearTimeout(reconnectTimeoutRef.current);
-        if (heartbeatIntervalRef.current)
-          clearInterval(heartbeatIntervalRef.current);
+        // if (heartbeatIntervalRef.current)
+        //   clearInterval(heartbeatIntervalRef.current);
       };
     }
     return undefined;
