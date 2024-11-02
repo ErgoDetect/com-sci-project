@@ -1,9 +1,9 @@
-import { useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useEffect } from 'react';
 import { useResData } from '../context';
 import { WebcamDisplayProps, LandmarksResult } from '../interface/propsType';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
-import { filterLandmark } from '../utility/filterLandMark';
+import filterLandmark from '../utility/filterLandMark';
 import useWebSocket from '../utility/webSocketConfig';
 
 const useVideoStream = ({
@@ -61,7 +61,6 @@ const useVideoStream = ({
     [deviceId],
   );
 
-  // Frame timing control
   const startFrameTiming = useCallback(
     (processFrame: () => Promise<void>, targetFPS: number) => {
       const interval = 1000 / targetFPS;
@@ -76,7 +75,7 @@ const useVideoStream = ({
           await processFrame();
         }
 
-        setTimeout(frameLoop, interval - deltaTime); // Use setTimeout for precise scheduling
+        setTimeout(frameLoop, interval - deltaTime);
       };
 
       setTimeout(frameLoop, interval);
@@ -84,7 +83,6 @@ const useVideoStream = ({
     [],
   );
 
-  // Processing frame and detecting landmarks
   const processFrame = useCallback(async () => {
     const webcam = webcamRef.current;
     if (webcam && webcam.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
@@ -102,9 +100,7 @@ const useVideoStream = ({
     }
   }, [setLandMarkData, webcamRef]);
 
-  // Handle WebSocket data send
-
-  useEffect(() => {
+  const handleWebSocketSend = useCallback(() => {
     if (
       landMarkData &&
       streaming &&
@@ -138,7 +134,6 @@ const useVideoStream = ({
     streaming,
   ]);
 
-  // Start video stream
   const startVideoStream = useCallback(async () => {
     try {
       const videoStream = await navigator.mediaDevices
@@ -167,8 +162,7 @@ const useVideoStream = ({
             poseLandmarkerRef.current = await initializePoseLandmarker();
           }
 
-          // Start frame timing with target FPS
-          startFrameTiming(processFrame, TARGET_FPS); // You can easily adjust target FPS here
+          startFrameTiming(processFrame, TARGET_FPS);
         };
       }
     } catch (error) {
@@ -183,7 +177,6 @@ const useVideoStream = ({
     webcamRef,
   ]);
 
-  // Stop video stream and cleanup
   const stopVideoStream = useCallback(() => {
     if (videoStreamRef.current) {
       const tracks = videoStreamRef.current.getTracks();
@@ -192,10 +185,13 @@ const useVideoStream = ({
     }
   }, [videoStreamRef]);
 
-  // Cleanup video stream on component unmount
+  useEffect(() => {
+    handleWebSocketSend();
+  }, [handleWebSocketSend]);
+
   useEffect(() => {
     return () => {
-      stopVideoStream(); // Clean up the video stream
+      stopVideoStream();
     };
   }, [stopVideoStream]);
 

@@ -1,6 +1,6 @@
-import { LandmarksResult, xyzPosition } from '../interface/propsType';
+import { LandmarksResult } from '../interface/propsType';
 
-export function filterLandmark(landMarkData: LandmarksResult): any {
+const filterLandmark = (landMarkData: LandmarksResult) => {
   const result = {
     faceDetect: !!landMarkData?.faceResults.faceLandmarks[0],
     leftShoulder: landMarkData?.poseResults?.landmarks[0]?.[11] ?? null,
@@ -31,4 +31,6 @@ export function filterLandmark(landMarkData: LandmarksResult): any {
     },
   };
   return result;
-}
+};
+
+export default filterLandmark;

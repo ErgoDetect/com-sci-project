@@ -170,7 +170,7 @@ const WebcamDisplay: React.FC<WebcamDisplayProps> = ({
         okText="I'm Ready"
         cancelText="Cancel"
       >
-        <Image src={infoImage} />
+        <Image src={infoImage} preview={false} />
         {/* https://www.siphhospital.com/th/news/article/share/849 */}
         <p>Source : Siriraj Piyamaharajkarun Hospital</p>
         <p>

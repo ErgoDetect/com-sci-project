@@ -75,6 +75,7 @@ const useWebSocket = (
 
     socket.addEventListener('open', () => {
       console.info('WebSocket connection opened');
+
       if (useFocalLength) {
         socket.send(JSON.stringify({ focal_length: calibrationData }));
       }
@@ -148,8 +149,8 @@ const useWebSocket = (
         cleanupWebSocket();
         if (reconnectTimeoutRef.current)
           clearTimeout(reconnectTimeoutRef.current);
-        if (heartbeatIntervalRef.current)
-          clearInterval(heartbeatIntervalRef.current);
+        // if (heartbeatIntervalRef.current)
+        //   clearInterval(heartbeatIntervalRef.current);
       };
     }
     return undefined;
