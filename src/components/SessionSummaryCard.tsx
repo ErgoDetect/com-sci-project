@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Statistic, Alert } from 'antd';
 import { SummaryCard } from '../styles/styles';
 import axiosInstance from '../utility/axiosInstance';
@@ -28,6 +28,37 @@ const SessionSummaryCard = () => {
     fetchLatestSession();
   }, []);
 
+  const getSumInSeconds = useCallback(
+    (inputArray: any) => {
+      if (inputArray && inputArray.length !== 0) {
+        let sum = 0;
+        inputArray.forEach((element: any) => {
+          if (element.length === 1) {
+            sum += sessionData.duration - element[0];
+          } else {
+            sum += element[1] - element[0];
+          }
+        });
+        const sumSeconds = sum / FPS;
+        return sumSeconds;
+      }
+      return 0;
+    },
+    [sessionData],
+  );
+
+  const getColorGreenOrRed = useCallback(
+    (inputArray: any) => {
+      let sumInSeconds = getSumInSeconds(inputArray);
+      if (sumInSeconds / (sessionData.duration / FPS) <= 0.2) {
+        return '#52c41a';
+      } else {
+        return '#ff4d4f';
+      }
+    },
+    [sessionData],
+  );
+
   const stats = useMemo(() => {
     if (!sessionData) return [];
 
@@ -36,25 +67,25 @@ const SessionSummaryCard = () => {
         id: 'blinkAlert',
         title: 'Blink Alert Times',
         value: sessionData.blink?.length ?? 0,
-        color: '#52c41a',
+        color: getColorGreenOrRed(sessionData.blink),
       },
       {
         id: 'thoracicAlert',
         title: 'Thoracic Alert Times',
         value: sessionData.thoracic?.length ?? 0,
-        color: '#ff4d4f',
+        color: getColorGreenOrRed(sessionData.thoracic),
       },
       {
         id: 'proximityAlert',
         title: 'Sitting Too Close Alert Times',
         value: sessionData.distance?.length ?? 0,
-        color: '#ff4d4f',
+        color: getColorGreenOrRed(sessionData.distance),
       },
       {
         id: 'sittingLongAlert',
         title: 'Sitting Too Long Alert Times',
         value: sessionData.sitting?.length ?? 0,
-        color: '#ff4d4f',
+        color: getColorGreenOrRed(sessionData.sitting),
       },
       {
         id: 'totalSessionTime',
