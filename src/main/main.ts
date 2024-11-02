@@ -195,6 +195,50 @@ const createThumbnail = (
   });
 };
 
+const deleteVideoAndThumbnail = async (
+  videoName: string,
+  thumbnailName: string,
+): Promise<{ success: boolean; error?: string }> => {
+  const saveFolderPath = path.join(app.getPath('userData'), 'result');
+
+  const videoPath = path.join(saveFolderPath, videoName);
+  const thumbnailPath = path.join(saveFolderPath, thumbnailName);
+
+  const deletionPromises = [];
+
+  // Attempt to delete the video file
+  deletionPromises.push(
+    fs.promises.unlink(videoPath).catch((error) => {
+      // Log the error but don't throw
+      logger.warn('Error deleting video file:', error.message);
+    }),
+  );
+
+  // Attempt to delete the thumbnail file
+  deletionPromises.push(
+    fs.promises.unlink(thumbnailPath).catch((error) => {
+      // Log the error but don't throw
+      logger.warn('Error deleting thumbnail file:', error.message);
+    }),
+  );
+
+  try {
+    // Wait for both deletions to settle
+    await Promise.allSettled(deletionPromises);
+
+    logger.info(
+      `Attempted to delete video and thumbnail: ${videoName}, ${thumbnailName}`,
+    );
+    return { success: true };
+  } catch (error) {
+    logger.error('Unexpected error while deleting video or thumbnail:', error);
+    return {
+      success: false,
+      error: 'Unexpected error',
+    };
+  }
+};
+
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
   // Utility function to ensure directory exists
@@ -283,6 +327,12 @@ const setupIPCHandlers = (): void => {
     },
   );
 
+  ipcMain.handle(
+    'delete-video-and-thumbnail',
+    async (event, videoName, thumbnailName) => {
+      return await deleteVideoAndThumbnail(videoName, thumbnailName);
+    },
+  );
   // Handle retrieving video
   ipcMain.handle('get-video', async (event, videoName) => {
     const filePath = path.join(app.getPath('userData'), 'result', videoName);

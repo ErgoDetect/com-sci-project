@@ -34,6 +34,7 @@ const HistoryPage = () => {
     thumbnail: string;
     session_type: string;
     isFallback?: boolean; // Add a flag to track fallback status for each item
+    thumbnail_name?: string;
   }
 
   const [loading, setLoading] = useState(false);
@@ -115,6 +116,7 @@ const HistoryPage = () => {
             thumbnail,
             session_type: session.session_type,
             isFallback: false,
+            thumbnail_name: session.thumbnail,
           };
         }),
       );
@@ -128,25 +130,44 @@ const HistoryPage = () => {
     }
   }, [checkedItems]);
 
-  const deleteHistory = async (sessionTitle: string) => {
+  const deleteHistory = async (
+    sessionTitle: string,
+    videoName: string,
+    thumbnailName: string,
+  ) => {
     const sessionId = sessionTitle.replace('Session ID: ', '');
     try {
       await axiosInstance.delete(
         `/delete/session/history?session_id=${sessionId}`,
       );
+
+      const deleteVideoPromise = window.electron.video.deleteVideoAndThumbnail(
+        videoName,
+        thumbnailName,
+      );
+
+      await Promise.allSettled([deleteVideoPromise]);
+
       fetchUserHistory();
     } catch (deleteError) {
       message.error('Failed to delete history');
     }
   };
 
-  const showDeleteConfirm = (sessionTitle: any) => {
+  const showDeleteConfirm = (
+    sessionTitle: any,
+    videoName: any,
+    thumbnailName: any,
+  ) => {
+    // console.log(videoName);
+    // console.log(thumbnailName);
+
     confirm({
       title: 'Are you sure delete this history?',
       icon: <ExclamationCircleOutlined />,
       content: sessionTitle,
       async onOk() {
-        await deleteHistory(sessionTitle);
+        await deleteHistory(sessionTitle, videoName, thumbnailName);
         message.success('History deleted successfully');
       },
       onCancel() {
@@ -268,7 +289,11 @@ const HistoryPage = () => {
                     icon={<CloseOutlined />}
                     onClick={(event) => {
                       event.stopPropagation();
-                      showDeleteConfirm(item.session_title);
+                      showDeleteConfirm(
+                        item.session_title,
+                        item.file_name,
+                        item.thumbnail_name,
+                      );
                     }}
                   />
                 </div>
