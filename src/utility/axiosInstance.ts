@@ -1,68 +1,66 @@
 /* eslint-disable no-underscore-dangle */
 import axios from 'axios';
 
+let cachedDeviceIdentifier: string | PromiseLike<string> = null;
+
+// Function to get or cache the device identifier
 const getDeviceIdentifier = async (): Promise<string> => {
+  if (cachedDeviceIdentifier) {
+    return cachedDeviceIdentifier;
+  }
   const deviceIdentifier = await window.electron.system.getMacAddress();
   if (!deviceIdentifier) {
     throw new Error('Device identifier not found');
   }
+  cachedDeviceIdentifier = deviceIdentifier;
   return deviceIdentifier;
 };
 
+// Create the Axios instance
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
   withCredentials: true,
 });
 
-// List of endpoints that require the 'Device-Identifier' header
-const endpointsRequiringDeviceIdentifier = [
+// Define endpoints that require the 'Device-Identifier' header
+const endpointsRequiringDeviceIdentifier = new Set([
   '/auth/status',
   '/auth/google/login',
   '/auth/logout',
   '/auth/google/set-cookies',
   '/auth/login',
   '/auth/refresh-token',
-];
+]);
 
-// Add a request interceptor to conditionally attach the 'Device-Identifier' header
+// Request interceptor to attach the 'Device-Identifier' header where needed
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Check if the request URL matches one of the endpoints requiring the header
     if (
-      endpointsRequiringDeviceIdentifier.some((url) =>
-        config.url?.includes(url),
-      )
+      config.url &&
+      endpointsRequiringDeviceIdentifier.has(config.url.split('?')[0])
     ) {
       const deviceIdentifier = await getDeviceIdentifier();
       config.headers['Device-Identifier'] = deviceIdentifier;
     }
-
     return config;
   },
-  (error) => {
-    // Handle request error
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
-// Add a response interceptor to handle errors globally
+// Response interceptor to handle global errors and token refresh mechanism
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If we get a 401 and it's not already retried, handle it
+    // Handle token refresh logic on 401 Unauthorized response
     if (
       error.response &&
       error.response.status === 401 &&
       !originalRequest._retry
     ) {
-      originalRequest._retry = true; // Prevent retrying indefinitely
-
+      originalRequest._retry = true; // Mark the request as retried
       try {
-        // Call refresh-token API to get a new token
         const deviceIdentifier = await getDeviceIdentifier();
         const refreshResponse = await axiosInstance.post(
           '/auth/refresh-token',
@@ -73,15 +71,16 @@ axiosInstance.interceptors.response.use(
         );
 
         if (refreshResponse.status === 200) {
-          // Token refreshed, retry the original request with the new token
+          // Retry the original request with the new token
           return axiosInstance(originalRequest);
         }
       } catch (refreshError) {
         console.error('Error refreshing token:', refreshError);
-        // If refresh fails, log out or handle appropriately
+        // Implement a logout mechanism or further error handling here
       }
     }
 
+    // Additional handling for other types of response errors can be added here
     return Promise.reject(error);
   },
 );
