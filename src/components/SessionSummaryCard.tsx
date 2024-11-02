@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Statistic, Alert } from 'antd';
-import dayjs from 'dayjs';
 import { SummaryCard } from '../styles/styles';
 import axiosInstance from '../utility/axiosInstance';
 import { useResData } from '../context';
@@ -111,16 +110,16 @@ const SessionSummaryCard = () => {
                   // Conditional formatting based on the duration
                   if (totalSeconds < 60) {
                     // Less than a minute, show only seconds
-                    return `${s} seconds`;
+                    return `${s} วินาที`;
                   }
                   if (totalSeconds < 3600) {
                     // Less than an hour, show minutes and seconds
-                    return `${m} minutes ${s} seconds`;
+                    return `${m} นาที ${s} วินาที`;
                   }
                   // One hour or more, show hours, minutes, and seconds
-                  return `${h} hours ${m} minutes ${s} seconds`;
+                  return `${h} ชั่วโมง ${m} นาที ${s} วินาที`;
                 }
-                return '0 seconds';
+                return '0 วินาที';
               })(),
 
         color: '#000',
