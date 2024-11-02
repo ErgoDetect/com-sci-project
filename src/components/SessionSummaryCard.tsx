@@ -11,7 +11,7 @@ const SessionSummaryCard = () => {
   const [sessionData, setSessionData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const FPS = 15;
   useEffect(() => {
     const fetchLatestSession = async () => {
       setLoading(true);
@@ -62,7 +62,13 @@ const SessionSummaryCard = () => {
         value:
           streaming && initializationSuccess
             ? 'In Progress'
-            : `${sessionData.duration ?? 0} min`,
+            : (() => {
+                const totalSeconds = (sessionData.duration ?? 0) / FPS; // Convert duration in minutes to seconds and then divide by 15
+                const h = Math.floor(totalSeconds / 3600);
+                const m = Math.floor((totalSeconds % 3600) / 60);
+                const s = Math.floor(totalSeconds % 60);
+                return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+              })(),
         color: '#000',
       },
     ];
