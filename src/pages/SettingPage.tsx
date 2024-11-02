@@ -14,6 +14,7 @@ import {
   SettingOutlined,
   CameraOutlined,
   InfoCircleOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { IoIosCloseCircleOutline } from 'react-icons/io';
 import DeviceSelector from '../components/camera/deviceSelector';
@@ -256,29 +257,22 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
 
       <Button
         type="text"
-        icon={<IoIosCloseCircleOutline style={{ fontSize: '36px' }} />}
+        shape="circle"
+        size="large"
+        icon={<CloseOutlined />}
         onClick={() => setIsSettingsOpen(false)}
-        aria-label="Close Settings"
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          fontSize: '16px',
-          backgroundColor: 'transparent',
-          border: 'none',
-          zIndex: 1000,
-          padding: '10px',
-          cursor: 'pointer',
-        }}
         onMouseOver={(e) => {
           e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
         }}
         onMouseOut={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
         }}
-      >
-        ESC
-      </Button>
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+        }}
+      />
 
       <Content
         style={{
