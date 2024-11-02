@@ -107,6 +107,16 @@ const electronHandler = {
         thumbnail,
       );
     },
+    deleteVideoAndThumbnail(
+      videoName: string,
+      thumbnailName: string,
+    ): Promise<{ success: boolean; error?: string }> {
+      return ipcRenderer.invoke(
+        'delete-video-and-thumbnail',
+        videoName,
+        thumbnailName,
+      );
+    },
   },
   config: {
     getSystemTheme() {
