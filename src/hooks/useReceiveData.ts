@@ -17,6 +17,8 @@ const useReceiveData = () => {
       setInitializationSuccess(false);
       setTrackingData(null);
       setIsAligned(false);
+
+      return;
     }
 
     // Process `resData` only if `streaming` is true

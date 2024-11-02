@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import { initializeFaceLandmarker } from '../model/faceLandmark';
 import { initializePoseLandmarker } from '../model/bodyLandmark';
-import { filterLandmark } from '../utility/filterLandMark';
+import filterLandmark from '../utility/filterLandMark';
 import {
   LandmarksResult,
   UseVideoProcessorProps,

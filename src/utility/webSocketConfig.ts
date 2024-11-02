@@ -75,6 +75,7 @@ const useWebSocket = (
 
     socket.addEventListener('open', () => {
       console.info('WebSocket connection opened');
+
       if (useFocalLength) {
         socket.send(JSON.stringify({ focal_length: calibrationData }));
       }
