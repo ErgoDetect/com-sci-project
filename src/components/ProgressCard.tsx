@@ -188,7 +188,14 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         {isExpanded ? <UpOutlined /> : <DownOutlined />}
       </Title>
       <div
-        style={{ position: 'relative', height: '10px', marginBottom: '8px' }}
+        style={{
+          position: 'relative',
+          height: '10px',
+          marginBottom: '8px',
+          width: '100%', // Changed from '1em' to '100%'
+          maxWidth: '100%', // Ensures the div does not exceed the card's width
+          overflow: 'hidden', // Uncomments and applies overflow hidden to prevent content spilling
+        }}
       >
         {progressBar}
       </div>
