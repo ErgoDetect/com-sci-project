@@ -30,7 +30,11 @@ const defaultAppConfig = {
   saveUploadVideo: true,
   useFocalLength: false,
   saveSessionVideo: true,
-  showNotification: true,
+  // showNotification: true,
+  showBlinkNotification: true,
+  showSittingNotification: true,
+  showDistanceNotification: true,
+  showThoracticNotification: true,
   calibrationData: {
     cameraMatrix: [
       [0.0, 0.0, 0.0],

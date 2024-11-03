@@ -63,8 +63,16 @@ interface ResContextProps {
   >;
   useFocalLength: boolean;
   setUseFocalLength: React.Dispatch<React.SetStateAction<boolean>>;
-  showNotification: boolean;
-  setShowNotification: React.Dispatch<React.SetStateAction<boolean>>;
+  // showNotification: boolean;
+  // setShowNotification: React.Dispatch<React.SetStateAction<boolean>>;
+  showBlinkNotification: boolean;
+  setShowBlinkNotification: React.Dispatch<React.SetStateAction<boolean>>;
+  showSittingNotification: boolean;
+  setShowSittingNotification: React.Dispatch<React.SetStateAction<boolean>>;
+  showDistanceNotification: boolean;
+  setShowDistanceNotification: React.Dispatch<React.SetStateAction<boolean>>;
+  showThoracticNotification: boolean;
+  setShowThoracticNotification: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -97,7 +105,13 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [saveUploadVideo, setSaveUploadVideo] = useState(true);
   const [saveSessionVideo, setSaveSessionVideo] = useState(true);
   const [renderSettings, setRenderSettings] = useState(false);
-  const [showNotification, setShowNotification] = useState(true);
+  // const [showNotification, setShowNotification] = useState(true);
+  const [showBlinkNotification, setShowBlinkNotification] = useState(true);
+  const [showSittingNotification, setShowSittingNotification] = useState(true);
+  const [showDistanceNotification, setShowDistanceNotification] =
+    useState(true);
+  const [showThoracticNotification, setShowThoracticNotification] =
+    useState(true);
 
   const webcamRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
@@ -117,8 +131,16 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
           setCalibrationData(config.calibrationData);
         if (config.saveSessionVideo !== undefined)
           setSaveSessionVideo(config.saveSessionVideo);
-        if (config.showNotification !== undefined)
-          setSaveSessionVideo(config.showNotification);
+        // if (config.showNotification !== undefined)
+        //   setShowNotification(config.showNotification);
+        if (config.showBlinkNotification !== undefined)
+          setShowBlinkNotification(config.showBlinkNotification);
+        if (config.showSittingNotification !== undefined)
+          setShowBlinkNotification(config.showSittingNotification);
+        if (config.showDistanceNotification !== undefined)
+          setShowBlinkNotification(config.showDistanceNotification);
+        if (config.showThoracticNotification !== undefined)
+          setShowBlinkNotification(config.showThoracticNotification);
       } catch (error) {
         console.error('Error fetching appConfig:', error);
       } finally {
@@ -173,8 +195,16 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setUseFocalLength,
       saveSessionVideo,
       setSaveSessionVideo,
-      showNotification,
-      setShowNotification,
+      // showNotification,
+      // setShowNotification,
+      showBlinkNotification,
+      setShowBlinkNotification,
+      showSittingNotification,
+      setShowSittingNotification,
+      showDistanceNotification,
+      setShowDistanceNotification,
+      showThoracticNotification,
+      setShowThoracticNotification,
     }),
     [
       resData,
@@ -197,7 +227,11 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       realTimeSessionId,
       useFocalLength,
       saveSessionVideo,
-      showNotification,
+      // showNotification,
+      showBlinkNotification,
+      showSittingNotification,
+      showDistanceNotification,
+      showThoracticNotification,
     ],
   );
 
