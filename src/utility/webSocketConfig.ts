@@ -60,7 +60,7 @@ const useWebSocket = (
   }, []);
 
   const initializeWebSocket = useCallback(() => {
-    const protocol = window.location.protocol === 'http:' ? 'ws' : 'wss';
+    const protocol = 'ws';
     const socketUrl = `${protocol}://localhost:8000/${dest}`;
 
     if (
