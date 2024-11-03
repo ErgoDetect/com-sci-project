@@ -5,7 +5,8 @@ import { useResData } from '../context';
 import axiosInstance from '../utility/axiosInstance';
 
 const useVideoRecorder = () => {
-  const { streaming, videoStreamRef, initializationSuccess } = useResData();
+  const { streaming, videoStreamRef, initializationSuccess, saveSessionVideo } =
+    useResData();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Ref for MediaRecorder
   const recordedChunksRef = useRef<Blob[]>([]); // Ref for recorded video chunks
 
@@ -86,7 +87,12 @@ const useVideoRecorder = () => {
 
   // Manage recording based on streaming and initial state
   useEffect(() => {
-    if (streaming && videoStreamRef.current?.active && initializationSuccess) {
+    if (
+      streaming &&
+      videoStreamRef.current?.active &&
+      initializationSuccess &&
+      saveSessionVideo
+    ) {
       startRecording(videoStreamRef.current); // Start recording if streaming and initial
     } else if (!streaming && mediaRecorderRef.current) {
       stopRecording(); // Stop recording if streaming stops
@@ -103,6 +109,7 @@ const useVideoRecorder = () => {
     stopRecording,
     videoStreamRef,
     initializationSuccess,
+    saveSessionVideo,
   ]);
 
   return {

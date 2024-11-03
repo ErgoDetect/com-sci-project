@@ -47,6 +47,10 @@ const Settings = () => {
     useFocalLength,
     setUseFocalLength,
     calibrationData,
+    saveSessionVideo,
+    setSaveSessionVideo,
+    showNotification,
+    setShowNotification,
   } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const { deviceId, devices, setDeviceId } = useDevices();
@@ -110,6 +114,57 @@ const Settings = () => {
         });
     },
     [setShowDetailedData],
+  );
+  const handleSaveVideoChange = useCallback(
+    (checked: boolean): void => {
+      setSaveSessionVideo(checked);
+      window.electron.config
+        .getAppConfig()
+        .then((config) => {
+          const updatedConfig = { ...config, saveSessionVideo: checked };
+          return window.electron.config.saveAppConfig(updatedConfig);
+        })
+        .then((result) => {
+          if (result.success) {
+            message.success('Settings saved successfully');
+            return 'Settings saved'; // Returning a value for consistency
+          }
+          message.error('Failed to save settings');
+          throw new Error(result.error || 'Unknown save error');
+        })
+        .catch((error): void => {
+          message.error('Error fetching or saving settings');
+          console.error('Error:', error);
+          return null; // Return null explicitly to avoid promise chain issues
+        });
+    },
+    [setSaveSessionVideo],
+  );
+
+  const handleShowNotificationsChange = useCallback(
+    (checked: boolean): void => {
+      setShowNotification(checked);
+      window.electron.config
+        .getAppConfig()
+        .then((config) => {
+          const updatedConfig = { ...config, showNotification: checked };
+          return window.electron.config.saveAppConfig(updatedConfig);
+        })
+        .then((result) => {
+          if (result.success) {
+            message.success('Settings saved successfully');
+            return 'Settings saved'; // Returning a value for consistency
+          }
+          message.error('Failed to save settings');
+          throw new Error(result.error || 'Unknown save error');
+        })
+        .catch((error): void => {
+          message.error('Error fetching or saving settings');
+          console.error('Error:', error);
+          return null; // Return null explicitly to avoid promise chain issues
+        });
+    },
+    [setShowNotification],
   );
 
   const handleUseFocalLengthChange = useCallback(
@@ -194,10 +249,28 @@ const Settings = () => {
           General Settings
         </Title>
         <Form layout="vertical">
-          <Form.Item label="Show Detailed Data During Detection and Summary">
+          <Form.Item label="Show Detailed Data During Detection ">
             <Switch
               checked={showDetailedData}
               onChange={handleDetailedDataChange}
+            />
+            <Tooltip title="Toggle detailed data display in detection ">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item label="Show Notifications">
+            <Switch
+              checked={showNotification}
+              onChange={handleShowNotificationsChange}
+            />
+            <Tooltip title="Toggle detailed data display in detection and summary view.">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item label="Save Video Detection Session">
+            <Switch
+              checked={saveSessionVideo}
+              onChange={handleSaveVideoChange}
             />
             <Tooltip title="Toggle detailed data display in detection and summary view.">
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
@@ -206,7 +279,14 @@ const Settings = () => {
         </Form>
       </>
     ),
-    [showDetailedData, handleDetailedDataChange],
+    [
+      showDetailedData,
+      handleDetailedDataChange,
+      showNotification,
+      handleShowNotificationsChange,
+      saveSessionVideo,
+      handleSaveVideoChange,
+    ],
   );
 
   // Sidebar menu items

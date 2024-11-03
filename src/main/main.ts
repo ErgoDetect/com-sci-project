@@ -29,6 +29,8 @@ const defaultAppConfig = {
   showStat: false,
   saveUploadVideo: true,
   useFocalLength: false,
+  saveSessionVideo: true,
+  showNotification: true,
   calibrationData: {
     cameraMatrix: [
       [0.0, 0.0, 0.0],

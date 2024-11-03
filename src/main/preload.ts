@@ -48,9 +48,15 @@ const electronHandler = {
     },
   },
   notifications: {
-    showNotification(title: string, body: string) {
-      return ipcRenderer.invoke('show-notification', { title, body });
+    showNotification(title: string, body: string, enable: boolean) {
+      if (enable) {
+        return ipcRenderer.invoke('show-notification', { title, body });
+      } else {
+        console.log('Notifications are disabled.');
+        return false;
+      }
     },
+
     openUrl(url: string) {
       return ipcRenderer.invoke('open-auth-url', url);
     },

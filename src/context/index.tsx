@@ -49,6 +49,8 @@ interface ResContextProps {
   setInitialModal: React.Dispatch<React.SetStateAction<boolean>>;
   saveUploadVideo: boolean;
   setSaveUploadVideo: React.Dispatch<React.SetStateAction<boolean>>;
+  saveSessionVideo: boolean;
+  setSaveSessionVideo: React.Dispatch<React.SetStateAction<boolean>>;
   videoFile: File | null;
   setVideoFile: React.Dispatch<React.SetStateAction<File | null>>;
   useVideoFile: boolean;
@@ -61,6 +63,8 @@ interface ResContextProps {
   >;
   useFocalLength: boolean;
   setUseFocalLength: React.Dispatch<React.SetStateAction<boolean>>;
+  showNotification: boolean;
+  setShowNotification: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ResContext = createContext<ResContextProps | null>(null);
@@ -91,7 +95,9 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   );
   const [showDetailedData, setShowDetailedData] = useState(false);
   const [saveUploadVideo, setSaveUploadVideo] = useState(true);
+  const [saveSessionVideo, setSaveSessionVideo] = useState(true);
   const [renderSettings, setRenderSettings] = useState(false);
+  const [showNotification, setShowNotification] = useState(true);
 
   const webcamRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
@@ -109,6 +115,10 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
           setUseFocalLength(config.useFocalLength);
         if (config.calibrationData !== undefined)
           setCalibrationData(config.calibrationData);
+        if (config.saveSessionVideo !== undefined)
+          setSaveSessionVideo(config.saveSessionVideo);
+        if (config.showNotification !== undefined)
+          setSaveSessionVideo(config.showNotification);
       } catch (error) {
         console.error('Error fetching appConfig:', error);
       } finally {
@@ -161,9 +171,14 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setRealTimeSessionId,
       useFocalLength,
       setUseFocalLength,
+      saveSessionVideo,
+      setSaveSessionVideo,
+      showNotification,
+      setShowNotification,
     }),
     [
       resData,
+      contextLoading,
       isLogin,
       loginResponse,
       landMarkData,
@@ -181,7 +196,8 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       useVideoFile,
       realTimeSessionId,
       useFocalLength,
-      contextLoading, // Add contextLoading to dependencies
+      saveSessionVideo,
+      showNotification,
     ],
   );
 
