@@ -49,8 +49,16 @@ const Settings = () => {
     calibrationData,
     saveSessionVideo,
     setSaveSessionVideo,
-    showNotification,
-    setShowNotification,
+    // showNotification,
+    // setShowNotification,
+    showBlinkNotification,
+    setShowBlinkNotification,
+    showSittingNotification,
+    setShowSittingNotification,
+    showDistanceNotification,
+    setShowDistanceNotification,
+    showThoracticNotification,
+    setShowThoracticNotification,
   } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const { deviceId, devices, setDeviceId } = useDevices();
@@ -142,13 +150,36 @@ const Settings = () => {
   );
 
   const handleShowNotificationsChange = useCallback(
-    (checked: boolean): void => {
-      setShowNotification(checked);
+    (type: string, checked: boolean): void => {
       window.electron.config
         .getAppConfig()
         .then((config) => {
-          const updatedConfig = { ...config, showNotification: checked };
-          return window.electron.config.saveAppConfig(updatedConfig);
+          if (type == 'blink') {
+            setShowBlinkNotification(checked);
+            const updatedConfig = { ...config, showBlinkNotification: checked };
+            return window.electron.config.saveAppConfig(updatedConfig);
+          } else if (type == 'sitting') {
+            setShowSittingNotification(checked);
+            const updatedConfig = {
+              ...config,
+              showSittingNotification: checked,
+            };
+            return window.electron.config.saveAppConfig(updatedConfig);
+          } else if (type == 'distance') {
+            setShowDistanceNotification(checked);
+            const updatedConfig = {
+              ...config,
+              showDistanceNotification: checked,
+            };
+            return window.electron.config.saveAppConfig(updatedConfig);
+          } else if (type == 'thoractic') {
+            setShowThoracticNotification(checked);
+            const updatedConfig = {
+              ...config,
+              showThoracticNotification: checked,
+            };
+            return window.electron.config.saveAppConfig(updatedConfig);
+          }
         })
         .then((result) => {
           if (result.success) {
@@ -164,7 +195,12 @@ const Settings = () => {
           return null; // Return null explicitly to avoid promise chain issues
         });
     },
-    [setShowNotification],
+    [
+      setShowBlinkNotification,
+      setShowSittingNotification,
+      setShowDistanceNotification,
+      setShowThoracticNotification,
+    ],
   );
 
   const handleUseFocalLengthChange = useCallback(
@@ -258,12 +294,65 @@ const Settings = () => {
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
             </Tooltip>
           </Form.Item>
-          <Form.Item label="Show Notifications">
+          {/* <Form.Item label="Show Notifications">
             <Switch
               checked={showNotification}
               onChange={handleShowNotificationsChange}
             />
-            <Tooltip title="Toggle detailed data display in detection and summary view.">
+            <Tooltip title="Tooggle to turn on and off notification">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item> */}
+          <Form.Item label="Show Blink Notifications">
+            <Switch
+              checked={showBlinkNotification}
+              onChange={() =>
+                handleShowNotificationsChange('blink', !showBlinkNotification)
+              }
+            />
+            <Tooltip title="Tooggle to turn on and off blink notification">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item label="Show Sitting Notifications">
+            <Switch
+              checked={showSittingNotification}
+              onChange={() =>
+                handleShowNotificationsChange(
+                  'sitting',
+                  !showSittingNotification,
+                )
+              }
+            />
+            <Tooltip title="Tooggle to turn on and off sitting notification">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item label="Show Distance Notifications">
+            <Switch
+              checked={showDistanceNotification}
+              onChange={() =>
+                handleShowNotificationsChange(
+                  'distance',
+                  !showDistanceNotification,
+                )
+              }
+            />
+            <Tooltip title="Tooggle to turn on and off distance notification">
+              <InfoCircleOutlined style={{ marginLeft: 8 }} />
+            </Tooltip>
+          </Form.Item>
+          <Form.Item label="Show Thoractic Notifications">
+            <Switch
+              checked={showThoracticNotification}
+              onChange={() =>
+                handleShowNotificationsChange(
+                  'thoractic',
+                  !showThoracticNotification,
+                )
+              }
+            />
+            <Tooltip title="Tooggle to turn on and off thoractic notification">
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
             </Tooltip>
           </Form.Item>
@@ -272,7 +361,7 @@ const Settings = () => {
               checked={saveSessionVideo}
               onChange={handleSaveVideoChange}
             />
-            <Tooltip title="Toggle detailed data display in detection and summary view.">
+            <Tooltip title="Toggle to save video file while using Live Feed">
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
             </Tooltip>
           </Form.Item>
@@ -282,8 +371,16 @@ const Settings = () => {
     [
       showDetailedData,
       handleDetailedDataChange,
-      showNotification,
-      handleShowNotificationsChange,
+      // showNotification,
+      // handleShowNotificationsChange,
+      showBlinkNotification,
+      setShowBlinkNotification,
+      showSittingNotification,
+      setShowSittingNotification,
+      showDistanceNotification,
+      setShowDistanceNotification,
+      showThoracticNotification,
+      setShowThoracticNotification,
       saveSessionVideo,
       handleSaveVideoChange,
     ],
