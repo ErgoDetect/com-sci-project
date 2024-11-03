@@ -1,5 +1,7 @@
 /* eslint-disable react/button-has-type */
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import axiosInstance from '../utility/axiosInstance';
 
 // Simple styling for the UI components
 const styles = {
@@ -41,6 +43,9 @@ const styles = {
 const EmailVerification = () => {
   const [resendCountdown, setResendCountdown] = useState(60); // Countdown for resending the email
   const [isResending, setIsResending] = useState(false);
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const userEmail = queryParams.get('email');
 
   // Countdown logic for re-enabling the resend button
   useEffect(() => {
@@ -53,16 +58,18 @@ const EmailVerification = () => {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  // const handleResendClick = async () => {
-  //   setIsResending(true);
-  //   try {
-  //     await resendEmail(); // Call the resendEmail function passed as prop
-  //   } catch (error) {
-  //     console.error('Error resending email:', error);
-  //   }
-  //   setIsResending(false);
-  //   setResendCountdown(60); // Reset countdown after resending email
-  // };
+  const handleResendClick = async () => {
+    setIsResending(true);
+    try {
+      await axiosInstance.post('/auth/resend-verification', {
+        email: userEmail,
+      }); // Call the resendEmail function passed as prop
+    } catch (error) {
+      console.error('Error resending email:', error);
+    }
+    setIsResending(false);
+    setResendCountdown(60); // Reset countdown after resending email
+  };
 
   return (
     <div style={styles.container}>
@@ -83,7 +90,7 @@ const EmailVerification = () => {
           </p>
         ) : (
           <button
-            onClick={() => {}}
+            onClick={handleResendClick}
             style={styles.resendButton}
             disabled={isResending}
           >
