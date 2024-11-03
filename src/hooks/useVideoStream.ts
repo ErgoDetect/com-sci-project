@@ -191,7 +191,7 @@ const useVideoStream = ({
       tracks.forEach((track) => track.stop());
       videoStreamRef.current = null;
     }
-  }, [videoStreamRef]);
+  }, [stopFrameTiming, videoStreamRef]);
 
   useEffect(() => {
     handleWebSocketSend();

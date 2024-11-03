@@ -24,12 +24,7 @@ const AccountButton: React.FC = () => {
       label: <span>Settings</span>,
       key: '/setting',
       onClick: () => {
-        setRenderSettings((prev) => {
-          return !prev; // Correctly return the updated value
-        });
-        console.log(renderSettings);
-
-        console.log('Settings clicked'); // Log the click action
+        navigate('/setting');
       },
     },
     {

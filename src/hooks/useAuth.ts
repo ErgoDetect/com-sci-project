@@ -104,13 +104,19 @@ const fetchGoogleAuthUrl = async () => {
   }
 };
 
-// Refresh access token
 const refreshAccessToken = async () => {
   try {
-    await axiosInstance.post(REFRESH_TOKEN_URL);
-  } catch (error) {
+    const response = await axiosInstance.post(REFRESH_TOKEN_URL);
+    if (response.status === 200) {
+      // Assuming the server responds with relevant data on successful refresh
+      return { success: true, token: response.data.token };
+    }
+    // Handle unexpected status codes as unsuccessful refresh attempts
+    return { success: false, message: 'Failed to refresh token' };
+  } catch (error: any) {
     logError('Error refreshing access token', error);
-    throw error;
+    // Return a structured error to handle it gracefully
+    return { success: false, message: error.message };
   }
 };
 
@@ -130,51 +136,14 @@ const checkTokenStatus = async (): Promise<AuthStatusResponse> => {
 const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const [tryCount, setTryCount] = useState(0);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Handle successful login
-
-  // Check server connection
-  const checkServerConnection = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get('/');
-      if (response.status === 200) {
-        setIsConnected(true);
-        setTryCount(0);
-      } else {
-        console.error('Server connection failed with status:', response.status);
-        setIsConnected(false);
-        setTryCount((prev) => prev + 1);
-      }
-    } catch (error) {
-      console.error('Error connecting to server:', error);
-      setIsConnected(false);
-      setTryCount((prev) => prev + 1);
-    }
-  }, []);
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | undefined;
-
-    if (!isConnected && tryCount < 12) {
-      intervalId = setInterval(() => checkServerConnection(), 5000);
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [isConnected, checkServerConnection, tryCount]);
 
   // Token status check
   const checkAuthStatus = useCallback(async (): Promise<AuthStatusResponse> => {
     setLoading(true);
 
     try {
-      let checksTokenStatus = await checkTokenStatus();
+      const checksTokenStatus = await checkTokenStatus();
 
       // Case 1: User is already authenticated
       if (checksTokenStatus.status === 'Authenticated') {
@@ -183,25 +152,50 @@ const useAuth = () => {
 
       // Case 2: Token needs refreshing
       if (checksTokenStatus.status === 'Refresh') {
-        await refreshAccessToken(); // Attempt to refresh token
-        checksTokenStatus = await checkTokenStatus(); // Re-check status
-
-        if (checksTokenStatus.status === 'Authenticated') {
-          navigate(location.pathname); // Navigate to home if re-authenticated
-          return { status: 'Authenticated' }; // Return success
+        const refreshResponse = await refreshAccessToken(); // Attempt to refresh token
+        if (refreshResponse.success) {
+          // Successfully refreshed the token
+          return { status: 'Authenticated' };
         }
+        // Failed to refresh the token, handle according to the failure reason
+        return { status: 'LoginRequired', message: refreshResponse.message };
       }
 
       // Case 3: User needs to log in
-      navigate('/login'); // Only navigate once
       return { status: 'LoginRequired', message: 'Authentication required' };
-    } catch (error: any) {
-      logError('Error during authentication check', error); // Log any errors
+    } catch (error) {
+      logError('Error during authentication check', error);
       return { status: 'LoginRequired', message: 'Authentication failed' };
     } finally {
       setLoading(false); // Stop loading spinner
     }
-  }, [location.pathname, navigate]);
+  }, []);
+
+  const checkServerConnection = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/');
+      if (response.status === 200) {
+        setIsConnected(true); // Connection is good
+      } else {
+        throw new Error('Server not responding');
+      }
+    } catch (error) {
+      console.error('Error connecting to server:', error);
+      setIsConnected(false); // Connection is lost
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check connection every 5 seconds if not connected
+    const interval = !isConnected
+      ? setInterval(checkServerConnection, 5000)
+      : null;
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isConnected, checkServerConnection]);
 
   // Email login handler
   const loginWithEmail = useCallback(
@@ -260,12 +254,13 @@ const useAuth = () => {
 
   return {
     loading,
+    setLoading,
     checkAuthStatus,
     loginWithEmail,
     loginWithGoogle,
     getDeviceIdentifier,
     isConnected,
-    tryCount,
+    refreshAccessToken,
   };
 };
 
