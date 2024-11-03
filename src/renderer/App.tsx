@@ -66,10 +66,8 @@ const App: React.FC = () => {
       setLoading(true);
       const response = await checkAuthStatus();
       setLoading(false);
-      console.log('Authentication response:', response);
 
       const lastPath = localStorage.getItem('lastPath') || '/';
-      console.log('Last path from storage:', lastPath);
 
       if (response.status === 'Authenticated') {
         if (lastPath === '/login') {
@@ -77,9 +75,6 @@ const App: React.FC = () => {
             'Authenticated but last path is login, navigating to home.',
           );
           navigate('/', { replace: true }); // Redirect to home if authenticated but last path is login
-        } else {
-          console.log('Navigating to last path:', lastPath);
-          navigate(lastPath, { replace: true });
         }
       } else if (
         response.status === 'LoginRequired' &&
