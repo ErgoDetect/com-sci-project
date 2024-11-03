@@ -16,7 +16,7 @@ import {
   InfoCircleOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { IoIosCloseCircleOutline } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
 import DeviceSelector from '../components/camera/deviceSelector';
 import useDevices from '../hooks/useDevices';
 import CalibrationModal from '../components/modal/CalibrationModal';
@@ -40,7 +40,7 @@ const defaultCalibrationData = {
   mean_error: 0.0,
 };
 
-const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
+const Settings = () => {
   const {
     showDetailedData,
     setShowDetailedData,
@@ -50,6 +50,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
   } = useResData();
   const [selectedMenu, setSelectedMenu] = useState<string>('camera');
   const { deviceId, devices, setDeviceId } = useDevices();
+  const navigate = useNavigate();
 
   // Check if calibration data matches default value
   const isCalibrationDefault = useMemo(
@@ -260,7 +261,7 @@ const Settings: React.FC<SettingsProps> = ({ setIsSettingsOpen }) => {
         shape="circle"
         size="large"
         icon={<CloseOutlined />}
-        onClick={() => setIsSettingsOpen(false)}
+        onClick={() => navigate(-1)}
         onMouseOver={(e) => {
           e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
         }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Routes,
   Route,
@@ -21,28 +21,19 @@ import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
 import HistoryPage from '../pages/HistoryPage';
 import AppHeader from '../components/layout/AppHeader';
-import ConnectionErrorModal from '../components/layout/ConnectionErrorModal';
 import { useResData } from '../context';
 import useReceiveData from '../hooks/useReceiveData';
 import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
 import VideoUploadPage from '../pages/VideoUploadPage';
+import useNavigationEffect from '../hooks/useNavigationEffect';
 
 const App: React.FC = () => {
-  const { checkAuthStatus, loading, isConnected, tryCount } = useAuth();
+  const { checkAuthStatus, loading, isConnected, setLoading } = useAuth();
   const { contextLoading, setStreaming } = useResData();
-  const { renderSettings, setRenderSettings } = useResData();
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const userInitiatedCheck = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Handle connection error modal visibility based on retry count
-  useEffect(() => {
-    if (tryCount >= 12) {
-      setIsModalVisible(true);
-    }
-  }, [tryCount]);
-
   // Handle deep link protocol for navigation
   useEffect(() => {
     const handleProtocolUrl = (url: string) => {
@@ -61,35 +52,70 @@ const App: React.FC = () => {
     return undefined;
   }, [navigate]);
 
-  // Authenticate user and redirect if needed
+  useEffect(() => {
+    localStorage.setItem('lastPath', location.pathname);
+  }, [location]);
+
   useEffect(() => {
     const authenticate = async () => {
-      const response = await checkAuthStatus();
-      if (
-        response.status === 'Authenticated' &&
-        location.pathname === '/login'
-      ) {
-        navigate('/');
+      if (!isConnected) {
+        console.log('Waiting for server connection...');
+        return;
       }
+
+      setLoading(true);
+      const response = await checkAuthStatus();
+      setLoading(false);
+      console.log('Authentication response:', response);
+
+      const lastPath = localStorage.getItem('lastPath') || '/';
+      console.log('Last path from storage:', lastPath);
+
+      if (response.status === 'Authenticated') {
+        if (lastPath === '/login') {
+          console.log(
+            'Authenticated but last path is login, navigating to home.',
+          );
+          navigate('/', { replace: true }); // Redirect to home if authenticated but last path is login
+        } else {
+          console.log('Navigating to last path:', lastPath);
+          navigate(lastPath, { replace: true });
+        }
+      } else if (
+        response.status === 'LoginRequired' &&
+        !userInitiatedCheck.current
+      ) {
+        if (
+          ['/', '/history', '/video-upload', '/summary', '/setting'].includes(
+            lastPath,
+          )
+        ) {
+          console.log('Navigating back to non-sensitive route:', lastPath);
+          navigate(lastPath, { replace: true });
+        } else {
+          console.log('Navigating to login due to login requirement');
+          navigate('/login', { replace: true });
+        }
+      }
+      userInitiatedCheck.current = false;
     };
 
     if (!['/signup', '/wait-verify'].includes(location.pathname)) {
       authenticate();
     }
-  }, [checkAuthStatus, location.pathname, navigate]);
+  }, [checkAuthStatus, isConnected, location.pathname, navigate, setLoading]);
 
   useEffect(() => {
-    if (['/video-upload', '/summary', '/history'].includes(location.pathname)) {
+    if (
+      ['/video-upload', '/summary', '/history', 'summary'].includes(
+        location.pathname,
+      )
+    ) {
       setStreaming(true);
     } else {
       setStreaming(false);
     }
   }, [location.pathname, setStreaming]);
-
-  const closeSettings = useCallback(
-    () => setRenderSettings(false),
-    [setRenderSettings],
-  );
 
   // Memoize menu items to avoid unnecessary re-renders
   const menuItems = useMemo(
@@ -115,8 +141,8 @@ const App: React.FC = () => {
     [],
   );
 
-  // Render content based on the application's state
   const renderContent = useCallback(() => {
+    // Check both loading states and connection state
     if (loading || !isConnected || contextLoading) {
       return (
         <div
@@ -134,54 +160,40 @@ const App: React.FC = () => {
       );
     }
 
-    if (renderSettings) {
-      return <SettingPage setIsSettingsOpen={closeSettings} />;
-    }
+    // Conditional rendering based on path
+    const shouldShowHeader = ![
+      '/login',
+      '/signup',
+      '/wait-verify',
+      '/setting',
+      '/profile',
+    ].includes(location.pathname);
 
-    switch (location.pathname) {
-      case '/login':
-        return <Login />;
-      case '/signup':
-        return <Signup />;
-      case '/wait-verify':
-        return <WaitVerify />;
-      default:
-        return (
-          <>
-            <AppHeader items={menuItems} />
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/video-upload" element={<VideoUploadPage />} />
-              <Route path="/summary" element={<SummaryPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-            </Routes>
-          </>
-        );
-    }
-  }, [
-    loading,
-    isConnected,
-    contextLoading,
-    renderSettings,
-    location.pathname,
-    closeSettings,
-    menuItems,
-  ]);
+    return (
+      <>
+        {shouldShowHeader && <AppHeader items={menuItems} />}
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/wait-verify" element={<WaitVerify />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/video-upload" element={<VideoUploadPage />} />
+          <Route path="/summary" element={<SummaryPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/setting" element={<SettingPage />} />
+          <Route path="/profile" element="" />
+        </Routes>
+      </>
+    );
+  }, [loading, isConnected, contextLoading, location.pathname, menuItems]);
 
   // Initialize hooks for additional functionality
   useReceiveData();
   useVideoRecorder();
   useNotify();
+  useNavigationEffect(userInitiatedCheck);
 
-  return (
-    <>
-      <ConnectionErrorModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-      />
-      {renderContent()}
-    </>
-  );
+  return <>{renderContent()}</>;
 };
 
 export default App;
