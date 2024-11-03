@@ -1,6 +1,8 @@
 /* eslint-disable react/button-has-type */
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import axiosInstance from '../utility/axiosInstance';
 
 // Simple styling for the UI components
@@ -43,6 +45,7 @@ const styles = {
 const EmailVerification = () => {
   const [resendCountdown, setResendCountdown] = useState(60); // Countdown for resending the email
   const [isResending, setIsResending] = useState(false);
+  const navigate = useNavigate();
   const { search } = useLocation();
   const queryParams = new URLSearchParams(search);
   const userEmail = queryParams.get('email');
@@ -73,6 +76,11 @@ const EmailVerification = () => {
 
   return (
     <div style={styles.container}>
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate(-1)}
+      />
       <h1 style={styles.title}>Verify Your Email</h1>
       <p style={styles.message}>
         We sent an email to <strong />. Please check your inbox and click on the
