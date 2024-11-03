@@ -192,7 +192,7 @@ export interface GoogleAuthResponse {
 }
 
 export interface AuthStatusResponse {
-  status: 'Authenticated' | 'Refresh' | 'LoginRequired' | 'Not Found'; // Expected status values
+  status: 'Authenticated' | 'Refresh' | 'LoginRequired' | 'Not Found';
   message?: string; // Optional error or informational message
   user_id?: string; // Optional user ID if needed
 }

@@ -1,48 +1,18 @@
-/* eslint-disable react/button-has-type */
-import React, { useState, useEffect } from 'react';
-
-// Simple styling for the UI components
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    textAlign: 'center',
-    padding: '20px',
-  } as React.CSSProperties,
-  title: {
-    fontSize: '2rem',
-    marginBottom: '1rem',
-  },
-  message: {
-    fontSize: '1.25rem',
-    marginBottom: '1rem',
-  },
-  countdownContainer: {
-    marginTop: '1rem',
-  },
-  countdownMessage: {
-    fontSize: '1rem',
-    color: 'gray',
-  },
-  resendButton: {
-    padding: '10px 20px',
-    fontSize: '1rem',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-};
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button, Spin, Card } from 'antd';
+import MailIcon from '../icons/mail.png';
+import axiosInstance from '../utility/axiosInstance';
 
 const EmailVerification = () => {
-  const [resendCountdown, setResendCountdown] = useState(60); // Countdown for resending the email
+  const [resendCountdown, setResendCountdown] = useState(60);
   const [isResending, setIsResending] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const userEmail = queryParams.get('email') || '';
 
-  // Countdown logic for re-enabling the resend button
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (resendCountdown > 0) {
@@ -53,44 +23,72 @@ const EmailVerification = () => {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  // const handleResendClick = async () => {
-  //   setIsResending(true);
-  //   try {
-  //     await resendEmail(); // Call the resendEmail function passed as prop
-  //   } catch (error) {
-  //     console.error('Error resending email:', error);
-  //   }
-  //   setIsResending(false);
-  //   setResendCountdown(60); // Reset countdown after resending email
-  // };
+  const handleResendClick = async () => {
+    setIsResending(true);
+    try {
+      await axiosInstance.post('/auth/resend-verification', {
+        email: userEmail,
+      });
+    } catch (errors) {
+      setError('Failed to resend email. Please try again later.');
+    } finally {
+      setIsResending(false);
+      setResendCountdown(60);
+    }
+  };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Verify Your Email</h1>
-      <p style={styles.message}>
-        We sent an email to <strong />. Please check your inbox and click on the
-        verification link to verify your email address.
-      </p>
-      <p>
-        If you haven`&apos`t received the email, you can resend it after the
-        timer below expires.
-      </p>
-
-      <div style={styles.countdownContainer}>
-        {resendCountdown > 0 ? (
-          <p style={styles.countdownMessage}>
-            You can resend the verification email in {resendCountdown} seconds.
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+      }}
+    >
+      <Card
+        style={{
+          background: '#fff',
+          padding: '20px',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+          width: '45%',
+          borderRadius: '12px',
+          // margin: '15px',
+        }}
+      >
+        <div
+          style={{
+            padding: '10px 20px',
+            color: '#fff',
+            textAlign: 'center',
+          }}
+        >
+          <img src={MailIcon} alt="mail icon" style={{ width: '15%' }} />
+        </div>
+        <div style={{ padding: '20px', textAlign: 'center', color: '#333' }}>
+          <h2>Check Email</h2>
+          <p>
+            Please check your email inbox and click on the provided link to
+            verify your email.
+            <p>
+              If you don&apos;t receive email
+              <Button
+                type="link"
+                onClick={handleResendClick}
+                disabled={isResending}
+              >
+                {isResending ? <Spin /> : 'Resend Email'}
+              </Button>
+            </p>
           </p>
-        ) : (
-          <button
-            onClick={() => {}}
-            style={styles.resendButton}
-            disabled={isResending}
-          >
-            {isResending ? 'Resending...' : 'Resend Email'}
-          </button>
-        )}
-      </div>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <Button type="link" onClick={() => navigate('/login')}>
+            Back to Login
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 };

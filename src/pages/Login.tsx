@@ -1,7 +1,12 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
-import { Button, Divider, Form, Input } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Button, Divider, Flex, Form, Input, Space } from 'antd';
+import {
+  UserOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
+  LockOutlined,
+} from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import GoogleButton from '../components/Login/GoogleButton';
 import useAuth from '../hooks/useAuth';
@@ -42,7 +47,6 @@ const Login: React.FC = () => {
           <h1 style={{ textAlign: 'center' }}>Log in</h1>
           <Form name="login" layout="vertical" onFinish={onFinish}>
             <Form.Item
-              // label="email address"
               name="email"
               rules={[{ required: true, message: '* email require' }]}
             >
@@ -59,11 +63,26 @@ const Login: React.FC = () => {
                 type={passwordVisible ? 'text' : 'password'}
                 style={{ height: 38 }}
                 suffix={
-                  <Button type="link" onClick={togglePasswordVisibility}>
-                    {passwordVisible ? 'Hide' : 'Show'}
-                  </Button>
+                  <Button
+                    type="link"
+                    color="primary"
+                    onClick={togglePasswordVisibility}
+                    icon={
+                      passwordVisible ? (
+                        <EyeTwoTone />
+                      ) : (
+                        <EyeInvisibleOutlined />
+                      )
+                    }
+                  />
                 }
               />
+            </Form.Item>
+            <Form.Item>
+              <Flex justify="end" align="center">
+                <Form.Item name="remember" valuePropName="checked" noStyle />
+                <Button type="text">Forgot password</Button>
+              </Flex>
             </Form.Item>
 
             <Form.Item>
@@ -74,7 +93,17 @@ const Login: React.FC = () => {
           </Form>
 
           <h4 style={{ textAlign: 'center' }}>
-            Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+            Don&apos;t have an account?{' '}
+            <Link
+              to="/signup"
+              style={{
+                color: '#1890ff',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+            >
+              Sign up
+            </Link>
           </h4>
         </div>
 

@@ -26,7 +26,6 @@ import useReceiveData from '../hooks/useReceiveData';
 import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
 import VideoUploadPage from '../pages/VideoUploadPage';
-import useNavigationEffect from '../hooks/useNavigationEffect';
 
 const App: React.FC = () => {
   const { checkAuthStatus, loading, isConnected, setLoading } = useAuth();
@@ -53,13 +52,8 @@ const App: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    localStorage.setItem('lastPath', location.pathname);
-  }, [location]);
-
-  useEffect(() => {
     const authenticate = async () => {
       if (!isConnected) {
-        console.log('Waiting for server connection...');
         return;
       }
 
@@ -71,28 +65,12 @@ const App: React.FC = () => {
 
       if (response.status === 'Authenticated') {
         if (lastPath === '/login') {
-          console.log(
-            'Authenticated but last path is login, navigating to home.',
-          );
-          navigate('/', { replace: true }); // Redirect to home if authenticated but last path is login
-        }
-      } else if (
-        response.status === 'LoginRequired' &&
-        !userInitiatedCheck.current
-      ) {
-        if (
-          ['/', '/history', '/video-upload', '/summary', '/setting'].includes(
-            lastPath,
-          )
-        ) {
-          console.log('Navigating back to non-sensitive route:', lastPath);
-          navigate(lastPath, { replace: true });
-        } else {
-          console.log('Navigating to login due to login requirement');
-          navigate('/login', { replace: true });
+          navigate('/', { replace: true });
         }
       }
-      userInitiatedCheck.current = false;
+      if (response.status === 'LoginRequired' && !userInitiatedCheck.current) {
+        navigate('/login', { replace: true });
+      }
     };
 
     if (!['/signup', '/wait-verify'].includes(location.pathname)) {
@@ -186,7 +164,6 @@ const App: React.FC = () => {
   useReceiveData();
   useVideoRecorder();
   useNotify();
-  useNavigationEffect(userInitiatedCheck);
 
   return <>{renderContent()}</>;
 };

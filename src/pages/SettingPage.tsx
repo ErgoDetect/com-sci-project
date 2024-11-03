@@ -25,11 +25,6 @@ import { useResData } from '../context';
 const { Sider, Content } = Layout;
 const { Title } = Typography;
 
-interface SettingsProps {
-  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-// Default calibration data
 const defaultCalibrationData = {
   cameraMatrix: [
     [0.0, 0.0, 0.0],
