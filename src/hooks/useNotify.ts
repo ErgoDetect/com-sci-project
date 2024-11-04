@@ -8,6 +8,7 @@ const useNotify = () => {
     showSittingNotification,
     showDistanceNotification,
     showThoracticNotification,
+    setStreaming,
   } = useResData();
 
   const lastResDataRef = useRef(null);
@@ -19,7 +20,8 @@ const useNotify = () => {
       resData.type === 'triggered_alerts' &&
       lastResDataRef.current !== resData
     ) {
-      const { blink, sitting, distance, thoracic } = resData.data;
+      const { blink, sitting, distance, thoracic, time_limit_exceed } =
+        resData.data;
 
       if (blink) {
         window.electron.notifications.showNotification(
@@ -53,6 +55,14 @@ const useNotify = () => {
         );
       }
 
+      if (time_limit_exceed) {
+        window.electron.notifications.showNotification(
+          'Time limit Alert',
+          'Session Exceed 2 Hours.',
+          showThoracticNotification,
+        );
+        setStreaming(false);
+      }
       // Update the lastResDataRef to the current resData
       lastResDataRef.current = resData;
     }
