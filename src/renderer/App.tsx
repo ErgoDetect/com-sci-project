@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import {
   Routes,
   Route,
@@ -21,23 +21,31 @@ import SummaryPage from '../pages/SummaryPage';
 import SettingPage from '../pages/SettingPage';
 import HistoryPage from '../pages/HistoryPage';
 import AppHeader from '../components/layout/AppHeader';
+
 import { useResData } from '../context';
 import useReceiveData from '../hooks/useReceiveData';
 import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
 import VideoUploadPage from '../pages/VideoUploadPage';
+import RequestResetLink from '../pages/RequestResetLink';
+import ResetPassword from '../pages/ResetPasswordPage';
 
 const App: React.FC = () => {
-  const { checkAuthStatus, loading, isConnected, setLoading } = useAuth();
+  const { checkAuthStatus, loading, isConnected } = useAuth();
   const { contextLoading, setStreaming } = useResData();
-  const userInitiatedCheck = useRef(false);
+
   const navigate = useNavigate();
   const location = useLocation();
+
   // Handle deep link protocol for navigation
   useEffect(() => {
     const handleProtocolUrl = (url: string) => {
       if (url.startsWith('ergodetect://login')) {
         navigate('/login');
+      } else if (url.startsWith('ergodetect://reset-password')) {
+        const params = new URLSearchParams(url.split('?')[1]);
+        const email = params.get('email');
+        navigate(`/reset-password?email=${email}`);
       }
     };
 
@@ -51,39 +59,25 @@ const App: React.FC = () => {
     return undefined;
   }, [navigate]);
 
+  // Authenticate user and redirect if needed
   useEffect(() => {
     const authenticate = async () => {
-      if (!isConnected) {
-        return;
-      }
-
-      setLoading(true);
       const response = await checkAuthStatus();
-      setLoading(false);
-
-      const lastPath = localStorage.getItem('lastPath') || '/';
-
-      if (response.status === 'Authenticated') {
-        if (lastPath === '/login') {
-          navigate('/', { replace: true });
-        }
-      }
-      if (response.status === 'LoginRequired' && !userInitiatedCheck.current) {
-        navigate('/login', { replace: true });
+      if (
+        response.status === 'Authenticated' &&
+        location.pathname === '/login'
+      ) {
+        navigate('/');
       }
     };
 
     if (!['/signup', '/wait-verify'].includes(location.pathname)) {
       authenticate();
     }
-  }, [checkAuthStatus, isConnected, location.pathname, navigate, setLoading]);
+  }, [checkAuthStatus, location.pathname, navigate]);
 
   useEffect(() => {
-    if (
-      ['/video-upload', '/summary', '/history', 'summary'].includes(
-        location.pathname,
-      )
-    ) {
+    if (['/video-upload', '/summary', '/history'].includes(location.pathname)) {
       setStreaming(true);
     } else {
       setStreaming(false);
@@ -114,8 +108,8 @@ const App: React.FC = () => {
     [],
   );
 
+  // Render content based on the application's state
   const renderContent = useCallback(() => {
-    // Check both loading states and connection state
     if (loading || !isConnected || contextLoading) {
       return (
         <div
@@ -133,13 +127,13 @@ const App: React.FC = () => {
       );
     }
 
-    // Conditional rendering based on path
     const shouldShowHeader = ![
       '/login',
       '/signup',
       '/wait-verify',
       '/setting',
-      '/profile',
+      '/request-reset',
+      '/reset-password',
     ].includes(location.pathname);
 
     return (
@@ -154,7 +148,8 @@ const App: React.FC = () => {
           <Route path="/summary" element={<SummaryPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/setting" element={<SettingPage />} />
-          <Route path="/profile" element="" />
+          <Route path="/request-reset" element={<RequestResetLink />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </>
     );

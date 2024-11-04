@@ -7,13 +7,14 @@ import {
   EyeTwoTone,
   LockOutlined,
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import GoogleButton from '../components/Login/GoogleButton';
 import useAuth from '../hooks/useAuth';
 
 const Login: React.FC = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const { loading, loginWithEmail } = useAuth(); // Use the centralized hook
+  const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
     setPasswordVisible((prev) => !prev);
@@ -81,7 +82,9 @@ const Login: React.FC = () => {
             <Form.Item>
               <Flex justify="end" align="center">
                 <Form.Item name="remember" valuePropName="checked" noStyle />
-                <Button type="text">Forgot password</Button>
+                <Button type="text" onClick={() => navigate('/request-reset')}>
+                  Forgot password
+                </Button>
               </Flex>
             </Form.Item>
 

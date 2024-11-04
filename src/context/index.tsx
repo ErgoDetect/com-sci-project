@@ -37,8 +37,6 @@ interface ResContextProps {
   setShowDetailedData: React.Dispatch<React.SetStateAction<boolean>>;
   webcamRef: React.RefObject<HTMLVideoElement>;
   videoStreamRef: React.MutableRefObject<MediaStream | null>;
-  renderSettings: boolean;
-  setRenderSettings: React.Dispatch<React.SetStateAction<boolean>>;
   trackingData: any;
   setTrackingData: React.Dispatch<React.SetStateAction<any>>;
   isAligned: boolean;
@@ -63,8 +61,6 @@ interface ResContextProps {
   >;
   useFocalLength: boolean;
   setUseFocalLength: React.Dispatch<React.SetStateAction<boolean>>;
-  // showNotification: boolean;
-  // setShowNotification: React.Dispatch<React.SetStateAction<boolean>>;
   showBlinkNotification: boolean;
   setShowBlinkNotification: React.Dispatch<React.SetStateAction<boolean>>;
   showSittingNotification: boolean;
@@ -104,8 +100,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
   const [showDetailedData, setShowDetailedData] = useState(false);
   const [saveUploadVideo, setSaveUploadVideo] = useState(true);
   const [saveSessionVideo, setSaveSessionVideo] = useState(true);
-  const [renderSettings, setRenderSettings] = useState(false);
-  // const [showNotification, setShowNotification] = useState(true);
   const [showBlinkNotification, setShowBlinkNotification] = useState(true);
   const [showSittingNotification, setShowSittingNotification] = useState(true);
   const [showDistanceNotification, setShowDistanceNotification] =
@@ -173,8 +167,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setShowDetailedData,
       webcamRef,
       videoStreamRef,
-      renderSettings,
-      setRenderSettings,
       trackingData,
       setTrackingData,
       isAligned,
@@ -195,8 +187,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       setUseFocalLength,
       saveSessionVideo,
       setSaveSessionVideo,
-      // showNotification,
-      // setShowNotification,
       showBlinkNotification,
       setShowBlinkNotification,
       showSittingNotification,
@@ -216,7 +206,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       calibrationData,
       combineResult,
       showDetailedData,
-      renderSettings,
       trackingData,
       isAligned,
       initializationSuccess,
@@ -227,7 +216,6 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
       realTimeSessionId,
       useFocalLength,
       saveSessionVideo,
-      // showNotification,
       showBlinkNotification,
       showSittingNotification,
       showDistanceNotification,

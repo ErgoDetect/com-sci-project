@@ -1,25 +1,17 @@
 import React from 'react';
 import { UserOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Dropdown, Space, Avatar } from 'antd';
+import { Dropdown, Avatar } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utility/axiosInstance';
-import { useResData } from '../../context';
+
 import '../../styles/styles.css';
 
 const AccountButton: React.FC = () => {
-  const { renderSettings, setRenderSettings } = useResData();
   const navigate = useNavigate();
 
   // Menu items with logout handling
   const items: MenuProps['items'] = [
-    {
-      label: <a href="/profile">Profile</a>,
-      key: '0',
-      onClick: () => {
-        console.log('Profile clicked'); // Log the click action
-      },
-    },
     {
       label: <span>Settings</span>,
       key: '/setting',
