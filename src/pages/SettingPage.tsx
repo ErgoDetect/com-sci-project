@@ -145,36 +145,39 @@ const Settings = () => {
   );
 
   const handleShowNotificationsChange = useCallback(
-    (type: string, checked: boolean): void => {
+    (
+      type: 'blink' | 'sitting' | 'distance' | 'thoractic',
+      checked: boolean,
+    ): void => {
+      const typeMapping = {
+        blink: {
+          setState: setShowBlinkNotification,
+          configKey: 'showBlinkNotification',
+        },
+        sitting: {
+          setState: setShowSittingNotification,
+          configKey: 'showSittingNotification',
+        },
+        distance: {
+          setState: setShowDistanceNotification,
+          configKey: 'showDistanceNotification',
+        },
+        thoractic: {
+          setState: setShowThoracticNotification,
+          configKey: 'showThoracticNotification',
+        },
+      };
+
+      const mapping = typeMapping[type];
+
+      if (!mapping) return; // Early return if the type is not recognized
+
       window.electron.config
         .getAppConfig()
         .then((config) => {
-          if (type == 'blink') {
-            setShowBlinkNotification(checked);
-            const updatedConfig = { ...config, showBlinkNotification: checked };
-            return window.electron.config.saveAppConfig(updatedConfig);
-          } else if (type == 'sitting') {
-            setShowSittingNotification(checked);
-            const updatedConfig = {
-              ...config,
-              showSittingNotification: checked,
-            };
-            return window.electron.config.saveAppConfig(updatedConfig);
-          } else if (type == 'distance') {
-            setShowDistanceNotification(checked);
-            const updatedConfig = {
-              ...config,
-              showDistanceNotification: checked,
-            };
-            return window.electron.config.saveAppConfig(updatedConfig);
-          } else if (type == 'thoractic') {
-            setShowThoracticNotification(checked);
-            const updatedConfig = {
-              ...config,
-              showThoracticNotification: checked,
-            };
-            return window.electron.config.saveAppConfig(updatedConfig);
-          }
+          mapping.setState(checked);
+          const updatedConfig = { ...config, [mapping.configKey]: checked };
+          return window.electron.config.saveAppConfig(updatedConfig);
         })
         .then((result) => {
           if (result.success) {
@@ -289,15 +292,6 @@ const Settings = () => {
               <InfoCircleOutlined style={{ marginLeft: 8 }} />
             </Tooltip>
           </Form.Item>
-          {/* <Form.Item label="Show Notifications">
-            <Switch
-              checked={showNotification}
-              onChange={handleShowNotificationsChange}
-            />
-            <Tooltip title="Tooggle to turn on and off notification">
-              <InfoCircleOutlined style={{ marginLeft: 8 }} />
-            </Tooltip>
-          </Form.Item> */}
           <Form.Item label="Show Blink Notifications">
             <Switch
               checked={showBlinkNotification}
@@ -366,18 +360,13 @@ const Settings = () => {
     [
       showDetailedData,
       handleDetailedDataChange,
-      // showNotification,
-      // handleShowNotificationsChange,
       showBlinkNotification,
-      setShowBlinkNotification,
       showSittingNotification,
-      setShowSittingNotification,
       showDistanceNotification,
-      setShowDistanceNotification,
       showThoracticNotification,
-      setShowThoracticNotification,
       saveSessionVideo,
       handleSaveVideoChange,
+      handleShowNotificationsChange,
     ],
   );
 

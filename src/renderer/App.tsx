@@ -26,6 +26,8 @@ import useReceiveData from '../hooks/useReceiveData';
 import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
 import VideoUploadPage from '../pages/VideoUploadPage';
+import RequestResetLink from '../pages/RequestResetLink';
+import ResetPassword from '../pages/ResetPasswordPage';
 
 const App: React.FC = () => {
   const { checkAuthStatus, loading, isConnected, setLoading } = useAuth();
@@ -38,6 +40,10 @@ const App: React.FC = () => {
     const handleProtocolUrl = (url: string) => {
       if (url.startsWith('ergodetect://login')) {
         navigate('/login');
+      } else if (url.startsWith('ergodetect://reset-password')) {
+        const params = new URLSearchParams(url.split('?')[1]);
+        const email = params.get('email');
+        navigate(`/reset-password?email=${email}`);
       }
     };
 
@@ -139,7 +145,8 @@ const App: React.FC = () => {
       '/signup',
       '/wait-verify',
       '/setting',
-      '/profile',
+      '/request-reset',
+      '/reset-password',
     ].includes(location.pathname);
 
     return (
@@ -154,7 +161,8 @@ const App: React.FC = () => {
           <Route path="/summary" element={<SummaryPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/setting" element={<SettingPage />} />
-          <Route path="/profile" element="" />
+          <Route path="/request-reset" element={<RequestResetLink />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </>
     );
