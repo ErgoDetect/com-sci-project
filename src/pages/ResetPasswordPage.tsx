@@ -33,8 +33,12 @@ const ResetPassword: React.FC = () => {
         message.success('Password reset successfully! Redirecting to login...');
         navigate('/login');
       }
-    } catch (error) {
-      message.error('Failed to reset password. Please try again.');
+    } catch (error: any) {
+      if (error.response && error.response.status === 409) {
+        message.error('New password must be different from the old password');
+      } else {
+        message.error('Failed to reset password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
