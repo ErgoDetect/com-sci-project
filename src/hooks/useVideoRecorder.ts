@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { message } from 'antd';
 import fixWebmDuration from 'webm-duration-fix';
 import { useResData } from '../context';
@@ -9,10 +9,12 @@ const useVideoRecorder = () => {
     useResData();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Ref for MediaRecorder
   const recordedChunksRef = useRef<Blob[]>([]); // Ref for recorded video chunks
+  const [saveFinish, setSaveFinish] = useState(false);
 
   // Save recorded video and clean up memory
   const saveRecordedVideo = useCallback(async () => {
     if (recordedChunksRef.current.length === 0) return;
+    setSaveFinish(false);
 
     try {
       const blob = await fixWebmDuration(
@@ -35,6 +37,7 @@ const useVideoRecorder = () => {
 
       if (result.success) {
         message.success(`Video saved to ${result.filePath}`);
+        setSaveFinish(true);
         axiosInstance.post('/landmark/video_name', {
           video_name: videoFileName,
           thumbnail,
@@ -115,6 +118,7 @@ const useVideoRecorder = () => {
   return {
     startRecording,
     stopRecording,
+    saveFinish,
   };
 };
 

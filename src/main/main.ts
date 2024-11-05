@@ -24,13 +24,45 @@ let tray: Tray | null = null;
 let isQuitting = false;
 let powerSaveBlockerId: number | null = null;
 
+const platformFolder =
+  process.platform === 'darwin'
+    ? 'darwin'
+    : process.platform === 'win32'
+      ? 'win32'
+      : null;
+const archFolder = process.arch === 'arm64' ? 'arm64' : 'x64';
+
+if (!platformFolder) {
+  throw new Error('Unsupported platform');
+}
+
+// Define ffmpeg and ffprobe paths based on packaging status
+let ffmpegPath = app.isPackaged
+  ? path.join(process.resourcesPath, 'ffmpeg')
+  : path.resolve(__dirname, '../../node_modules/ffmpeg-static/ffmpeg');
+
+let ffprobePath = app.isPackaged
+  ? path.join(
+      process.resourcesPath,
+      'ffprobe',
+      platformFolder,
+      archFolder,
+      'ffprobe',
+    )
+  : path.resolve(
+      __dirname,
+      `../../node_modules/ffprobe-static/bin/${platformFolder}/${archFolder}/ffprobe`,
+    );
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
+
 // Define the default app configuration
 const defaultAppConfig = {
   showStat: false,
   saveUploadVideo: true,
   useFocalLength: false,
   saveSessionVideo: true,
-  // showNotification: true,
   showBlinkNotification: true,
   showSittingNotification: true,
   showDistanceNotification: true,
@@ -63,18 +95,22 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-// Ensure save folder and settings file exist
-const ensureSaveFolderExists = (): void => {
-  const saveFolderPath = path.join(app.getPath('userData'), 'result');
-  const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
+const appPaths = {
+  saveFolderPath: path.join(app.getPath('userData'), 'result'),
+  settingPath: path.join(app.getPath('userData'), 'appConfig.json'),
+};
 
-  if (!fs.existsSync(saveFolderPath)) {
-    fs.mkdirSync(saveFolderPath, { recursive: true });
+// Ensure save folder and settings file exist
+const ensureSaveFolderExists = async () => {
+  if (!fs.existsSync(appPaths.saveFolderPath)) {
+    await fs.promises.mkdir(appPaths.saveFolderPath, { recursive: true });
   }
 
-  if (!fs.existsSync(settingPath)) {
-    // Write the default app config to the settings file
-    fs.writeFileSync(settingPath, JSON.stringify(defaultAppConfig, null, 2));
+  if (!fs.existsSync(appPaths.settingPath)) {
+    fs.writeFileSync(
+      appPaths.settingPath,
+      JSON.stringify(defaultAppConfig, null, 2),
+    );
   }
 };
 
@@ -178,37 +214,39 @@ const setupAppEvents = (): void => {
   });
 };
 
-const createThumbnail = (
+const createThumbnail = async (
   videoPath: string,
   thumbnailPath: string,
 ): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    ffmpeg(videoPath)
-      .screenshots({
-        timestamps: ['1%'], // Capture frame at 5% of video duration
-        filename: path.basename(thumbnailPath),
-        folder: path.dirname(thumbnailPath),
-        size: '1280x720', // Desired thumbnail dimensions
-      })
-      .on('end', () => {
-        console.log(`Thumbnail created successfully at ${thumbnailPath}`);
-        resolve();
-      })
-      .on('error', (err: Error) => {
-        console.error('Error creating thumbnail:', err);
-        reject(err);
-      });
-  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(videoPath)
+        .screenshots({
+          timestamps: ['1%'], // Capture frame at 5% of video duration
+          filename: path.basename(thumbnailPath),
+          folder: path.dirname(thumbnailPath),
+          size: '1280x720', // Desired thumbnail dimensions
+        })
+        .on('end', () => {
+          console.log(`Thumbnail created successfully at ${thumbnailPath}`);
+          resolve();
+        })
+        .on('error', (err: Error) => {
+          console.error('Error creating thumbnail:', err);
+          reject(err);
+        });
+    });
+  } catch (error) {
+    throw new Error(`Thumbnail creation failed: ${(error as Error).message}`);
+  }
 };
 
 const deleteVideoAndThumbnail = async (
   videoName: string,
   thumbnailName: string,
 ): Promise<{ success: boolean; error?: string }> => {
-  const saveFolderPath = path.join(app.getPath('userData'), 'result');
-
-  const videoPath = path.join(saveFolderPath, videoName);
-  const thumbnailPath = path.join(saveFolderPath, thumbnailName);
+  const videoPath = path.join(appPaths.saveFolderPath, videoName);
+  const thumbnailPath = path.join(appPaths.saveFolderPath, thumbnailName);
 
   const deletionPromises = [];
 
@@ -245,37 +283,38 @@ const deleteVideoAndThumbnail = async (
   }
 };
 
+// Utility function to save file
+const saveFile = async (filePath: string, data: Buffer) => {
+  await fs.promises.writeFile(filePath, data);
+};
+
+const saveVideoWithThumbnail = async (
+  videoName: string,
+  thumbnail: string,
+  buffer: Buffer,
+) => {
+  const filePath = path.join(appPaths.saveFolderPath, videoName);
+  const thumbnailPath = path.join(appPaths.saveFolderPath, thumbnail);
+
+  // Start saving the file and creating the thumbnail concurrently
+  const saveFilePromise = saveFile(filePath, buffer);
+  const thumbnailPromise = saveFilePromise.then(() =>
+    createThumbnail(filePath, thumbnailPath),
+  );
+
+  // Wait for both operations to complete
+  await Promise.all([saveFilePromise, thumbnailPromise]);
+
+  logger.info(
+    `Video saved successfully to ${filePath} with thumbnail at ${thumbnailPath}`,
+  );
+
+  return { success: true, filePath, thumbnailPath };
+};
+
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
   // Utility function to ensure directory exists
-  const ensureDirectoryExists = async (directoryPath: string) => {
-    await fs.promises.mkdir(directoryPath, { recursive: true });
-  };
-
-  // Utility function to save file
-  const saveFile = async (filePath: string, data: Buffer) => {
-    await fs.promises.writeFile(filePath, data);
-  };
-
-  // Utility function to save video and generate thumbnail
-  const saveVideoWithThumbnail = async (
-    videoName: string,
-    thumbnail: string,
-    buffer: Buffer,
-  ) => {
-    const saveFolderPath = path.join(app.getPath('userData'), 'result');
-
-    await ensureDirectoryExists(saveFolderPath);
-
-    const filePath = path.join(saveFolderPath, videoName);
-    await saveFile(filePath, buffer);
-    logger.info(`Video saved successfully to ${filePath}`);
-
-    const thumbnailPath = path.join(saveFolderPath, thumbnail);
-    await createThumbnail(filePath, thumbnailPath);
-
-    return { success: true, filePath, thumbnailPath };
-  };
 
   // Handle saving video
   ipcMain.handle('save-video', async (event, videoName, thumbnail, buffer) => {

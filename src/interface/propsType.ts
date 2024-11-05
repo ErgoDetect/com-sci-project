@@ -202,7 +202,6 @@ export interface AuthStatusResponse {
 export interface SignUpFormValues {
   email: string;
   password: string;
-  display_name: string;
   confirm: string;
 }
 

@@ -8,7 +8,7 @@ import {
 export const initializePoseLandmarker = async () => {
   try {
     const filesetResolver = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm',
     );
     const poseLandmarker = await PoseLandmarker.createFromOptions(
       filesetResolver,

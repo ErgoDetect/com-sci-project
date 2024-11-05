@@ -92,20 +92,6 @@ const Signup: React.FC = () => {
             layout="vertical"
           >
             <Form.Item
-              label="Display Name"
-              name="display_name"
-              rules={[
-                { required: true, message: 'Please input your Display Name!' },
-                {
-                  min: 3,
-                  message: 'Display Name must be at least 3 characters.',
-                },
-              ]}
-            >
-              <Input placeholder="Display Name" ref={displayNameRef} />
-            </Form.Item>
-
-            <Form.Item
               label="Email"
               name="email"
               rules={[
