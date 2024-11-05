@@ -48,9 +48,14 @@ const electronHandler = {
     },
   },
   notifications: {
-    showNotification(title: string, body: string, enable: boolean) {
+    showNotification(
+      title: string,
+      body: string,
+      icon: string,
+      enable: boolean,
+    ) {
       if (enable) {
-        return ipcRenderer.invoke('show-notification', { title, body });
+        return ipcRenderer.invoke('show-notification', { title, body, icon });
       } else {
         console.log('Notifications are disabled.');
         return false;

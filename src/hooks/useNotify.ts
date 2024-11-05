@@ -20,13 +20,14 @@ const useNotify = () => {
       resData.type === 'triggered_alerts' &&
       lastResDataRef.current !== resData
     ) {
-      const { blink, sitting, distance, thoracic, time_limit_exceed } =
+      const { blink, sitting, distance, thoracic, timeLimitExceed } =
         resData.data;
 
       if (blink) {
         window.electron.notifications.showNotification(
           'Blink',
           'Blink more',
+          'eye.png',
           showBlinkNotification,
         );
       }
@@ -35,6 +36,7 @@ const useNotify = () => {
         window.electron.notifications.showNotification(
           'Sitting Alert',
           'Take a break from sitting.',
+          'timer.png',
           showSittingNotification,
         );
       }
@@ -43,6 +45,7 @@ const useNotify = () => {
         window.electron.notifications.showNotification(
           'Distance Alert',
           'Maintain proper distance.',
+          'distance.png',
           showDistanceNotification,
         );
       }
@@ -51,14 +54,16 @@ const useNotify = () => {
         window.electron.notifications.showNotification(
           'Posture Alert',
           'Adjust your thoracic posture.',
+          'Kyphosis.png',
           showThoracticNotification,
         );
       }
 
-      if (time_limit_exceed) {
+      if (timeLimitExceed) {
         window.electron.notifications.showNotification(
           'Time limit Alert',
           'Session Exceed 2 Hours.',
+          'finish.png',
           showThoracticNotification,
         );
         setStreaming(false);
@@ -72,6 +77,7 @@ const useNotify = () => {
     showSittingNotification,
     showDistanceNotification,
     showThoracticNotification,
+    setStreaming,
   ]);
 };
 

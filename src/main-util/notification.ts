@@ -1,5 +1,13 @@
-import { ipcMain, Notification } from 'electron';
+import { app, ipcMain, Notification } from 'electron';
 import logger from './logger'; // Adjust the import path if necessary
+import path from 'path';
+
+const getIconPath = (...paths: string[]): string => {
+  const RESOURCES_PATH = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'icons')
+    : path.join(__dirname, '../../assets/icons');
+  return path.join(RESOURCES_PATH, ...paths);
+};
 
 const handleNotifications = (): void => {
   // Register the IPC handler for showing notifications
@@ -7,7 +15,7 @@ const handleNotifications = (): void => {
     'show-notification',
     async (
       _event,
-      { title, body }: { title: string; body: string },
+      { title, body, icon }: { title: string; body: string; icon: string },
     ): Promise<{ success: boolean; error?: string }> => {
       // Check if notifications are supported on this platform
       if (!Notification.isSupported()) {
@@ -25,8 +33,8 @@ const handleNotifications = (): void => {
       }
 
       try {
-        // Create and display the notification
-        const notification = new Notification({ title, body });
+        const iconPath = getIconPath(icon);
+        const notification = new Notification({ title, body, icon: iconPath });
         notification.show();
 
         // Optionally handle notification events
