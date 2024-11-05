@@ -49,36 +49,36 @@ const Summary: React.FC = () => {
 
   const handleExportPDF = useCallback(async () => {
     if (summaryRef.current) {
-      const canvas = await html2canvas(summaryRef.current, { scale: 2 }); // Increase scale for better quality
+      const canvas = await html2canvas(summaryRef.current, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new JsPDF({
-        orientation: 'portrait', // or 'landscape'
+        orientation: 'portrait',
         unit: 'pt',
-        format: 'a4', // or other formats like 'letter'
+        format: 'a4',
         putOnlyUsedFonts: true,
-        floatPrecision: 16, // or other values for better precision
+        floatPrecision: 16,
       });
 
       const imgWidth = pdf.internal.pageSize.getWidth();
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Check if the content height exceeds the page height
-      let position = 0;
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // If the content is taller than a page, add pages accordingly
-      if (imgHeight > pageHeight) {
-        while (position < imgHeight) {
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          position += pageHeight; // Move down by the page height for the next page
-          if (position < imgHeight) {
-            pdf.addPage(); // Add a new page if more content is available
-          }
+      let position = 0;
+
+      while (position < imgHeight) {
+        // Calculate the remaining height of the image to be displayed on the current page
+        const remainingHeight = imgHeight - position;
+        const renderHeight = Math.min(pageHeight, remainingHeight);
+
+        // Add the portion of the image for the current page
+        pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
+
+        position += pageHeight;
+
+        if (position < imgHeight) {
+          pdf.addPage(); // Add a new page if more content is available
         }
-      } else {
-        // If the content fits on one page
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       }
 
       pdf.save('summary.pdf');

@@ -28,6 +28,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
 }) => {
   const isExpanded = expanded.includes(type);
   const FPS = 15;
+
   const getAverageInSeconds = useCallback(
     (inputArray: any) => {
       if (inputArray && inputArray.length !== 0) {
@@ -86,6 +87,35 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     },
     [data.duration],
   );
+  const getNumberOfTimes = useCallback(
+    (inputArray: any) => {
+      if (inputArray && inputArray.length !== 0) {
+        return inputArray.length;
+      }
+      return 0;
+    },
+    [data.duration],
+  );
+  const getPercent = useCallback(
+    (inputArray: any[]) => {
+      if (inputArray && inputArray.length !== 0) {
+        let sum = 0;
+        inputArray.forEach((element) => {
+          if (element.length === 1) {
+            sum += data.duration - element[0];
+          } else {
+            sum += element[1] - element[0];
+          }
+        });
+        const sumSeconds = sum / FPS;
+        let percent = (sumSeconds / (data.duration / FPS)) * 100;
+        return (Math.round(percent * 100) / 100).toFixed(2);
+      }
+      return 0;
+    },
+    [data.duration],
+  );
+
   const convertSeconds = useCallback((second: number) => {
     const hours = Math.floor(second / 3600);
     const minutes = Math.floor((second % 3600) / 60);
@@ -99,20 +129,33 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     return `${seconds}s`;
   }, []);
   const getStat = useCallback(() => {
-    let stat1 = '';
-    let stat2 = '';
-    let stat3 = '';
+    let stat1 = null;
+    let stat2 = null;
+    let stat3 = null;
+    let stat4 = null;
+    let stat5 = null;
+
     if (type === 'blink') {
       const averageSeconds = getAverageInSeconds(data?.blink);
       const longestSeconds = getLongestInSeconds(data?.blink);
-      stat1 = 'Average not blinking longer than 5 seconds: ';
-      stat2 = 'Longest not blinking longer than 5 seconds: ';
+      const numberOfTimes = getNumberOfTimes(data?.blink);
+      const percent = getPercent(data?.blink);
+
+      stat1 = 'Average times not blinking longer than 5 seconds : ';
+      stat2 = 'Longest times not blinking longer than 5 seconds : ';
+      stat3 = 'Number of times not blinking longer than 5 seconds : ';
+      stat4 = 'Percent of times not blinking longer than 5 seconds : ';
+
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
+      stat3 += numberOfTimes;
+      stat4 += percent + '%';
     } else if (type === 'distance') {
       const averageSeconds = getAverageInSeconds(data?.distance);
       const longestSeconds = getLongestInSeconds(data?.distance);
       const perHourInSeconds = getPerHourInSecond(data?.distance);
+      const numberOfTimes = getNumberOfTimes(data?.distance);
+      const percent = getPercent(data?.distance);
 
       stat1 =
         'Average times sitting too close to screen longer than 30 seconds : ';
@@ -120,37 +163,66 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         'Longest times sitting too close to screen longer than 30 seconds : ';
       stat3 =
         'Average times sitting too close to screen longer than 30 seconds per hour : ';
+      stat4 =
+        'Number of times sitting too close to screen longer than 30 seconds : ';
+      stat5 =
+        'Percent of times sitting too close to screen longer than 30 seconds : ';
+
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
       stat3 += convertSeconds(perHourInSeconds);
+      stat4 += numberOfTimes;
+      stat5 += percent + '%';
     } else if (type === 'thoracic') {
       const averageSeconds = getAverageInSeconds(data?.thoracic);
       const longestSeconds = getLongestInSeconds(data?.thoracic);
       const perHourInSeconds = getPerHourInSecond(data?.thoracic);
+      const numberOfTimes = getNumberOfTimes(data?.thoracic);
+      const percent = getPercent(data?.thoracic);
+
       stat1 =
         'Average times to thoracic posture detect longer than 2 seconds : ';
       stat2 =
         'Longest times to thoracic posture detect longer than 2 seconds : ';
       stat3 =
-        'Average times to thoracic posture detect longer than 2 seconds per hour: ';
+        'Average times to thoracic posture detect longer than 2 seconds per hour : ';
+      stat4 =
+        'Number of times to thoracic posture detect longer than 2 seconds : ';
+      stat5 =
+        'Percent of times to thoracic posture detect longer than 2 seconds : ';
+
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
       stat3 += convertSeconds(perHourInSeconds);
+      stat4 += numberOfTimes;
+      stat5 += percent + '%';
     } else if (type === 'sitting') {
       const averageSeconds = getAverageInSeconds(data?.sitting);
       const longestSeconds = getLongestInSeconds(data?.sitting);
+      const numberOfTimes = getNumberOfTimes(data?.sitting);
+      const percent = getPercent(data?.sitting);
+
       stat1 = 'Average times sitting longer than 45 minutes : ';
       stat2 = 'Longest times sitting longer than 45 minutes : ';
+      stat3 = 'Number of times sitting longer than 45 minutes : ';
+      stat4 = 'Percent of times sitting longer than 45 minutes : ';
+
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
+      stat3 += numberOfTimes;
+      stat4 += percent + '%';
     }
     return (
       <>
         {stat1}
-        <br />
+        {stat1 ? <br /> : null}
         {stat2}
-        <br />
+        {stat2 ? <br /> : null}
         {stat3}
+        {stat3 ? <br /> : null}
+        {stat4}
+        {stat4 ? <br /> : null}
+        {stat5}
       </>
     );
   }, [
@@ -187,6 +259,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         {title}
         {isExpanded ? <UpOutlined /> : <DownOutlined />}
       </Title>
+
       <div
         style={{
           position: 'relative',
