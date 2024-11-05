@@ -16,6 +16,7 @@ interface ProgressCardProps {
   progressBar: React.ReactNode;
   description: string;
   data: any;
+  color?: string;
 }
 
 const ProgressCard: React.FC<ProgressCardProps> = ({
@@ -26,6 +27,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   progressBar,
   description,
   data,
+  color,
 }) => {
   const isExpanded = expanded.includes(type);
   const FPS = 15;
@@ -162,7 +164,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const dataForChart = getDataForChart(data?.blink);
       // console.log(dataForChart);
 
-      chart = <HistogramChart data={dataForChart} />;
+      chart = <HistogramChart data={dataForChart} color={color} />;
 
       stat1 = 'Average times not blinking longer than 5 seconds : ';
       stat2 = 'Longest times not blinking longer than 5 seconds : ';
@@ -180,7 +182,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const numberOfTimes = getNumberOfTimes(data?.distance);
       const percent = getPercent(data?.distance);
       const dataForChart = getDataForChart(data?.distance);
-      chart = <HistogramChart data={dataForChart} />;
+      chart = <HistogramChart data={dataForChart} color={color} />;
 
       stat1 =
         'Average times sitting too close to screen longer than 30 seconds : ';
@@ -205,7 +207,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const numberOfTimes = getNumberOfTimes(data?.thoracic);
       const percent = getPercent(data?.thoracic);
       const dataForChart = getDataForChart(data?.thoracic);
-      chart = <HistogramChart data={dataForChart} />;
+      chart = <HistogramChart data={dataForChart} color={color} />;
 
       stat1 =
         'Average times to thoracic posture detect longer than 2 seconds : ';
@@ -229,7 +231,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const numberOfTimes = getNumberOfTimes(data?.sitting);
       const percent = getPercent(data?.sitting);
       const dataForChart = getDataForChart(data?.sitting);
-      chart = <HistogramChart data={dataForChart} />;
+      chart = <HistogramChart data={dataForChart} color={color} />;
 
       stat1 = 'Average times sitting longer than 45 minutes : ';
       stat2 = 'Longest times sitting longer than 45 minutes : ';

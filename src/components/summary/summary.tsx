@@ -321,6 +321,7 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
                     progressBar={createProgressBar(eventType)}
                     description={description}
                     data={data}
+                    color={colorMap[eventType]}
                   />
                 );
               },

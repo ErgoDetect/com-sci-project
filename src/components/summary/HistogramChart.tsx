@@ -23,9 +23,10 @@ ChartJS.register(
 // Define the props for the component
 interface HistogramChartProps {
   data: number[];
+  color?: string;
 }
 
-const HistogramChart: React.FC<HistogramChartProps> = ({ data }) => {
+const HistogramChart: React.FC<HistogramChartProps> = ({ data, color }) => {
   if (data.length === 0) {
     return null; // or display a message, e.g., <p>No data available</p>
   }
@@ -57,8 +58,8 @@ const HistogramChart: React.FC<HistogramChartProps> = ({ data }) => {
       {
         label: 'Frequency',
         data: bins,
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: color,
+        borderColor: color,
         borderWidth: 1,
       },
     ],
@@ -72,7 +73,21 @@ const HistogramChart: React.FC<HistogramChartProps> = ({ data }) => {
       },
       title: {
         display: true,
-        text: 'Histogram Chart',
+        text: 'Duration Histogram',
+      },
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Duration' },
+      },
+      y: {
+        title: { display: true, text: 'Frequency' },
+        ticks: {
+          stepSize: 1,
+          callback: function (value: any, index: any, ticks: any) {
+            return Number.isInteger(value) ? value : '';
+          },
+        },
       },
     },
   };
