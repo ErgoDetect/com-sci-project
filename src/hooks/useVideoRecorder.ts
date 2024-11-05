@@ -1,94 +1,71 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { message } from 'antd';
-import fixWebmDuration from 'webm-duration-fix';
 import { useResData } from '../context';
 import axiosInstance from '../utility/axiosInstance';
 
 const useVideoRecorder = () => {
   const { streaming, videoStreamRef, initializationSuccess, saveSessionVideo } =
     useResData();
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Ref for MediaRecorder
-  const recordedChunksRef = useRef<Blob[]>([]); // Ref for recorded video chunks
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [saveFinish, setSaveFinish] = useState(false);
 
-  // Save recorded video and clean up memory
-  const saveRecordedVideo = useCallback(async () => {
-    if (recordedChunksRef.current.length === 0) return;
+  // Start recording video stream and save chunks continuously
+  const startRecording = useCallback((stream: MediaStream) => {
     setSaveFinish(false);
+    if (!mediaRecorderRef.current && stream && stream.active) {
+      try {
+        const timestamp = Date.now();
+        const videoFileName = `recorded_video_${timestamp}.webm`;
+        const thumbnail = `thumb_recorded_video_${timestamp}.jpg`;
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
 
-    try {
-      const blob = await fixWebmDuration(
-        new Blob(recordedChunksRef.current, { type: 'video/webm' }),
-      );
-      recordedChunksRef.current = []; // Clear recorded chunks to free memory
+        recorder.ondataavailable = async (event) => {
+          if (event.data.size > 0) {
+            try {
+              const arrayBuffer = await event.data.arrayBuffer();
 
-      const arrayBuffer = await blob.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
+              // Send ArrayBuffer instead of Buffer
+              const result = await window.electron.video.saveChunk(
+                videoFileName,
+                thumbnail,
+                arrayBuffer,
+              );
+              if (result.success) {
+                message.success(`Video saved to ${result.filePath}`);
+                await axiosInstance.post('/landmark/video_name', {
+                  video_name: videoFileName,
+                  thumbnail,
+                });
+              } else {
+                message.error(`Failed to save video: ${result.error}`);
+              }
+            } catch (error: any) {
+              message.error(
+                `Error processing video data: ${error.message || error}`,
+              );
+            }
+          }
+        };
 
-      const timestamp = Date.now();
-      const videoFileName = `recorded_video_${timestamp}.webm`;
-      const thumbnail = `thumb_recorded_video_${timestamp}.jpg`;
-
-      const result = await window.electron.video.saveVideo(
-        videoFileName,
-        thumbnail,
-        buffer,
-      );
-
-      if (result.success) {
-        message.success(`Video saved to ${result.filePath}`);
-        setSaveFinish(true);
-        axiosInstance.post('/landmark/video_name', {
-          video_name: videoFileName,
-          thumbnail,
-        });
-      } else {
-        message.error(`Failed to save video: ${result.error}`);
+        recorder.start();
+        message.info('Recording started.');
+      } catch (error: any) {
+        message.error(`Error starting recording: ${error.message || error}`);
       }
-      // Clean up listeners after video is saved
-      window.electron.ipcRenderer.removeAllListeners('save-video');
-    } catch (error: any) {
-      message.error(`Error occurred: ${error.message || error}`);
     }
   }, []);
 
-  // Start recording video stream
-  const startRecording = useCallback(
-    (stream: MediaStream) => {
-      if (!mediaRecorderRef.current && stream) {
-        try {
-          const recorder = new MediaRecorder(stream);
-          mediaRecorderRef.current = recorder;
-
-          recorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              recordedChunksRef.current.push(event.data); // Accumulate chunks
-            }
-          };
-
-          recorder.onstop = saveRecordedVideo; // Save video when recording stops
-
-          recorder.start();
-          message.info('Recording started.');
-        } catch (error: any) {
-          message.error(`Error starting recording: ${error.message || error}`);
-        }
-      }
-    },
-    [saveRecordedVideo],
-  );
-
-  // Stop recording and clear memory
+  // Stop recording
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop(); // Stop the recorder
-      mediaRecorderRef.current = null; // Reset recorder
-      recordedChunksRef.current = []; // Clear recorded chunks
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      setSaveFinish(true);
       message.info('Recording stopped.');
     }
   }, []);
 
-  // Manage recording based on streaming and initial state
   useEffect(() => {
     if (
       streaming &&
@@ -96,14 +73,14 @@ const useVideoRecorder = () => {
       initializationSuccess &&
       saveSessionVideo
     ) {
-      startRecording(videoStreamRef.current); // Start recording if streaming and initial
+      startRecording(videoStreamRef.current);
     } else if (!streaming && mediaRecorderRef.current) {
-      stopRecording(); // Stop recording if streaming stops
+      stopRecording();
     }
 
     return () => {
       if (mediaRecorderRef.current) {
-        stopRecording(); // Clean up when component unmounts
+        stopRecording();
       }
     };
   }, [

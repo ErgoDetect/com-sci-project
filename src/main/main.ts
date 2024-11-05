@@ -36,7 +36,6 @@ if (!platformFolder) {
   throw new Error('Unsupported platform');
 }
 
-// Define ffmpeg and ffprobe paths based on packaging status
 let ffmpegPath = app.isPackaged
   ? path.join(process.resourcesPath, 'ffmpeg')
   : path.resolve(__dirname, '../../node_modules/ffmpeg-static/ffmpeg');
@@ -100,7 +99,6 @@ const appPaths = {
   settingPath: path.join(app.getPath('userData'), 'appConfig.json'),
 };
 
-// Ensure save folder and settings file exist
 const ensureSaveFolderExists = async () => {
   if (!fs.existsSync(appPaths.saveFolderPath)) {
     await fs.promises.mkdir(appPaths.saveFolderPath, { recursive: true });
@@ -114,7 +112,6 @@ const ensureSaveFolderExists = async () => {
   }
 };
 
-// Show initial notification when the app starts
 const showInitialNotification = (): void => {
   if (Notification.isSupported()) {
     const notification = new Notification({
@@ -127,7 +124,6 @@ const showInitialNotification = (): void => {
   }
 };
 
-// Create system tray with context menu
 const createTray = (): void => {
   const iconPath = getAssetPath('icons', '16x16.png');
 
@@ -135,7 +131,7 @@ const createTray = (): void => {
     log.error(
       `Tray icon not found at: ${iconPath}. Falling back to default icon.`,
     );
-    tray = new Tray(nativeImage.createEmpty()); // Fallback to empty tray icon
+    tray = new Tray(nativeImage.createEmpty());
     return;
   }
 
@@ -163,9 +159,7 @@ const createTray = (): void => {
   }
 };
 
-// Setup application events
 const setupAppEvents = (): void => {
-  // Prevent window close, hide it instead
   mainWindow?.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -196,7 +190,7 @@ const setupAppEvents = (): void => {
       mainWindow = await createMainWindow();
     } else {
       mainWindow?.show();
-      if (process.platform === 'darwin') app.dock.show(); // Show dock icon on macOS
+      if (process.platform === 'darwin') app.dock.show();
     }
   });
 
@@ -212,33 +206,6 @@ const setupAppEvents = (): void => {
       }
     }
   });
-};
-
-const createThumbnail = async (
-  videoPath: string,
-  thumbnailPath: string,
-): Promise<void> => {
-  try {
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(videoPath)
-        .screenshots({
-          timestamps: ['1%'], // Capture frame at 5% of video duration
-          filename: path.basename(thumbnailPath),
-          folder: path.dirname(thumbnailPath),
-          size: '1280x720', // Desired thumbnail dimensions
-        })
-        .on('end', () => {
-          console.log(`Thumbnail created successfully at ${thumbnailPath}`);
-          resolve();
-        })
-        .on('error', (err: Error) => {
-          console.error('Error creating thumbnail:', err);
-          reject(err);
-        });
-    });
-  } catch (error) {
-    throw new Error(`Thumbnail creation failed: ${(error as Error).message}`);
-  }
 };
 
 const deleteVideoAndThumbnail = async (
@@ -283,6 +250,30 @@ const deleteVideoAndThumbnail = async (
   }
 };
 
+const createThumbnail = async (
+  videoPath: string,
+  thumbnailPath: string,
+): Promise<void> => {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(videoPath)
+        .screenshots({
+          timestamps: [2.0],
+          filename: path.basename(thumbnailPath),
+          folder: path.dirname(thumbnailPath),
+          size: '1280x720', // Desired thumbnail dimensions
+        })
+        .on('end', () => {
+          resolve();
+        })
+        .on('error', (err: Error) => {
+          reject(err);
+        });
+    });
+  } catch (error) {
+    throw new Error(`Thumbnail creation failed: ${(error as Error).message}`);
+  }
+};
 // Utility function to save file
 const saveFile = async (filePath: string, data: Buffer) => {
   await fs.promises.writeFile(filePath, data);
@@ -314,22 +305,57 @@ const saveVideoWithThumbnail = async (
 
 // Setup IPC handlers
 const setupIPCHandlers = (): void => {
-  // Utility function to ensure directory exists
+  // ipcMain.handle('save-video', async (event, videoName, thumbnail) => {
+  //   const filePath = path.join(app.getPath('userData'), videoName);
+  //   const thumbnailPath = path.join(app.getPath('userData'), thumbnail);
 
-  // Handle saving video
-  ipcMain.handle('save-video', async (event, videoName, thumbnail, buffer) => {
-    try {
-      return await saveVideoWithThumbnail(videoName, thumbnail, buffer);
-    } catch (error) {
-      logger.error('Error saving video or generating thumbnail:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unexpected error',
-      };
-    }
-  });
+  //   try {
+  //     await createThumbnail(filePath, thumbnailPath);
+  //     return { success: true, filePath, thumbnailPath };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       error: error instanceof Error ? error.message : 'Unexpected error',
+  //     };
+  //   }
+  // });
 
-  // Handle saving and uploading video
+  ipcMain.handle(
+    'save-chunk',
+    async (event, finalFileName, thumbnail, buffer) => {
+      const filePath = path.join(
+        app.getPath('userData'),
+        'result',
+        finalFileName,
+      );
+      const thumbnailPath = path.join(
+        app.getPath('userData'),
+        'result',
+        thumbnail,
+      );
+
+      return new Promise((resolve, reject) => {
+        const writeStream = fs.createWriteStream(filePath, { flags: 'a' }); // Append mode
+
+        writeStream.on('error', (err) => {
+          reject({
+            success: false,
+            error: err.message || 'Unexpected error',
+          });
+        });
+
+        writeStream.on('finish', () => {
+          resolve({ success: true, filePath });
+          createThumbnail(filePath, thumbnailPath);
+        });
+
+        // Write the buffer directly and close the stream
+        writeStream.write(buffer);
+        writeStream.end();
+      });
+    },
+  );
+
   ipcMain.handle(
     'save-upload-video',
     async (event, buffer, start, videoName, thumbnail) => {
@@ -371,14 +397,13 @@ const setupIPCHandlers = (): void => {
       }
     },
   );
-
   ipcMain.handle(
     'delete-video-and-thumbnail',
     async (event, videoName, thumbnailName) => {
       return await deleteVideoAndThumbnail(videoName, thumbnailName);
     },
   );
-  // Handle retrieving video
+
   ipcMain.handle('get-video', async (event, videoName) => {
     const filePath = path.join(app.getPath('userData'), 'result', videoName);
 
@@ -394,7 +419,6 @@ const setupIPCHandlers = (): void => {
     }
   });
 
-  // Handle retrieving thumbnail
   ipcMain.handle('get-thumbnail', async (event, thumbnailName) => {
     const filePath = path.join(
       app.getPath('userData'),
@@ -415,7 +439,6 @@ const setupIPCHandlers = (): void => {
   });
 };
 
-// Handle app config loading
 ipcMain.handle('get-app-config', async () => {
   try {
     const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
@@ -424,18 +447,17 @@ ipcMain.handle('get-app-config', async () => {
     }
 
     const data = await fs.promises.readFile(settingPath, 'utf-8');
-    return { ...defaultAppConfig, ...JSON.parse(data) }; // Merge default with existing config
+    return { ...defaultAppConfig, ...JSON.parse(data) };
   } catch (error) {
     logger.error('Error loading app config:', error);
     return { error: 'Failed to load config' };
   }
 });
 
-// Handle saving app config
 ipcMain.handle('save-app-config', async (event, newConfig) => {
   try {
     const settingPath = path.join(app.getPath('userData'), 'appConfig.json');
-    const config = { ...defaultAppConfig, ...newConfig }; // Merge with default
+    const config = { ...defaultAppConfig, ...newConfig };
     await fs.promises.writeFile(settingPath, JSON.stringify(config, null, 2));
     return { success: true, config };
   } catch (error) {
@@ -456,7 +478,6 @@ const startPowerSaveBlocker = (): void => {
   }
 };
 
-// Ensure single instance lock
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -481,7 +502,6 @@ if (!app.requestSingleInstanceLock()) {
   });
 }
 
-// Main application startup logic
 app.whenReady().then(async () => {
   loadEnvFile();
   ensureSaveFolderExists();
@@ -512,7 +532,6 @@ app.whenReady().then(async () => {
   logger.info('System Memory Info:', process.getSystemMemoryInfo());
 });
 
-// Handle unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   if (mainWindow) {

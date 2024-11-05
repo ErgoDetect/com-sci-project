@@ -92,11 +92,31 @@ const electronHandler = {
   },
   video: {
     saveVideo(
+      temp: string,
       videoName: string,
       thumbnail: string,
       buffer: Uint8Array,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-      return ipcRenderer.invoke('save-video', videoName, thumbnail, buffer);
+      return ipcRenderer.invoke(
+        'save-video',
+        temp,
+        videoName,
+        thumbnail,
+        buffer,
+      );
+    },
+    saveChunk: async (
+      chunkFileName: string,
+      thumbnail: string,
+      chunkArrayBuffer: ArrayBuffer,
+    ) => {
+      const chunkBuffer = Buffer.from(chunkArrayBuffer); // Convert ArrayBuffer to Buffer
+      return ipcRenderer.invoke(
+        'save-chunk',
+        chunkFileName,
+        thumbnail,
+        chunkBuffer,
+      );
     },
     getVideo(videoName: string): Promise<string | null> {
       return ipcRenderer.invoke('get-video', videoName);
