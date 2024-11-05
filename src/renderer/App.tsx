@@ -69,6 +69,9 @@ const App: React.FC = () => {
       ) {
         navigate('/');
       }
+      if (response.status === 'LoginRequired') {
+        navigate('/login');
+      }
     };
 
     if (!['/signup', '/wait-verify'].includes(location.pathname)) {
@@ -157,7 +160,6 @@ const App: React.FC = () => {
 
   // Initialize hooks for additional functionality
   useReceiveData();
-  useVideoRecorder();
   useNotify();
 
   return <>{renderContent()}</>;

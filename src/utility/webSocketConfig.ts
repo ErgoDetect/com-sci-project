@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import axiosInstance from './axiosInstance';
 import { useResData } from '../context';
 
@@ -21,6 +22,7 @@ const useWebSocket = (
   dest: string,
   onMessage?: WebSocketMessageHandler,
 ): UseWebSocketResult => {
+  const location = useLocation();
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -114,7 +116,7 @@ const useWebSocket = (
         clearInterval(heartbeatIntervalRef.current);
 
       // Handle specific close codes that might indicate a need to refresh the token
-      if (event.code === 1008 || event.code === 4001) {
+      if (event.code === 1008 || event.reason.includes('Token has expired')) {
         await refreshToken();
       }
 
@@ -142,19 +144,17 @@ const useWebSocket = (
   ]);
 
   useEffect(() => {
-    // Only initialize WebSocket after context has loaded completely
-    if (!contextLoading) {
+    // Check if the current path matches the page where WebSocket should be active
+    if (location.pathname === '/' && !contextLoading) {
       const cleanupWebSocket = initializeWebSocket();
       return () => {
         cleanupWebSocket();
         if (reconnectTimeoutRef.current)
           clearTimeout(reconnectTimeoutRef.current);
-        // if (heartbeatIntervalRef.current)
-        //   clearInterval(heartbeatIntervalRef.current);
       };
     }
     return undefined;
-  }, [initializeWebSocket, contextLoading]);
+  }, [initializeWebSocket, contextLoading, location.pathname]);
 
   return useMemo(() => ({ send, message }), [send, message]);
 };

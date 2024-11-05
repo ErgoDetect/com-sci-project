@@ -31,8 +31,6 @@ const useReceiveData = () => {
         setInitializationSuccess(true);
         setRealTimeSessionId(resData.sitting_session_id);
         console.log('init success');
-      } else if (resData === 'sitting_session_id') {
-        console.log(resData);
       }
     }
   }, [

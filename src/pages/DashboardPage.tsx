@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, message, Modal, Switch } from 'antd';
+import { Button, message, Modal, Spin, Switch, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { CaretRightOutlined } from '@ant-design/icons';
+import {
+  CaretRightOutlined,
+  CheckCircleFilled,
+  CheckCircleOutlined,
+  Loading3QuartersOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Container, FlexColumn, VideoCard } from '../styles/styles'; // Assuming FlexColumn exists or will be created
 import SessionMetricsCard from '../components/dashboard/SessionMetricsCard';
 import SessionSummaryCard from '../components/SessionSummaryCard';
 import { useResData } from '../context';
 import WebcamDisplay from '../components/camera/webcamDisplay';
 import useDevices from '../hooks/useDevices';
+import useVideoRecorder from '../hooks/useVideoRecorder';
+
+const { Text } = Typography;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +35,7 @@ const Dashboard = () => {
   const { deviceId } = useDevices();
   const [openModal, setOpenModal] = useState(false);
   const frameCountRef = useRef<number>(0);
+  const { saveFinish } = useVideoRecorder();
   const toggleStreaming = useCallback(() => {
     if (streaming) {
       frameCountRef.current = 0;
@@ -91,42 +101,73 @@ const Dashboard = () => {
       <Modal
         open={openModal}
         centered
-        width="60%"
-        onCancel={() => {
-          setOpenModal(false);
-        }}
+        width="45%"
+        styles={{ body: { height: '100%' } }}
+        onCancel={() => setOpenModal(false)}
         footer={
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 20,
-            }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
             <Button
-              onClick={() => {
-                setOpenModal(false);
-              }}
+              onClick={() => setOpenModal(false)}
               style={{ marginTop: '1rem' }}
             >
               Continue Detect
             </Button>
             <Button
               type="primary"
-              style={{
-                marginTop: '1rem',
-              }}
               icon={<CaretRightOutlined />}
-              onClick={() => {
-                navigate(`/summary?session_id=${realTimeSessionId}`);
-              }}
+              style={{ marginTop: '1rem' }}
+              onClick={() =>
+                navigate(`/summary?session_id=${realTimeSessionId}`)
+              }
+              disabled={!saveFinish}
             >
               View Detect Result
             </Button>
           </div>
         }
-      />
+      >
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          {!saveFinish ? (
+            <>
+              <Spin
+                size="large"
+                indicator={<LoadingOutlined style={{ fontSize: 180 }} spin />}
+              />
+              <Text
+                type="secondary"
+                style={{
+                  display: 'block',
+                  marginTop: '30px',
+                  fontSize: '18px',
+                }}
+              >
+                Video save in progress, please wait...
+              </Text>
+            </>
+          ) : (
+            <>
+              <CheckCircleFilled
+                style={{
+                  display: 'block',
+                  marginTop: '30px',
+                  fontSize: '130px',
+                  color: 'green',
+                }}
+              />
+              <Text
+                type="success"
+                style={{
+                  display: 'block',
+                  marginTop: '30px',
+                  fontSize: '18px',
+                }}
+              >
+                Loaded Successfully!
+              </Text>
+            </>
+          )}
+        </div>
+      </Modal>
     </>
   );
 };
