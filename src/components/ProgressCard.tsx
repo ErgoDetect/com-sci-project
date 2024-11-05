@@ -10,7 +10,7 @@ type EventType = 'blink' | 'distance' | 'thoracic' | 'sitting';
 interface ProgressCardProps {
   title: string;
   type: EventType;
-  expanded: EventType | null;
+  expanded: EventType[];
   onExpandToggle: (type: EventType) => void;
   progressBar: React.ReactNode;
   description: string;
@@ -26,7 +26,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   description,
   data,
 }) => {
-  const isExpanded = expanded === type;
+  const isExpanded = expanded.includes(type);
   const FPS = 15;
   const getAverageInSeconds = useCallback(
     (inputArray: any) => {
