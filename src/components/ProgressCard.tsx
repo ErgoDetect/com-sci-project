@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Card, Typography } from 'antd';
 import { UpOutlined, DownOutlined } from '@ant-design/icons';
+import HistogramChart from './summary/HistogramChart';
 
 const { Title, Text } = Typography;
 
@@ -115,6 +116,23 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     },
     [data.duration],
   );
+  const getDataForChart = useCallback(
+    (inputArray: any[]) => {
+      let array: number[] = [];
+      if (inputArray && inputArray.length !== 0) {
+        inputArray.forEach((element) => {
+          if (element.length === 1) {
+            array.push((data.duration - element[0]) / FPS);
+          } else {
+            array.push((element[1] - element[0]) / FPS);
+          }
+        });
+        return array;
+      }
+      return array;
+    },
+    [data.duration],
+  );
 
   const convertSeconds = useCallback((second: number) => {
     const hours = Math.floor(second / 3600);
@@ -134,12 +152,17 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     let stat3 = null;
     let stat4 = null;
     let stat5 = null;
+    let chart = null;
 
     if (type === 'blink') {
       const averageSeconds = getAverageInSeconds(data?.blink);
       const longestSeconds = getLongestInSeconds(data?.blink);
       const numberOfTimes = getNumberOfTimes(data?.blink);
       const percent = getPercent(data?.blink);
+      const dataForChart = getDataForChart(data?.blink);
+      // console.log(dataForChart);
+
+      chart = <HistogramChart data={dataForChart} />;
 
       stat1 = 'Average times not blinking longer than 5 seconds : ';
       stat2 = 'Longest times not blinking longer than 5 seconds : ';
@@ -156,6 +179,8 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const perHourInSeconds = getPerHourInSecond(data?.distance);
       const numberOfTimes = getNumberOfTimes(data?.distance);
       const percent = getPercent(data?.distance);
+      const dataForChart = getDataForChart(data?.distance);
+      chart = <HistogramChart data={dataForChart} />;
 
       stat1 =
         'Average times sitting too close to screen longer than 30 seconds : ';
@@ -179,6 +204,8 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const perHourInSeconds = getPerHourInSecond(data?.thoracic);
       const numberOfTimes = getNumberOfTimes(data?.thoracic);
       const percent = getPercent(data?.thoracic);
+      const dataForChart = getDataForChart(data?.thoracic);
+      chart = <HistogramChart data={dataForChart} />;
 
       stat1 =
         'Average times to thoracic posture detect longer than 2 seconds : ';
@@ -201,6 +228,8 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       const longestSeconds = getLongestInSeconds(data?.sitting);
       const numberOfTimes = getNumberOfTimes(data?.sitting);
       const percent = getPercent(data?.sitting);
+      const dataForChart = getDataForChart(data?.sitting);
+      chart = <HistogramChart data={dataForChart} />;
 
       stat1 = 'Average times sitting longer than 45 minutes : ';
       stat2 = 'Longest times sitting longer than 45 minutes : ';
@@ -223,6 +252,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         {stat4}
         {stat4 ? <br /> : null}
         {stat5}
+        {chart ? chart : null}
       </>
     );
   }, [
