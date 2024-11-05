@@ -32,7 +32,8 @@ const HistogramChart: React.FC<HistogramChartProps> = ({ data }) => {
 
   // Function to calculate bins
   const getBins = (data: number[], binSize: number): number[] => {
-    const min = Math.min(...data);
+    // const min = Math.min(...data);
+    const min = 0;
     const max = Math.max(...data);
     const numBins = Math.ceil((max - min) / binSize);
     const bins = Array(numBins).fill(0);
