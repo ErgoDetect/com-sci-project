@@ -15,6 +15,7 @@ import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ProgressCard from '../ProgressCard';
+import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 
 const { Content } = Layout;
 
@@ -254,7 +255,7 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
       <div style={{ position: 'relative', textAlign: 'center' }}>
         <video
           ref={videoRef}
-          style={{ width: '100%', borderRadius: '12px' }}
+          style={{ height: '480px', borderRadius: '12px' }}
           controls
           src={isVideoAvailable ? videoSrc || '' : undefined}
         />
@@ -317,11 +318,24 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
           <br />
           <span>Session Duration: {duration}</span>
           {!pdfVersion ? (
-            <Card
-              style={{ margin: '24px 0', padding: '0', borderRadius: '12px' }}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
             >
-              {videoPlayer}
-            </Card>
+              <Card
+                style={{
+                  margin: '24px 0',
+                  padding: '0',
+                  borderRadius: '12px',
+                  width: 'max-content',
+                }}
+              >
+                {videoPlayer}
+              </Card>
+            </div>
           ) : null}
           {data &&
             data.duration &&
