@@ -55,7 +55,6 @@ const setupWindowEvents = (window: BrowserWindow): void => {
       window.minimize();
     } else {
       window.show();
-      window.webContents.openDevTools();
     }
 
     if (
