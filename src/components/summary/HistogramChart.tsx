@@ -24,16 +24,21 @@ ChartJS.register(
 interface HistogramChartProps {
   data: number[];
   color?: string;
+  height?: number;
+  width?: number;
 }
 
-const HistogramChart: React.FC<HistogramChartProps> = ({ data, color }) => {
+const HistogramChart: React.FC<HistogramChartProps> = ({
+  data,
+  color,
+  height = 100,
+}) => {
   if (data.length === 0) {
     return null; // or display a message, e.g., <p>No data available</p>
   }
 
   // Function to calculate bins
   const getBins = (data: number[], binSize: number): number[] => {
-    // const min = Math.min(...data);
     const min = 0;
     const max = Math.max(...data);
     const numBins = Math.ceil((max - min) / binSize);
@@ -92,7 +97,7 @@ const HistogramChart: React.FC<HistogramChartProps> = ({ data, color }) => {
     },
   };
 
-  return <Bar data={chartData} options={options} />;
+  return <Bar data={chartData} options={options} height={height} />;
 };
 
 export default HistogramChart;
