@@ -189,7 +189,7 @@
         ]
       },
       {
-        "from": "node_modules/ffmpeg-static/ffmpeg",
+        "from": "node_modules/ffmpeg-static",
         "to": "ffmpeg"
       },
       {
@@ -235,12 +235,14 @@
       ]
     },
     "win": {
-      "target": {
-        "target": "default",
-        "arch": [
-          "x64"
-        ]
-      },
+      "target": [
+        {
+          "target": "default",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "protocols": [
         {
           "name": "ErgoDetect Protocol",

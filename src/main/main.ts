@@ -38,7 +38,7 @@ if (!platformFolder) {
 
 // Define ffmpeg and ffprobe paths based on packaging status
 let ffmpegPath = app.isPackaged
-  ? path.join(process.resourcesPath, 'ffmpeg')
+  ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg')
   : path.resolve(__dirname, '../../node_modules/ffmpeg-static/ffmpeg');
 
 let ffprobePath = app.isPackaged
