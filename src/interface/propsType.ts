@@ -1,5 +1,6 @@
 /** @format */
 
+import { EventType } from '@testing-library/react';
 import React, { ReactNode } from 'react';
 
 export interface PositionData {
@@ -211,4 +212,10 @@ export interface FormErrorInfo {
     errors: string[];
   }>;
   outOfDate: boolean;
+}
+
+export interface SummaryComponentProps {
+  inputData: any;
+  pdfVersion?: boolean;
+  handleExportPDF?: () => void;
 }

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Typography, message } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../utility/axiosInstance';
 
 const { Title } = Typography;
 
 const RequestResetLink: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const onFinish = async (values: { email: string }) => {
     setLoading(true);
@@ -24,33 +27,43 @@ const RequestResetLink: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 400,
-        margin: '50px auto',
-        padding: '20px',
-        border: '1px solid #f0f0f0',
-        borderRadius: '8px',
-      }}
-    >
-      <Title level={3}>Request Password Reset</Title>
-      <Form layout="vertical" onFinish={onFinish}>
-        <Form.Item
-          label="Email Address"
-          name="email"
-          rules={[
-            { required: true, message: 'Please input your email address!' },
-            { type: 'email', message: 'Please enter a valid email address!' },
-          ]}
-        >
-          <Input placeholder="Enter your email" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
-            Send Reset Link
-          </Button>
-        </Form.Item>
-      </Form>
+    <div>
+      <div style={{ padding: '24px' }}>
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(-1)}
+        />
+      </div>
+
+      <div
+        style={{
+          maxWidth: 400,
+          margin: '50px auto',
+          padding: '20px',
+          border: '1px solid #f0f0f0',
+          borderRadius: '8px',
+        }}
+      >
+        <Title level={3}>Request Password Reset</Title>
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item
+            label="Email Address"
+            name="email"
+            rules={[
+              { required: true, message: 'Please input your email address!' },
+              { type: 'email', message: 'Please enter a valid email address!' },
+            ]}
+          >
+            <Input placeholder="Enter your email" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block>
+              Send Reset Link
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
     </div>
   );
 };

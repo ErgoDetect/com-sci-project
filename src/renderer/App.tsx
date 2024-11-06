@@ -24,7 +24,6 @@ import AppHeader from '../components/layout/AppHeader';
 
 import { useResData } from '../context';
 import useReceiveData from '../hooks/useReceiveData';
-import useVideoRecorder from '../hooks/useVideoRecorder';
 import useNotify from '../hooks/useNotify';
 import VideoUploadPage from '../pages/VideoUploadPage';
 import RequestResetLink from '../pages/RequestResetLink';
@@ -74,7 +73,14 @@ const App: React.FC = () => {
       }
     };
 
-    if (!['/signup', '/wait-verify'].includes(location.pathname)) {
+    if (
+      ![
+        '/signup',
+        '/wait-verify',
+        '/reset-password',
+        '/request-reset',
+      ].includes(location.pathname)
+    ) {
       authenticate();
     }
   }, [checkAuthStatus, location.pathname, navigate]);

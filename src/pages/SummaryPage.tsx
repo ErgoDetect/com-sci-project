@@ -1,20 +1,9 @@
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from 'react';
-import { Layout, Card, Tooltip, Button, Spin, message } from 'antd';
-import {
-  ArrowLeftOutlined,
-  DownloadOutlined,
-  PlayCircleOutlined,
-} from '@ant-design/icons';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { message } from 'antd';
+
 import JsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { useLocation, useNavigate } from 'react-router-dom';
-import ProgressCard from '../components/ProgressCard';
+import { useLocation } from 'react-router-dom';
 import axiosInstance from '../utility/axiosInstance';
 import SummaryComponent from '../components/summary/summary';
 
@@ -67,10 +56,6 @@ const Summary: React.FC = () => {
       let position = 0;
 
       while (position < imgHeight) {
-        // Calculate the remaining height of the image to be displayed on the current page
-        const remainingHeight = imgHeight - position;
-        const renderHeight = Math.min(pageHeight, remainingHeight);
-
         // Add the portion of the image for the current page
         pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
 
@@ -95,7 +80,7 @@ const Summary: React.FC = () => {
           left: '-9999px',
         }}
       >
-        <SummaryComponent inputData={data} pdfVersion={true} />
+        <SummaryComponent inputData={data} pdfVersion />
       </div>
       {data ? (
         <SummaryComponent
@@ -106,7 +91,6 @@ const Summary: React.FC = () => {
       ) : null}
     </>
   );
-  // return <></>;
 };
 
 export default Summary;

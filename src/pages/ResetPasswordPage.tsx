@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Typography, message } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../utility/axiosInstance';
 
 const { Title } = Typography;
@@ -45,42 +46,51 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 400,
-        margin: '50px auto',
-        padding: '20px',
-        border: '1px solid #f0f0f0',
-        borderRadius: '8px',
-      }}
-    >
-      <Title level={3}>Reset Password</Title>
-      {email && <Typography.Text>Your email: {email}</Typography.Text>}
-      <Form layout="vertical" onFinish={onFinish}>
-        <Form.Item
-          label="New Password"
-          name="password"
-          rules={[
-            { required: true, message: 'Please input your new password!' },
-          ]}
-        >
-          <Input.Password placeholder="Enter new password" />
-        </Form.Item>
-        <Form.Item
-          label="Confirm New Password"
-          name="confirmPassword"
-          rules={[
-            { required: true, message: 'Please confirm your new password!' },
-          ]}
-        >
-          <Input.Password placeholder="Confirm new password" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
-            Reset Password
-          </Button>
-        </Form.Item>
-      </Form>
+    <div>
+      <div style={{ padding: '24px' }}>
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(-1)}
+        />
+      </div>
+      <div
+        style={{
+          maxWidth: 400,
+          margin: '50px auto',
+          padding: '20px',
+          border: '1px solid #f0f0f0',
+          borderRadius: '8px',
+        }}
+      >
+        <Title level={3}>Reset Password</Title>
+        {email && <Typography.Text>Your email: {email}</Typography.Text>}
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item
+            label="New Password"
+            name="password"
+            rules={[
+              { required: true, message: 'Please input your new password!' },
+            ]}
+          >
+            <Input.Password placeholder="Enter new password" />
+          </Form.Item>
+          <Form.Item
+            label="Confirm New Password"
+            name="confirmPassword"
+            rules={[
+              { required: true, message: 'Please confirm your new password!' },
+            ]}
+          >
+            <Input.Password placeholder="Confirm new password" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block>
+              Reset Password
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
     </div>
   );
 };

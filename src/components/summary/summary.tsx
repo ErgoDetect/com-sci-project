@@ -11,11 +11,9 @@ import {
   DownloadOutlined,
   PlayCircleOutlined,
 } from '@ant-design/icons';
-import JsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ProgressCard from '../ProgressCard';
-import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
+import { SummaryComponentProps } from '../../interface/propsType';
 
 const { Content } = Layout;
 
@@ -55,12 +53,6 @@ const cardDetails: Record<EventType, { title: string; description: string }> = {
   },
 };
 
-interface SummaryComponentProps {
-  inputData: any;
-  pdfVersion?: boolean;
-  handleExportPDF?: () => void;
-}
-
 const SummaryComponent: React.FC<SummaryComponentProps> = ({
   inputData,
   pdfVersion = false,
@@ -81,7 +73,7 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
     if (pdfVersion) {
       setExpandedCard(['blink', 'sitting', 'distance', 'thoracic']);
     }
-  });
+  }, [pdfVersion]);
 
   const handleExpandToggle = useCallback((type: EventType) => {
     setExpandedCard((prev) =>
@@ -280,7 +272,8 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
     [videoSrc, isPlaying, handlePlayPause, isVideoAvailable],
   );
   const getDuration = useCallback(() => {
-    const second = data?.duration / FPS;
+    const frameTime = data?.duration;
+    const second = frameTime / FPS;
     const hours = Math.floor(second / 3600);
     const minutes = Math.floor((second % 3600) / 60);
     const seconds = Math.floor(second % 60);

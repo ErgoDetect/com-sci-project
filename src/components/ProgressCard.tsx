@@ -16,7 +16,7 @@ interface ProgressCardProps {
   progressBar: React.ReactNode;
   description: string;
   data: any;
-  color?: string;
+  color: string;
 }
 
 const ProgressCard: React.FC<ProgressCardProps> = ({
@@ -90,15 +90,12 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
     },
     [data.duration],
   );
-  const getNumberOfTimes = useCallback(
-    (inputArray: any) => {
-      if (inputArray && inputArray.length !== 0) {
-        return inputArray.length;
-      }
-      return 0;
-    },
-    [data.duration],
-  );
+  const getNumberOfTimes = useCallback((inputArray: any) => {
+    if (inputArray && inputArray.length !== 0) {
+      return inputArray.length;
+    }
+    return 0;
+  }, []);
   const getPercent = useCallback(
     (inputArray: any[]) => {
       if (inputArray && inputArray.length !== 0) {
@@ -111,7 +108,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
           }
         });
         const sumSeconds = sum / FPS;
-        let percent = (sumSeconds / (data.duration / FPS)) * 100;
+        const percent = (sumSeconds / (data.duration / FPS)) * 100;
         return (Math.round(percent * 100) / 100).toFixed(2);
       }
       return 0;
@@ -120,7 +117,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
   );
   const getDataForChart = useCallback(
     (inputArray: any[]) => {
-      let array: number[] = [];
+      const array: number[] = [];
       if (inputArray && inputArray.length !== 0) {
         inputArray.forEach((element) => {
           if (element.length === 1) {
@@ -174,7 +171,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
       stat3 += numberOfTimes;
-      stat4 += percent + '%';
+      stat4 += `${percent}%`;
     } else if (type === 'distance') {
       const averageSeconds = getAverageInSeconds(data?.distance);
       const longestSeconds = getLongestInSeconds(data?.distance);
@@ -199,7 +196,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat2 += convertSeconds(longestSeconds);
       stat3 += convertSeconds(perHourInSeconds);
       stat4 += numberOfTimes;
-      stat5 += percent + '%';
+      stat5 += `${percent}%`;
     } else if (type === 'thoracic') {
       const averageSeconds = getAverageInSeconds(data?.thoracic);
       const longestSeconds = getLongestInSeconds(data?.thoracic);
@@ -224,7 +221,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat2 += convertSeconds(longestSeconds);
       stat3 += convertSeconds(perHourInSeconds);
       stat4 += numberOfTimes;
-      stat5 += percent + '%';
+      stat5 += `${percent}%`;
     } else if (type === 'sitting') {
       const averageSeconds = getAverageInSeconds(data?.sitting);
       const longestSeconds = getLongestInSeconds(data?.sitting);
@@ -241,7 +238,7 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
       stat1 += convertSeconds(averageSeconds);
       stat2 += convertSeconds(longestSeconds);
       stat3 += numberOfTimes;
-      stat4 += percent + '%';
+      stat4 += `${percent}%`;
     }
     return (
       <>
@@ -254,18 +251,22 @@ const ProgressCard: React.FC<ProgressCardProps> = ({
         {stat4}
         {stat4 ? <br /> : null}
         {stat5}
-        {chart ? chart : null}
+        {chart || null}
       </>
     );
   }, [
+    color,
     convertSeconds,
     data?.blink,
     data?.distance,
     data?.sitting,
     data?.thoracic,
     getAverageInSeconds,
+    getDataForChart,
     getLongestInSeconds,
+    getNumberOfTimes,
     getPerHourInSecond,
+    getPercent,
     type,
   ]);
   const stat = getStat();
