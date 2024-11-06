@@ -278,6 +278,21 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
     ),
     [videoSrc, isPlaying, handlePlayPause, isVideoAvailable],
   );
+  const getDuration = useCallback(() => {
+    const second = data?.duration / FPS;
+    const hours = Math.floor(second / 3600);
+    const minutes = Math.floor((second % 3600) / 60);
+    const seconds = Math.floor(second % 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+  }, [data]);
+
+  const duration = getDuration();
 
   return (
     <Layout style={{ padding: '24px', minHeight: '100vh' }}>
@@ -299,6 +314,8 @@ const SummaryComponent: React.FC<SummaryComponentProps> = ({
         >
           <h2>Session: {data?.session_id}</h2>
           <span>Date: {data?.date}</span>
+          <br />
+          <span>Session Duration: {duration}</span>
           {!pdfVersion ? (
             <Card
               style={{ margin: '24px 0', padding: '0', borderRadius: '12px' }}
