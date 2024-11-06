@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- Enable Just-In-Time compilation -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- Basic app information -->
+    <key>CFBundleName</key>
+    <string>YourAppName</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.yourcompany.yourapp</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+
+    <!-- Custom URL Scheme -->
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>com.yourcompany.yourapp</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>ergodetect</string>
+        </array>
+      </dict>
+    </array>
+
+    <!-- Security entitlements -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <key>com.apple.security.notifications</key>
+    <true/>
+  </dict>
+</plist>
