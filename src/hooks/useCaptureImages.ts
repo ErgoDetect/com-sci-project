@@ -9,7 +9,12 @@ const MAX_IMAGE_COUNT = Math.floor((CAPTURE_DURATION / 1000) * CAPTURE_FPS);
 
 const notify = async (title: string, body: string) => {
   try {
-    await window.electron?.notifications.showNotification?.(title, body);
+    await window.electron?.notifications.showNotification?.(
+      title,
+      body,
+      '',
+      true,
+    );
   } catch (error) {
     console.error('Notification error:', error);
   }
