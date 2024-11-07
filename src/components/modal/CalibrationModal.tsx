@@ -153,7 +153,13 @@ const CalibrationModal: React.FC = () => {
         open={isConfirmationModalOpen}
         onCancel={toggleModal(setConfirmationModalOpen)}
         footer={
-          <>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Button
               size="large"
               onClick={toggleModal(setConfirmationModalOpen)}
@@ -169,7 +175,7 @@ const CalibrationModal: React.FC = () => {
             >
               Yes
             </Button>
-          </>
+          </div>
         }
         width="300px"
         centered
