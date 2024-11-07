@@ -130,11 +130,11 @@ export const ResProvider: React.FC<{ children: ReactNode }> = ({
         if (config.showBlinkNotification !== undefined)
           setShowBlinkNotification(config.showBlinkNotification);
         if (config.showSittingNotification !== undefined)
-          setShowBlinkNotification(config.showSittingNotification);
+          setShowSittingNotification(config.showSittingNotification);
         if (config.showDistanceNotification !== undefined)
-          setShowBlinkNotification(config.showDistanceNotification);
+          setShowDistanceNotification(config.showDistanceNotification);
         if (config.showThoracticNotification !== undefined)
-          setShowBlinkNotification(config.showThoracticNotification);
+          setShowThoracticNotification(config.showThoracticNotification);
       } catch (error) {
         console.error('Error fetching appConfig:', error);
       } finally {
