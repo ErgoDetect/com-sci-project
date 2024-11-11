@@ -64,7 +64,7 @@ const useNotify = () => {
           'Time limit Alert',
           'Session Exceed 2 Hours.',
           'finish.png',
-          showThoracticNotification,
+          true,
         );
         setStreaming(false);
       }
