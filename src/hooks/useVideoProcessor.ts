@@ -51,9 +51,16 @@ const useVideoProcessor = ({
         return; // Exit if processing is cancelled
       }
       const videoElement = mainVideoElementRef.current;
-      if (!videoElement) return;
-
-      videoElement.currentTime = currentTime;
+      if (videoElement.currentTime !== currentTime) {
+        videoElement.currentTime = currentTime;
+        await new Promise<void>((resolve) => {
+          const handleSeek = () => {
+            resolve();
+            videoElement.removeEventListener('seeked', handleSeek);
+          };
+          videoElement.addEventListener('seeked', handleSeek);
+        });
+      }
 
       const timestamp = currentTime * 1000;
       console.log(`Processing frame at time: ${currentTime}`);
